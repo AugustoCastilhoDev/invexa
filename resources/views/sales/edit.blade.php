@@ -3,20 +3,32 @@
 @section('title', 'Editar Venda')
 
 @section('content')
-<div class="card shadow-sm">
-    <div class="card-body">
-        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+<div class="card dashboard-card card-dark-bg shadow-sm border-0">
+    <div class="card-header card-header-dark border-bottom">
+        <div class="d-flex justify-content-between align-items-center gap-3">
             <div>
-                <h4 class="mb-1">Editar Venda</h4>
-                <p class="text-muted mb-0">Altere os dados da venda e seus itens.</p>
+                <h4 class="mb-1 text-white">Editar Venda #{{ $sale->id }}</h4>
+                <p class="text-soft mb-0">Altere os dados da venda e seus itens.</p>
             </div>
-            <a href="{{ route('sales.index') }}" class="btn btn-outline-secondary">Voltar</a>
+            <a href="{{ route('sales.index') }}" class="btn btn-outline-light">Voltar</a>
         </div>
+    </div>
+
+    <div class="card-body">
 
         @if ($errors->any())
-            <div class="alert alert-danger">
-                <strong>Corrija os erros abaixo.</strong>
+            <div class="alert alert-danger mb-4">
+                <strong>Corrija os erros abaixo:</strong>
+                <ul class="mb-0 mt-1">
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
             </div>
+        @endif
+
+        @if (session('error'))
+            <div class="alert alert-danger">{{ session('error') }}</div>
         @endif
 
         <form action="{{ route('sales.update', $sale) }}" method="POST" id="sale-form">
@@ -25,26 +37,31 @@
 
             <div class="row g-3 mb-4">
                 <div class="col-12 col-md-4">
-                    <label for="customer_name" class="form-label">Cliente</label>
-                    <input type="text" id="customer_name" name="customer_name" class="form-control @error('customer_name') is-invalid @enderror" value="{{ old('customer_name', $sale->customer_name) }}" placeholder="Nome do cliente">
+                    <label for="customer_name" class="form-label text-soft fw-semibold">Cliente</label>
+                    <input type="text" id="customer_name" name="customer_name"
+                        class="form-control @error('customer_name') is-invalid @enderror"
+                        value="{{ old('customer_name', $sale->customer_name) }}"
+                        placeholder="Nome do cliente">
                     @error('customer_name')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
                 </div>
 
                 <div class="col-12 col-md-3">
-                    <label for="sale_date" class="form-label">Data da venda</label>
-                    <input type="datetime-local" id="sale_date" name="sale_date" class="form-control @error('sale_date') is-invalid @enderror" value="{{ old('sale_date', optional($sale->sale_date)->format('Y-m-d\TH:i')) }}">
+                    <label for="sale_date" class="form-label text-soft fw-semibold">Data da venda</label>
+                    <input type="datetime-local" id="sale_date" name="sale_date"
+                        class="form-control @error('sale_date') is-invalid @enderror"
+                        value="{{ old('sale_date', optional($sale->sale_date)->format('Y-m-d\TH:i')) }}">
                     @error('sale_date')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
                 </div>
 
                 <div class="col-12 col-md-3">
-                    <label for="status" class="form-label">Status</label>
+                    <label for="status" class="form-label text-soft fw-semibold">Status</label>
                     <select id="status" name="status" class="form-select @error('status') is-invalid @enderror">
                         <option value="concluida" @selected(old('status', $sale->status) === 'concluida')>Concluída</option>
-                        <option value="pendente" @selected(old('status', $sale->status) === 'pendente')>Pendente</option>
+                        <option value="pendente"  @selected(old('status', $sale->status) === 'pendente')>Pendente</option>
                         <option value="cancelada" @selected(old('status', $sale->status) === 'cancelada')>Cancelada</option>
                     </select>
                     @error('status')
@@ -53,18 +70,23 @@
                 </div>
 
                 <div class="col-12 col-md-2">
-                    <label for="notes" class="form-label">Observações</label>
-                    <input type="text" id="notes" name="notes" class="form-control @error('notes') is-invalid @enderror" value="{{ old('notes', $sale->notes) }}" placeholder="Opcional">
+                    <label for="notes" class="form-label text-soft fw-semibold">Observações</label>
+                    <input type="text" id="notes" name="notes"
+                        class="form-control @error('notes') is-invalid @enderror"
+                        value="{{ old('notes', $sale->notes) }}"
+                        placeholder="Opcional">
                     @error('notes')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
                 </div>
             </div>
 
-            <div class="card mb-4">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <span>Itens da venda</span>
-                    <button type="button" class="btn btn-sm btn-primary" id="add-item">Adicionar item</button>
+            <div class="card card-dark-bg mb-4">
+                <div class="card-header card-header-dark d-flex justify-content-between align-items-center">
+                    <span class="text-white">Itens da venda</span>
+                    <button type="button" class="btn btn-sm btn-primary" id="add-item">
+                        <i class="bi bi-plus-circle"></i> Adicionar item
+                    </button>
                 </div>
 
                 <div class="card-body">
@@ -73,36 +95,42 @@
                     @enderror
 
                     <div id="items-container" class="vstack gap-3">
-                        @php
-                            $oldItems = old('items');
-                        @endphp
+                        @php $oldItems = old('items'); @endphp
 
                         @if ($oldItems)
                             @foreach ($oldItems as $index => $item)
                                 <div class="border rounded p-3 item-row">
                                     <div class="row g-3 align-items-end">
-                                        <div class="col-12 col-md-5">
-                                            <label class="form-label">Produto</label>
-                                            <select name="items[{{ $index }}][product_id]" class="form-select">
+                                        <div class="col-12 col-md-6">
+                                            <label class="form-label text-soft fw-semibold">Produto</label>
+                                            <select name="items[{{ $index }}][product_id]" class="form-select product-select">
                                                 <option value="">Selecione</option>
                                                 @foreach ($products as $product)
-                                                    <option value="{{ $product->id }}" @selected((string)($item['product_id'] ?? '') === (string)$product->id)>
+                                                    <option value="{{ $product->id }}"
+                                                        data-price="{{ $product->price }}"
+                                                        @selected((string)($item['product_id'] ?? '') === (string)$product->id)>
                                                         {{ $product->name }} (Estoque: {{ $product->quantity }})
                                                     </option>
                                                 @endforeach
                                             </select>
                                         </div>
-
                                         <div class="col-6 col-md-2">
-                                            <label class="form-label">Quantidade</label>
-                                            <input type="number" min="1" name="items[{{ $index }}][quantity]" class="form-control" value="{{ $item['quantity'] ?? 1 }}">
+                                            <label class="form-label text-soft fw-semibold">Quantidade</label>
+                                            <input type="number" min="1"
+                                                name="items[{{ $index }}][quantity]"
+                                                class="form-control"
+                                                value="{{ $item['quantity'] ?? 1 }}">
                                         </div>
-
-                                        <div class="col-6 col-md-3">
-                                            <label class="form-label">Preço</label>
-                                            <input type="number" step="0.01" min="0" name="items[{{ $index }}][price]" class="form-control" value="{{ $item['price'] ?? '' }}">
+                                        <div class="col-6 col-md-2">
+                                            <label class="form-label text-soft fw-semibold">Preço Unitário</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text bg-black border-secondary text-soft">R$</span>
+                                                <input type="number" step="0.01" min="0"
+                                                    name="items[{{ $index }}][price]"
+                                                    class="form-control price-input"
+                                                    value="{{ $item['price'] ?? '' }}">
+                                            </div>
                                         </div>
-
                                         <div class="col-12 col-md-2 d-grid">
                                             <button type="button" class="btn btn-outline-danger remove-item">Remover</button>
                                         </div>
@@ -113,28 +141,36 @@
                             @foreach ($sale->items as $index => $item)
                                 <div class="border rounded p-3 item-row">
                                     <div class="row g-3 align-items-end">
-                                        <div class="col-12 col-md-5">
-                                            <label class="form-label">Produto</label>
-                                            <select name="items[{{ $index }}][product_id]" class="form-select">
+                                        <div class="col-12 col-md-6">
+                                            <label class="form-label text-soft fw-semibold">Produto</label>
+                                            <select name="items[{{ $index }}][product_id]" class="form-select product-select">
                                                 <option value="">Selecione</option>
                                                 @foreach ($products as $product)
-                                                    <option value="{{ $product->id }}" @selected($item->product_id == $product->id)>
+                                                    <option value="{{ $product->id }}"
+                                                        data-price="{{ $product->price }}"
+                                                        @selected($item->product_id == $product->id)>
                                                         {{ $product->name }} (Estoque: {{ $product->quantity }})
                                                     </option>
                                                 @endforeach
                                             </select>
                                         </div>
-
                                         <div class="col-6 col-md-2">
-                                            <label class="form-label">Quantidade</label>
-                                            <input type="number" min="1" name="items[{{ $index }}][quantity]" class="form-control" value="{{ $item->quantity }}">
+                                            <label class="form-label text-soft fw-semibold">Quantidade</label>
+                                            <input type="number" min="1"
+                                                name="items[{{ $index }}][quantity]"
+                                                class="form-control"
+                                                value="{{ $item->quantity }}">
                                         </div>
-
-                                        <div class="col-6 col-md-3">
-                                            <label class="form-label">Preço</label>
-                                            <input type="number" step="0.01" min="0" name="items[{{ $index }}][price]" class="form-control" value="{{ $item->price }}">
+                                        <div class="col-6 col-md-2">
+                                            <label class="form-label text-soft fw-semibold">Preço Unitário</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text bg-black border-secondary text-soft">R$</span>
+                                                <input type="number" step="0.01" min="0"
+                                                    name="items[{{ $index }}][price]"
+                                                    class="form-control price-input"
+                                                    value="{{ $item->price }}">
+                                            </div>
                                         </div>
-
                                         <div class="col-12 col-md-2 d-grid">
                                             <button type="button" class="btn btn-outline-danger remove-item">Remover</button>
                                         </div>
@@ -147,8 +183,8 @@
             </div>
 
             <div class="d-flex justify-content-end gap-2">
-                <a href="{{ route('sales.index') }}" class="btn btn-outline-secondary">Cancelar</a>
-                <button type="submit" class="btn btn-primary">Atualizar venda</button>
+                <a href="{{ route('sales.index') }}" class="btn btn-outline-light">Cancelar</a>
+                <button type="submit" class="btn btn-primary">Atualizar Venda</button>
             </div>
         </form>
     </div>
@@ -157,26 +193,31 @@
 <template id="item-template">
     <div class="border rounded p-3 item-row">
         <div class="row g-3 align-items-end">
-            <div class="col-12 col-md-5">
-                <label class="form-label">Produto</label>
-                <select name="items[__INDEX__][product_id]" class="form-select">
+            <div class="col-12 col-md-6">
+                <label class="form-label text-soft fw-semibold">Produto</label>
+                <select name="items[__INDEX__][product_id]" class="form-select product-select">
                     <option value="">Selecione</option>
                     @foreach ($products as $product)
-                        <option value="{{ $product->id }}">{{ $product->name }} (Estoque: {{ $product->quantity }})</option>
+                        <option value="{{ $product->id }}" data-price="{{ $product->price }}">
+                            {{ $product->name }} (Estoque: {{ $product->quantity }})
+                        </option>
                     @endforeach
                 </select>
             </div>
-
             <div class="col-6 col-md-2">
-                <label class="form-label">Quantidade</label>
+                <label class="form-label text-soft fw-semibold">Quantidade</label>
                 <input type="number" min="1" name="items[__INDEX__][quantity]" class="form-control" value="1">
             </div>
-
-            <div class="col-6 col-md-3">
-                <label class="form-label">Preço</label>
-                <input type="number" step="0.01" min="0" name="items[__INDEX__][price]" class="form-control">
+            <div class="col-6 col-md-2">
+                <label class="form-label text-soft fw-semibold">Preço Unitário</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-black border-secondary text-soft">R$</span>
+                    <input type="number" step="0.01" min="0"
+                           name="items[__INDEX__][price]"
+                           class="form-control price-input"
+                           placeholder="0.00">
+                </div>
             </div>
-
             <div class="col-12 col-md-2 d-grid">
                 <button type="button" class="btn btn-outline-danger remove-item">Remover</button>
             </div>
@@ -189,11 +230,23 @@
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const container = document.getElementById('items-container');
-    const template = document.getElementById('item-template').innerHTML;
+    const template  = document.getElementById('item-template').innerHTML;
     const addButton = document.getElementById('add-item');
 
+    function bindProductSelect(row) {
+        const select     = row.querySelector('.product-select');
+        const priceInput = row.querySelector('.price-input');
+        if (!select || !priceInput) return;
+        select.addEventListener('change', function () {
+            const selected = this.options[this.selectedIndex];
+            const price    = selected ? selected.dataset.price : '';
+            if (price) priceInput.value = parseFloat(price).toFixed(2);
+            else priceInput.value = '';
+        });
+    }
+
     function bindRemoveButtons() {
-        document.querySelectorAll('.remove-item').forEach(button => {
+        container.querySelectorAll('.remove-item').forEach(button => {
             button.onclick = function () {
                 const items = container.querySelectorAll('.item-row');
                 if (items.length > 1) {
@@ -216,9 +269,12 @@ document.addEventListener('DOMContentLoaded', function () {
     addButton.addEventListener('click', function () {
         const index = container.querySelectorAll('.item-row').length;
         container.insertAdjacentHTML('beforeend', template.replaceAll('__INDEX__', index));
+        const newRow = container.querySelectorAll('.item-row')[index];
+        bindProductSelect(newRow);
         refreshIndexes();
     });
 
+    container.querySelectorAll('.item-row').forEach(row => bindProductSelect(row));
     bindRemoveButtons();
 });
 </script>
