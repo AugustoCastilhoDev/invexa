@@ -5,7 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>@yield('title', 'Estoque e Vendas')</title>
+    <title>@yield('title', 'Invexa') — Invexa</title>
+
+    {{-- Favicon SVG inline --}}
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0%25' stop-color='%234f46e5'/><stop offset='100%25' stop-color='%237c3aed'/></linearGradient></defs><rect width='32' height='32' rx='8' fill='url(%23g)'/><text x='50%25' y='50%25' dominant-baseline='central' text-anchor='middle' font-family='Inter,system-ui,sans-serif' font-size='18' font-weight='700' fill='white'>I</text></svg>">
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css">
@@ -47,14 +50,14 @@
             width: 2rem;
             height: 2rem;
             border-radius: .45rem;
-            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: .95rem;
             color: #fff;
             flex-shrink: 0;
-            box-shadow: 0 0 0 1px rgba(96,165,250,.25), 0 4px 10px rgba(37,99,235,.35);
+            box-shadow: 0 0 0 1px rgba(139,92,246,.25), 0 4px 10px rgba(79,70,229,.35);
         }
 
         /* Nav links */
@@ -181,9 +184,9 @@
             {{-- Brand --}}
             <a class="navbar-brand-custom" href="{{ route('dashboard') }}">
                 <div class="brand-icon">
-                    <i class="bi bi-graph-up-arrow"></i>
+                    <i class="bi bi-box-seam-fill"></i>
                 </div>
-                <span>Estoque e Vendas</span>
+                <span>INVEXA</span>
             </a>
 
             {{-- Toggler mobile --}}
@@ -330,8 +333,8 @@
     <footer class="footer-main py-4">
         <div class="container text-center" style="color: rgba(148,163,184,.6); font-size: .8rem;">
             <div class="d-flex align-items-center justify-content-center gap-2 mb-1">
-                <i class="bi bi-graph-up-arrow" style="color: #3b82f6;"></i>
-                <span class="fw-semibold" style="color: rgba(226,232,240,.7);">Estoque e Vendas</span>
+                <i class="bi bi-box-seam-fill" style="color: #7c3aed;"></i>
+                <span class="fw-semibold" style="color: rgba(226,232,240,.7);">INVEXA</span>
                 <span>© {{ date('Y') }}</span>
             </div>
             <div>
