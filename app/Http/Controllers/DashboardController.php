@@ -33,14 +33,14 @@ class DashboardController extends Controller
 
         $filteredQuery = $this->filteredSalesQuery($request, $from, $to);
 
-        // ── Métricas brutas de vendas ────────────────────────────────
-        $periodSalesCount  = (clone $filteredQuery)->count();
-        $periodRevenue     = (clone $filteredQuery)->sum('total');
+        // ── Métricas brutas de vendas ────────────────────────────────────
+        $periodSalesCount    = (clone $filteredQuery)->count();
+        $periodRevenue       = (float)(clone $filteredQuery)->sum('total');
         $periodAverageTicket = $periodSalesCount > 0 ? $periodRevenue / $periodSalesCount : 0;
-        $periodMaxSale     = (clone $filteredQuery)->max('total') ?? 0;
-        $periodMinSale     = (clone $filteredQuery)->min('total') ?? 0;
+        $periodMaxSale       = (clone $filteredQuery)->max('total') ?? 0;
+        $periodMinSale       = (clone $filteredQuery)->min('total') ?? 0;
 
-        // ── Devoluções do período ─────────────────────────────────
+        // ── Devoluções do período ────────────────────────────────────────
         $returnsQuery = SaleReturn::where('company_id', $companyId);
         if ($from && $to) {
             $returnsQuery->whereBetween('created_at', [
@@ -48,44 +48,50 @@ class DashboardController extends Controller
                 Carbon::parse($to)->endOfDay(),
             ]);
         }
-        $periodReturnsTotal = (clone $returnsQuery)->sum('total');
+        $periodReturnsTotal = (float)(clone $returnsQuery)->sum('total');
         $periodReturnsCount = (clone $returnsQuery)->count();
         $periodNetRevenue   = $periodRevenue - $periodReturnsTotal;
 
-        // ── Variação vs período anterior ───────────────────────────
-        $previousRevenue       = 0;
-        $revenueChange         = 0;
-        $revenueChangePercent  = null;
+        // ── Variação vs período anterior ───────────────────────────────
+        $previousRevenue      = 0;
+        $revenueChange        = 0;
+        $revenueChangePercent = null;
 
         if ($from && $to) {
-            $fromDate    = Carbon::parse($from)->startOfDay();
-            $toDate      = Carbon::parse($to)->endOfDay();
-            $periodDays  = $fromDate->diffInDays($toDate) + 1;
+            $fromDate      = Carbon::parse($from)->startOfDay();
+            $toDate        = Carbon::parse($to)->endOfDay();
+            $periodDays    = $fromDate->diffInDays($toDate) + 1;
             $previousStart = $fromDate->copy()->subDays($periodDays);
             $previousEnd   = $fromDate->copy()->subDay();
 
-            $previousRevenue = Sale::where('company_id', $companyId)
+            $previousRevenue = (float) Sale::where('company_id', $companyId)
                 ->whereBetween('sale_date', [$previousStart, $previousEnd])
                 ->sum('total');
 
-            $revenueChange        = $periodRevenue - $previousRevenue;
+            $revenueChange        = $periodNetRevenue - $previousRevenue;
             $revenueChangePercent = $previousRevenue > 0
                 ? ($revenueChange / $previousRevenue) * 100
                 : null;
         }
 
-        // ── Totais gerais ─────────────────────────────────────────
+        // ── Totais gerais ────────────────────────────────────────────────
         $totalProducts   = Product::where('company_id', $companyId)->count();
         $totalCategories = Category::where('company_id', $companyId)->count();
         $totalSales      = (clone $filteredQuery)->count();
-        $totalRevenue    = (clone $filteredQuery)->sum('total');
+        $totalRevenue    = (float)(clone $filteredQuery)->sum('total');
         $averageTicket   = $totalSales > 0 ? $totalRevenue / $totalSales : 0;
 
-        $salesToday = Sale::where('company_id', $companyId)
+        $salesToday = (float) Sale::where('company_id', $companyId)
             ->whereBetween('sale_date', [now()->startOfDay(), now()->endOfDay()])
             ->sum('total');
 
-        // ── Estoque e listas ──────────────────────────────────────
+        // Devoluções de hoje (para "Venda de hoje" líquida)
+        $returnsTodayTotal = (float) SaleReturn::where('company_id', $companyId)
+            ->whereBetween('created_at', [now()->startOfDay(), now()->endOfDay()])
+            ->sum('total');
+        $salesTodayNet = $salesToday - $returnsTodayTotal;
+
+        // ── Estoque e listas ─────────────────────────────────────────────
         $lowStockProducts = Product::with('category')
             ->where('company_id', $companyId)
             ->whereColumn('quantity', '<=', 'min_quantity')
@@ -100,10 +106,7 @@ class DashboardController extends Controller
             ->limit(5)
             ->get();
 
-        $latestSales = Sale::where('company_id', $companyId)
-            ->latest()
-            ->limit(5)
-            ->get();
+        $latestSales = Sale::where('company_id', $companyId)->latest()->limit(5)->get();
 
         $topSellingProducts = Product::select('products.id', 'products.name', 'products.quantity')
             ->selectRaw('COALESCE(SUM(sale_items.quantity), 0) as total_sold')
@@ -114,16 +117,15 @@ class DashboardController extends Controller
             ->limit(5)
             ->get();
 
-        // ── Últimas devoluções para o dashboard ─────────────────────
+        // ── Últimas devoluções ─────────────────────────────────────────
         $latestReturns = SaleReturn::with('sale')
             ->where('company_id', $companyId)
             ->orderByDesc('created_at')
             ->limit(5)
             ->get();
 
-        // ── Gráfico ──────────────────────────────────────────────
+        // ── Gráfico: receita líquida por dia (bruto − devoluções) ───────
         $chartQuery = $this->filteredSalesQuery($request, $from, $to);
-
         if (!$from && !$to && !$interval) {
             $chartQuery->whereBetween('sale_date', [
                 now()->subDays(30)->startOfDay(),
@@ -131,19 +133,46 @@ class DashboardController extends Controller
             ]);
         }
 
+        // Vendas brutas por dia
         $salesByDay = $chartQuery
             ->selectRaw('DATE(sale_date) as day, SUM(total) as total')
             ->groupBy(DB::raw('DATE(sale_date)'))
             ->orderBy('day')
-            ->get();
+            ->pluck('total', 'day');
 
-        $chartLabels = $salesByDay->pluck('day')->map(fn($d) => date('d/m', strtotime($d)));
-        $chartData   = $salesByDay->pluck('total');
+        // Devoluções por dia (mesmo intervalo)
+        $returnsChartQuery = SaleReturn::where('company_id', $companyId);
+        if ($from && $to) {
+            $returnsChartQuery->whereBetween('created_at', [
+                Carbon::parse($from)->startOfDay(),
+                Carbon::parse($to)->endOfDay(),
+            ]);
+        } elseif (!$from && !$to && !$interval) {
+            $returnsChartQuery->whereBetween('created_at', [
+                now()->subDays(30)->startOfDay(),
+                now()->endOfDay(),
+            ]);
+        }
+        $returnsByDay = $returnsChartQuery
+            ->selectRaw('DATE(created_at) as day, SUM(total) as total')
+            ->groupBy(DB::raw('DATE(created_at)'))
+            ->pluck('total', 'day');
+
+        // Mescla: para cada dia com venda, subtrai devoluções do mesmo dia
+        $allDays    = $salesByDay->keys()->merge($returnsByDay->keys())->unique()->sort()->values();
+        $chartLabels = $allDays->map(fn($d) => date('d/m', strtotime($d)));
+        $chartData   = $allDays->map(fn($d) =>
+            max(0, (float)($salesByDay[$d] ?? 0) - (float)($returnsByDay[$d] ?? 0))
+        );
+        // Dataset secundário: devoluções (para exibir no tooltip)
+        $chartReturnsData = $allDays->map(fn($d) => (float)($returnsByDay[$d] ?? 0));
 
         return view('dashboard', compact(
             'totalProducts', 'totalCategories', 'totalSales', 'totalRevenue',
-            'averageTicket', 'salesToday', 'lowStockProducts', 'criticalStockProducts',
-            'latestSales', 'topSellingProducts', 'chartLabels', 'chartData',
+            'averageTicket', 'salesToday', 'salesTodayNet',
+            'lowStockProducts', 'criticalStockProducts',
+            'latestSales', 'topSellingProducts',
+            'chartLabels', 'chartData', 'chartReturnsData',
             'from', 'to', 'interval',
             'periodSalesCount', 'periodRevenue', 'periodAverageTicket',
             'periodMaxSale', 'periodMinSale',
@@ -155,18 +184,12 @@ class DashboardController extends Controller
 
     public function exportCsv(Request $request)
     {
-        $sales = $this->filteredSalesQuery($request)
-            ->with('items.product')
-            ->orderBy('sale_date')
-            ->get();
-
+        $sales    = $this->filteredSalesQuery($request)->with('items.product')->orderBy('sale_date')->get();
         $filename = 'vendas_' . now()->format('Y-m-d_H-i-s') . '.csv';
-
-        $headers = [
+        $headers  = [
             'Content-Type'        => 'text/csv; charset=UTF-8',
             'Content-Disposition' => 'attachment; filename="' . $filename . '"',
         ];
-
         $callback = function () use ($sales) {
             $handle = fopen('php://output', 'w');
             fprintf($handle, chr(0xEF) . chr(0xBB) . chr(0xBF));
@@ -183,7 +206,6 @@ class DashboardController extends Controller
             }
             fclose($handle);
         };
-
         return response()->streamDownload($callback, $filename, $headers);
     }
 
@@ -193,17 +215,14 @@ class DashboardController extends Controller
         $from     = $request->input('from');
         $to       = $request->input('to');
         $interval = $request->input('interval');
-
         $pdf = Pdf::loadView('exports.sales-pdf', compact('sales', 'from', 'to', 'interval'))
             ->setPaper('a4', 'portrait');
-
         return $pdf->download('vendas_' . now()->format('Y-m-d_H-i-s') . '.pdf');
     }
 
     private function filteredSalesQuery(Request $request, ?string $from = null, ?string $to = null)
     {
         $interval = $request->input('interval');
-
         if ($interval === 'today') {
             $from = now()->toDateString();
             $to   = now()->toDateString();
@@ -214,10 +233,8 @@ class DashboardController extends Controller
             $from = now()->startOfMonth()->toDateString();
             $to   = now()->toDateString();
         }
-
         $companyId = auth()->user()->company_id;
         $query     = Sale::where('company_id', $companyId);
-
         if ($from && $to) {
             $query->whereBetween('sale_date', [
                 Carbon::parse($from)->startOfDay(),
@@ -228,7 +245,6 @@ class DashboardController extends Controller
         } elseif ($to) {
             $query->where('sale_date', '<=', Carbon::parse($to)->endOfDay());
         }
-
         return $query;
     }
 }
