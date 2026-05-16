@@ -14,6 +14,8 @@ use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
+    private string $tz = 'America/Sao_Paulo';
+
     public function index(Request $request)
     {
         $companyId = auth()->user()->company_id;
@@ -22,14 +24,14 @@ class DashboardController extends Controller
         $to        = $request->input('to');
 
         if ($interval === 'today') {
-            $from = now()->toDateString();
-            $to   = now()->toDateString();
+            $from = now($this->tz)->toDateString();
+            $to   = now($this->tz)->toDateString();
         } elseif ($interval === '7d') {
-            $from = now()->subDays(6)->toDateString();
-            $to   = now()->toDateString();
+            $from = now($this->tz)->subDays(6)->toDateString();
+            $to   = now($this->tz)->toDateString();
         } elseif ($interval === 'month') {
-            $from = now()->startOfMonth()->toDateString();
-            $to   = now()->toDateString();
+            $from = now($this->tz)->startOfMonth()->toDateString();
+            $to   = now($this->tz)->toDateString();
         }
 
         $filteredQuery = $this->filteredSalesQuery($request, $from, $to);
@@ -41,36 +43,36 @@ class DashboardController extends Controller
         $periodMaxSale       = (clone $filteredQuery)->max('total') ?? 0;
         $periodMinSale       = (clone $filteredQuery)->min('total') ?? 0;
 
-        // ── Vendas manuais via tela de estoque (type=saida, reason=venda) ──
+        // ── Vendas manuais via tela de estoque ────────────────────────
         $stockSalesMovements = $this->stockManualQuery($companyId, 'venda', $from, $to)->get();
         $stockSalesRevenue   = $stockSalesMovements->sum(
             fn($m) => abs($m->quantity) * (float) optional($m->product)->price
         );
         $stockSalesCount = $stockSalesMovements->count();
 
-        $periodRevenue       += $stockSalesRevenue;
-        $periodSalesCount    += $stockSalesCount;
-        $periodAverageTicket  = $periodSalesCount > 0 ? $periodRevenue / $periodSalesCount : 0;
+        $periodRevenue      += $stockSalesRevenue;
+        $periodSalesCount   += $stockSalesCount;
+        $periodAverageTicket = $periodSalesCount > 0 ? $periodRevenue / $periodSalesCount : 0;
 
-        // ── Fonte 1: devoluções via módulo SaleReturn ─────────────────
+        // ── Devoluções via módulo SaleReturn ────────────────────────
         $saleReturnsQuery = SaleReturn::where('company_id', $companyId);
         if ($from && $to) {
             $saleReturnsQuery->whereBetween('created_at', [
-                Carbon::parse($from)->startOfDay(),
-                Carbon::parse($to)->endOfDay(),
+                Carbon::parse($from, $this->tz)->startOfDay(),
+                Carbon::parse($to, $this->tz)->endOfDay(),
             ]);
         }
         $returnsFromModule  = (float)(clone $saleReturnsQuery)->sum('total');
         $returnsCountModule = (clone $saleReturnsQuery)->count();
 
-        // ── Fonte 2: devoluções manuais via tela de estoque (reason=devolucao) ──
+        // ── Devoluções manuais via tela de estoque ─────────────────
         $stockRetMovements = $this->stockManualQuery($companyId, 'devolucao', $from, $to)->get();
         $returnsFromStock  = $stockRetMovements->sum(
             fn($m) => abs($m->quantity) * (float) optional($m->product)->price
         );
         $returnsCountStock = $stockRetMovements->count();
 
-        // ── Totais combinados ─────────────────────────────────────────
+        // ── Totais ────────────────────────────────────────────────
         $periodReturnsTotal = $returnsFromModule + $returnsFromStock;
         $periodReturnsCount = $returnsCountModule + $returnsCountStock;
         $periodNetRevenue   = $periodRevenue - $periodReturnsTotal;
@@ -81,8 +83,8 @@ class DashboardController extends Controller
         $revenueChangePercent = null;
 
         if ($from && $to) {
-            $fromDate      = Carbon::parse($from)->startOfDay();
-            $toDate        = Carbon::parse($to)->endOfDay();
+            $fromDate      = Carbon::parse($from, $this->tz)->startOfDay();
+            $toDate        = Carbon::parse($to, $this->tz)->endOfDay();
             $periodDays    = $fromDate->diffInDays($toDate) + 1;
             $previousStart = $fromDate->copy()->subDays($periodDays);
             $previousEnd   = $fromDate->copy()->subDay();
@@ -104,18 +106,20 @@ class DashboardController extends Controller
         $totalRevenue    = $periodRevenue;
         $averageTicket   = $periodAverageTicket;
 
-        // Vendas de hoje — módulo /sales + estoque manual
+        // Vendas de hoje
+        $todayStart = now($this->tz)->startOfDay();
+        $todayEnd   = now($this->tz)->endOfDay();
+
         $salesToday = (float) Sale::where('company_id', $companyId)
-            ->whereBetween('sale_date', [now()->startOfDay(), now()->endOfDay()])
+            ->whereBetween('sale_date', [$todayStart, $todayEnd])
             ->sum('total');
-        $salesToday += $this->stockManualQuery($companyId, 'venda', now()->toDateString(), now()->toDateString())
+        $salesToday += $this->stockManualQuery($companyId, 'venda', now($this->tz)->toDateString(), now($this->tz)->toDateString())
             ->get()->sum(fn($m) => abs($m->quantity) * (float) optional($m->product)->price);
 
-        // Devoluções de hoje
         $returnsTodayModule = (float) SaleReturn::where('company_id', $companyId)
-            ->whereBetween('created_at', [now()->startOfDay(), now()->endOfDay()])
+            ->whereBetween('created_at', [$todayStart, $todayEnd])
             ->sum('total');
-        $returnsTodayStock  = $this->stockManualQuery($companyId, 'devolucao', now()->toDateString(), now()->toDateString())
+        $returnsTodayStock  = $this->stockManualQuery($companyId, 'devolucao', now($this->tz)->toDateString(), now($this->tz)->toDateString())
             ->get()->sum(fn($m) => abs($m->quantity) * (float) optional($m->product)->price);
 
         $salesTodayNet = $salesToday - $returnsTodayModule - $returnsTodayStock;
@@ -153,16 +157,15 @@ class DashboardController extends Controller
             ->get();
 
         // ── Gráfico ─────────────────────────────────────────────────
-        // Determina o intervalo do gráfico
         $chartFrom = $from;
         $chartTo   = $to;
         if (!$chartFrom && !$chartTo && !$interval) {
-            $chartFrom = now()->subDays(30)->toDateString();
-            $chartTo   = now()->toDateString();
+            $chartFrom = now($this->tz)->subDays(30)->toDateString();
+            $chartTo   = now($this->tz)->toDateString();
         }
 
-        // 1) Vendas do módulo /sales por dia
-        $chartQuery = $this->filteredSalesQuery($request, $chartFrom, $chartTo);
+        // 1) Vendas do módulo /sales por dia (sale_date já é DATE, sem problema de tz)
+        $chartQuery       = $this->filteredSalesQuery($request, $chartFrom, $chartTo);
         $salesByDayModule = $chartQuery
             ->selectRaw('DATE(sale_date) as day, SUM(total) as total')
             ->groupBy(DB::raw('DATE(sale_date)'))
@@ -170,13 +173,13 @@ class DashboardController extends Controller
             ->pluck('total', 'day')
             ->map(fn($v) => (float) $v);
 
-        // 2) Vendas manuais de estoque por dia — agrupadas por created_at
+        // 2) Vendas manuais de estoque por dia — converter created_at para tz local
         $salesByDayStock = $this->stockManualQuery($companyId, 'venda', $chartFrom, $chartTo)
             ->get()
-            ->groupBy(fn($m) => $m->created_at->toDateString())
+            ->groupBy(fn($m) => $m->created_at->timezone($this->tz)->toDateString())
             ->map(fn($g) => $g->sum(fn($m) => abs($m->quantity) * (float) optional($m->product)->price));
 
-        // 3) Merge vendas: módulo + estoque manual
+        // 3) Merge vendas
         $allSaleDays = collect($salesByDayModule->keys())
             ->merge($salesByDayStock->keys())
             ->unique();
@@ -188,20 +191,21 @@ class DashboardController extends Controller
         $returnsChartBase = SaleReturn::where('company_id', $companyId);
         if ($chartFrom && $chartTo) {
             $returnsChartBase->whereBetween('created_at', [
-                Carbon::parse($chartFrom)->startOfDay(),
-                Carbon::parse($chartTo)->endOfDay(),
+                Carbon::parse($chartFrom, $this->tz)->startOfDay(),
+                Carbon::parse($chartTo, $this->tz)->endOfDay(),
             ]);
         }
         $returnsByDayModule = $returnsChartBase
-            ->selectRaw('DATE(created_at) as day, SUM(total) as total')
-            ->groupBy(DB::raw('DATE(created_at)'))
+            ->selectRaw('DATE(CONVERT_TZ(created_at, \'+00:00\', \'-03:00\')) as day, SUM(total) as total')
+            ->groupBy(DB::raw('DATE(CONVERT_TZ(created_at, \'+00:00\', \'-03:00\')'))
+            )
             ->pluck('total', 'day')
             ->map(fn($v) => (float) $v);
 
         // 5) Devoluções manuais de estoque por dia
         $returnsByDayStock = $this->stockManualQuery($companyId, 'devolucao', $chartFrom, $chartTo)
             ->get()
-            ->groupBy(fn($m) => $m->created_at->toDateString())
+            ->groupBy(fn($m) => $m->created_at->timezone($this->tz)->toDateString())
             ->map(fn($g) => $g->sum(fn($m) => abs($m->quantity) * (float) optional($m->product)->price));
 
         // 6) Merge devoluções
@@ -212,7 +216,7 @@ class DashboardController extends Controller
             [$d => (float)($returnsByDayModule[$d] ?? 0) + (float)($returnsByDayStock[$d] ?? 0)]
         );
 
-        // 7) Monta dados do gráfico — liquido = bruto - devoluções (sem max para preservar negativos)
+        // 7) Dados finais do gráfico
         $allDays          = $salesByDay->keys()->merge($returnsByDay->keys())->unique()->sort()->values();
         $chartLabels      = $allDays->map(fn($d) => date('d/m', strtotime($d)));
         $chartData        = $allDays->map(
@@ -235,7 +239,7 @@ class DashboardController extends Controller
         ));
     }
 
-    // ── Helper: movimentos manuais de estoque (source_type IS NULL) ─────
+    // ── Helper: movimentos manuais (source_type IS NULL) com tz correto ──
     private function stockManualQuery(int $companyId, string $reason, ?string $from, ?string $to)
     {
         $q = StockMovement::with('product')
@@ -245,8 +249,8 @@ class DashboardController extends Controller
 
         if ($from && $to) {
             $q->whereBetween('created_at', [
-                Carbon::parse($from)->startOfDay(),
-                Carbon::parse($to)->endOfDay(),
+                Carbon::parse($from, $this->tz)->startOfDay(),
+                Carbon::parse($to, $this->tz)->endOfDay(),
             ]);
         }
 
@@ -295,26 +299,26 @@ class DashboardController extends Controller
     {
         $interval = $request->input('interval');
         if ($interval === 'today') {
-            $from = now()->toDateString();
-            $to   = now()->toDateString();
+            $from = now($this->tz)->toDateString();
+            $to   = now($this->tz)->toDateString();
         } elseif ($interval === '7d') {
-            $from = now()->subDays(6)->toDateString();
-            $to   = now()->toDateString();
+            $from = now($this->tz)->subDays(6)->toDateString();
+            $to   = now($this->tz)->toDateString();
         } elseif ($interval === 'month') {
-            $from = now()->startOfMonth()->toDateString();
-            $to   = now()->toDateString();
+            $from = now($this->tz)->startOfMonth()->toDateString();
+            $to   = now($this->tz)->toDateString();
         }
         $companyId = auth()->user()->company_id;
         $query     = Sale::where('company_id', $companyId);
         if ($from && $to) {
             $query->whereBetween('sale_date', [
-                Carbon::parse($from)->startOfDay(),
-                Carbon::parse($to)->endOfDay(),
+                Carbon::parse($from, $this->tz)->startOfDay(),
+                Carbon::parse($to, $this->tz)->endOfDay(),
             ]);
         } elseif ($from) {
-            $query->where('sale_date', '>=', Carbon::parse($from)->startOfDay());
+            $query->where('sale_date', '>=', Carbon::parse($from, $this->tz)->startOfDay());
         } elseif ($to) {
-            $query->where('sale_date', '<=', Carbon::parse($to)->endOfDay());
+            $query->where('sale_date', '<=', Carbon::parse($to, $this->tz)->endOfDay());
         }
         return $query;
     }
