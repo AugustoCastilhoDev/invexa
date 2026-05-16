@@ -6,6 +6,7 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Models\Sale;
 use App\Models\SaleReturn;
+use App\Models\StockMovement;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -33,26 +34,52 @@ class DashboardController extends Controller
 
         $filteredQuery = $this->filteredSalesQuery($request, $from, $to);
 
-        // ── Métricas brutas de vendas ────────────────────────────────────
+        // ── Métricas brutas ───────────────────────────────────────────
         $periodSalesCount    = (clone $filteredQuery)->count();
         $periodRevenue       = (float)(clone $filteredQuery)->sum('total');
         $periodAverageTicket = $periodSalesCount > 0 ? $periodRevenue / $periodSalesCount : 0;
         $periodMaxSale       = (clone $filteredQuery)->max('total') ?? 0;
         $periodMinSale       = (clone $filteredQuery)->min('total') ?? 0;
 
-        // ── Devoluções do período ────────────────────────────────────────
-        $returnsQuery = SaleReturn::where('company_id', $companyId);
+        // ── Fonte 1: devoluções via módulo SaleReturn ─────────────────
+        $saleReturnsQuery = SaleReturn::where('company_id', $companyId);
         if ($from && $to) {
-            $returnsQuery->whereBetween('created_at', [
+            $saleReturnsQuery->whereBetween('created_at', [
                 Carbon::parse($from)->startOfDay(),
                 Carbon::parse($to)->endOfDay(),
             ]);
         }
-        $periodReturnsTotal = (float)(clone $returnsQuery)->sum('total');
-        $periodReturnsCount = (clone $returnsQuery)->count();
+        $returnsFromModule  = (float)(clone $saleReturnsQuery)->sum('total');
+        $returnsCountModule = (clone $saleReturnsQuery)->count();
+
+        // ── Fonte 2: devoluções avulsas via tela de estoque ────────────
+        // StockMovement com reason=devolucao que NÃO vieram do SaleReturn
+        // Valor estimado = abs(quantity) × preço atual do produto
+        $stockRetQuery = StockMovement::with('product')
+            ->where('company_id', $companyId)
+            ->where('reason', 'devolucao')
+            ->where(function ($q) {
+                $q->whereNull('source_type')
+                  ->orWhere('source_type', '!=', 'App\Models\SaleReturn');
+            });
+        if ($from && $to) {
+            $stockRetQuery->whereBetween('created_at', [
+                Carbon::parse($from)->startOfDay(),
+                Carbon::parse($to)->endOfDay(),
+            ]);
+        }
+        $stockRetMovements  = (clone $stockRetQuery)->get();
+        $returnsFromStock   = $stockRetMovements->sum(
+            fn($m) => abs($m->quantity) * (float) optional($m->product)->price
+        );
+        $returnsCountStock  = $stockRetMovements->count();
+
+        // ── Totais combinados ─────────────────────────────────────────
+        $periodReturnsTotal = $returnsFromModule + $returnsFromStock;
+        $periodReturnsCount = $returnsCountModule + $returnsCountStock;
         $periodNetRevenue   = $periodRevenue - $periodReturnsTotal;
 
-        // ── Variação vs período anterior ───────────────────────────────
+        // ── Variação vs período anterior ──────────────────────────────
         $previousRevenue      = 0;
         $revenueChange        = 0;
         $revenueChangePercent = null;
@@ -74,7 +101,7 @@ class DashboardController extends Controller
                 : null;
         }
 
-        // ── Totais gerais ────────────────────────────────────────────────
+        // ── Totais gerais ─────────────────────────────────────────────
         $totalProducts   = Product::where('company_id', $companyId)->count();
         $totalCategories = Category::where('company_id', $companyId)->count();
         $totalSales      = (clone $filteredQuery)->count();
@@ -85,13 +112,25 @@ class DashboardController extends Controller
             ->whereBetween('sale_date', [now()->startOfDay(), now()->endOfDay()])
             ->sum('total');
 
-        // Devoluções de hoje (para "Venda de hoje" líquida)
-        $returnsTodayTotal = (float) SaleReturn::where('company_id', $companyId)
+        // Devoluções de hoje (ambas as fontes)
+        $returnsTodayModule = (float) SaleReturn::where('company_id', $companyId)
             ->whereBetween('created_at', [now()->startOfDay(), now()->endOfDay()])
             ->sum('total');
-        $salesTodayNet = $salesToday - $returnsTodayTotal;
 
-        // ── Estoque e listas ─────────────────────────────────────────────
+        $returnsTodayStock = StockMovement::with('product')
+            ->where('company_id', $companyId)
+            ->where('reason', 'devolucao')
+            ->whereBetween('created_at', [now()->startOfDay(), now()->endOfDay()])
+            ->where(function ($q) {
+                $q->whereNull('source_type')
+                  ->orWhere('source_type', '!=', 'App\Models\SaleReturn');
+            })
+            ->get()
+            ->sum(fn($m) => abs($m->quantity) * (float) optional($m->product)->price);
+
+        $salesTodayNet = $salesToday - $returnsTodayModule - $returnsTodayStock;
+
+        // ── Listas ───────────────────────────────────────────────────
         $lowStockProducts = Product::with('category')
             ->where('company_id', $companyId)
             ->whereColumn('quantity', '<=', 'min_quantity')
@@ -117,14 +156,13 @@ class DashboardController extends Controller
             ->limit(5)
             ->get();
 
-        // ── Últimas devoluções ─────────────────────────────────────────
         $latestReturns = SaleReturn::with('sale')
             ->where('company_id', $companyId)
             ->orderByDesc('created_at')
             ->limit(5)
             ->get();
 
-        // ── Gráfico: receita líquida por dia (bruto − devoluções) ───────
+        // ── Gráfico: líquido por dia (bruto − devoluções) ─────────────
         $chartQuery = $this->filteredSalesQuery($request, $from, $to);
         if (!$from && !$to && !$interval) {
             $chartQuery->whereBetween('sale_date', [
@@ -132,39 +170,66 @@ class DashboardController extends Controller
                 now()->endOfDay(),
             ]);
         }
-
-        // Vendas brutas por dia
         $salesByDay = $chartQuery
             ->selectRaw('DATE(sale_date) as day, SUM(total) as total')
             ->groupBy(DB::raw('DATE(sale_date)'))
             ->orderBy('day')
             ->pluck('total', 'day');
 
-        // Devoluções por dia (mesmo intervalo)
-        $returnsChartQuery = SaleReturn::where('company_id', $companyId);
+        // Devoluções por dia — módulo SaleReturn
+        $returnsChartBase = SaleReturn::where('company_id', $companyId);
         if ($from && $to) {
-            $returnsChartQuery->whereBetween('created_at', [
+            $returnsChartBase->whereBetween('created_at', [
                 Carbon::parse($from)->startOfDay(),
                 Carbon::parse($to)->endOfDay(),
             ]);
         } elseif (!$from && !$to && !$interval) {
-            $returnsChartQuery->whereBetween('created_at', [
+            $returnsChartBase->whereBetween('created_at', [
                 now()->subDays(30)->startOfDay(),
                 now()->endOfDay(),
             ]);
         }
-        $returnsByDay = $returnsChartQuery
+        $returnsByDayModule = $returnsChartBase
             ->selectRaw('DATE(created_at) as day, SUM(total) as total')
             ->groupBy(DB::raw('DATE(created_at)'))
             ->pluck('total', 'day');
 
-        // Mescla: para cada dia com venda, subtrai devoluções do mesmo dia
-        $allDays    = $salesByDay->keys()->merge($returnsByDay->keys())->unique()->sort()->values();
-        $chartLabels = $allDays->map(fn($d) => date('d/m', strtotime($d)));
-        $chartData   = $allDays->map(fn($d) =>
+        // Devoluções por dia — StockMovement avulso
+        $stockRetChartBase = StockMovement::with('product')
+            ->where('company_id', $companyId)
+            ->where('reason', 'devolucao')
+            ->where(function ($q) {
+                $q->whereNull('source_type')
+                  ->orWhere('source_type', '!=', 'App\Models\SaleReturn');
+            });
+        if ($from && $to) {
+            $stockRetChartBase->whereBetween('created_at', [
+                Carbon::parse($from)->startOfDay(),
+                Carbon::parse($to)->endOfDay(),
+            ]);
+        } elseif (!$from && !$to && !$interval) {
+            $stockRetChartBase->whereBetween('created_at', [
+                now()->subDays(30)->startOfDay(),
+                now()->endOfDay(),
+            ]);
+        }
+        $returnsByDayStock = $stockRetChartBase->get()
+            ->groupBy(fn($m) => $m->created_at->toDateString())
+            ->map(fn($g) => $g->sum(fn($m) => abs($m->quantity) * (float) optional($m->product)->price));
+
+        // Mescla as duas fontes por dia
+        $allReturnDays = collect($returnsByDayModule->keys())
+            ->merge($returnsByDayStock->keys())
+            ->unique();
+        $returnsByDay = $allReturnDays->mapWithKeys(fn($d) =>
+            [$d => (float)($returnsByDayModule[$d] ?? 0) + (float)($returnsByDayStock[$d] ?? 0)]
+        );
+
+        $allDays          = $salesByDay->keys()->merge($returnsByDay->keys())->unique()->sort()->values();
+        $chartLabels      = $allDays->map(fn($d) => date('d/m', strtotime($d)));
+        $chartData        = $allDays->map(fn($d) =>
             max(0, (float)($salesByDay[$d] ?? 0) - (float)($returnsByDay[$d] ?? 0))
         );
-        // Dataset secundário: devoluções (para exibir no tooltip)
         $chartReturnsData = $allDays->map(fn($d) => (float)($returnsByDay[$d] ?? 0));
 
         return view('dashboard', compact(
