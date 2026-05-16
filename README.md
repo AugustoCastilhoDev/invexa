@@ -2,11 +2,6 @@
 
 > Aplicação web para gestão de estoque, vendas e desempenho comercial, desenvolvida com **Laravel 13** e **Bootstrap 5**.
 
-[
-[
-[
-[
-
 ***
 
 ## Sobre o Projeto
