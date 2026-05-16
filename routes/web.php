@@ -8,6 +8,7 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SaleController;
+use App\Http\Controllers\StockMovementController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -27,11 +28,19 @@ Route::middleware(['auth', 'company'])->group(function () {
     Route::get('/dashboard/export/csv', [DashboardController::class, 'exportCsv'])->name('dashboard.export.csv');
     Route::get('/dashboard/export/pdf', [DashboardController::class, 'exportPdf'])->name('dashboard.export.pdf');
 
-    // Relatórios — visível para admin e gerente
+    // Relatórios — admin e gerente
     Route::middleware('role:admin,gerente')->group(function () {
-        Route::get('/reports/top-products',      [ReportController::class, 'topProducts'])->name('reports.top-products');
-        Route::get('/reports/top-products/csv',  [ReportController::class, 'topProductsCsv'])->name('reports.top-products.csv');
-        Route::get('/reports/top-products/pdf',  [ReportController::class, 'topProductsPdf'])->name('reports.top-products.pdf');
+        Route::get('/reports/top-products',     [ReportController::class, 'topProducts'])->name('reports.top-products');
+        Route::get('/reports/top-products/csv', [ReportController::class, 'topProductsCsv'])->name('reports.top-products.csv');
+        Route::get('/reports/top-products/pdf', [ReportController::class, 'topProductsPdf'])->name('reports.top-products.pdf');
+    });
+
+    // Gestão de estoque — admin e gerente
+    Route::middleware('role:admin,gerente')->group(function () {
+        Route::get('/stock',                     [StockMovementController::class, 'index'])->name('stock.index');
+        Route::get('/stock/create',              [StockMovementController::class, 'create'])->name('stock.create');
+        Route::post('/stock',                    [StockMovementController::class, 'store'])->name('stock.store');
+        Route::get('/stock/product/{product}',   [StockMovementController::class, 'product'])->name('stock.product');
     });
 
     // Perfil do usuário autenticado
@@ -50,11 +59,13 @@ Route::middleware(['auth', 'company'])->group(function () {
         Route::delete('/sales/{sale}', [SaleController::class, 'destroy'])->name('sales.destroy');
     });
 
+    // Produtos e Categorias — admin e gerente
     Route::middleware('role:admin,gerente')->group(function () {
         Route::resource('products', ProductController::class);
         Route::resource('categories', CategoryController::class);
     });
 
+    // Usuários — admin
     Route::middleware('role:admin')->group(function () {
         Route::resource('users', UserController::class)->except(['show']);
         Route::patch('/users/{user}/toggle-active', [UserController::class, 'toggleActive'])
