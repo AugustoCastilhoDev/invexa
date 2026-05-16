@@ -19,6 +19,20 @@
 
     <div class="card-body">
 
+        @if(session('success'))
+            <div class="alert alert-success alert-dismissible fade show mb-3" role="alert">
+                {{ session('success') }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        @endif
+
+        @if($errors->any())
+            <div class="alert alert-danger alert-dismissible fade show mb-3" role="alert">
+                {{ $errors->first('error') }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        @endif
+
         {{-- Filtros --}}
         <form method="GET" action="{{ route('stock.index') }}" class="mb-4">
             <div class="row g-2 align-items-end">
@@ -80,6 +94,7 @@
                         <th class="py-3">Qtd. Depois</th>
                         <th class="py-3">Usuário</th>
                         <th class="py-3">Obs.</th>
+                        <th class="py-3"></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -116,6 +131,23 @@
                         </td>
                         <td class="py-3" style="color:#94a3b8;font-size:.82rem;">
                             {{ Str::limit($mov->notes, 40) ?: '-' }}
+                        </td>
+                        <td class="py-3 pe-3">
+                            @if(is_null($mov->source_type))
+                                <form method="POST"
+                                      action="{{ route('stock.destroy', $mov) }}"
+                                      onsubmit="return confirm('Excluir esta movimentação e estornar o estoque?')">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Excluir e estornar">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            @else
+                                <span class="text-soft" style="font-size:.72rem;" title="Vinculado a uma venda">
+                                    <i class="bi bi-lock"></i>
+                                </span>
+                            @endif
                         </td>
                     </tr>
                     @endforeach

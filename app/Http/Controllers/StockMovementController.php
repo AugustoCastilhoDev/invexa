@@ -79,10 +79,9 @@ class StockMovementController extends Controller
                 $delta = match ($validated['type']) {
                     'entrada' => +$validated['quantity'],
                     'saida'   => -$validated['quantity'],
-                    'ajuste'  => $validated['quantity'] - $before, // ajusta para valor exato
+                    'ajuste'  => $validated['quantity'] - $before,
                 };
 
-                // Para ajuste, o quantity informado é o valor final desejado
                 $after = $validated['type'] === 'ajuste'
                     ? $validated['quantity']
                     : $before + $delta;
@@ -112,6 +111,40 @@ class StockMovementController extends Controller
         } catch (\Exception $e) {
             return back()->withInput()->with('error', $e->getMessage());
         }
+    }
+
+    /** Exclui uma movimentação MANUAL e estorna o estoque **/
+    public function destroy(StockMovement $stock)
+    {
+        $companyId = auth()->user()->company_id;
+
+        abort_if($stock->company_id !== $companyId, 403);
+
+        // Só permite excluir movimentos manuais (não vinculados a vendas)
+        if (!is_null($stock->source_type)) {
+            return redirect()->route('stock.index')
+                ->withErrors(['error' => 'Não é possível excluir movimentações vinculadas a vendas. Exclua a venda correspondente.']);
+        }
+
+        DB::transaction(function () use ($stock, $companyId) {
+            $product = Product::where('company_id', $companyId)
+                ->lockForUpdate()
+                ->find($stock->product_id);
+
+            if ($product) {
+                // Estorna: inverte o delta aplicado originalmente
+                $estorno = -$stock->quantity; // se foi +5 entra, estorna -5
+                $newQty  = $product->quantity + $estorno;
+
+                // Não deixa o estoque ficar negativo
+                $product->update(['quantity' => max(0, $newQty)]);
+            }
+
+            $stock->delete();
+        });
+
+        return redirect()->route('stock.index')
+            ->with('success', 'Movimentação excluída e estoque estornado com sucesso.');
     }
 
     /** Histórico de um produto específico **/

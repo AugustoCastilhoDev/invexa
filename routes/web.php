@@ -50,7 +50,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/returns/{saleReturn}/items', [SaleReturnController::class, 'getItems'])->name('returns.items');
 
     // Estoque
-    Route::resource('stock', StockMovementController::class)->only(['index', 'create', 'store']);
+    Route::resource('stock', StockMovementController::class)->only(['index', 'create', 'store', 'destroy']);
     Route::get('/stock/product/{product}', [StockMovementController::class, 'product'])->name('stock.product');
 
     // Relatórios
