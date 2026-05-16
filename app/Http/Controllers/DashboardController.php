@@ -173,21 +173,21 @@ class DashboardController extends Controller
             ->pluck('total', 'day')
             ->map(fn($v) => (float) $v);
 
-        // 2) Vendas manuais de estoque por dia (agrupadas no tz local)
+        // 2) Vendas manuais de estoque por dia
         $salesByDayStock = $this->stockManualQuery($companyId, 'venda', $chartFrom, $chartTo)
             ->get()
             ->groupBy(fn($m) => $m->created_at->timezone($this->tz)->toDateString())
             ->map(fn($g) => $g->sum(fn($m) => abs($m->quantity) * (float) optional($m->product)->price));
 
-        // 3) Merge vendas
+        // 3) Merge vendas — bruto total por dia
         $allSaleDays = collect($salesByDayModule->keys())
             ->merge($salesByDayStock->keys())
             ->unique();
         $salesByDay = $allSaleDays->mapWithKeys(
-            fn($d) => [$d => (float)($salesByDayModule[$d] ?? 0) + (float)($salesByDayStock[$d] ?? 0)]
+            fn($d) => [$d => round((float)($salesByDayModule[$d] ?? 0) + (float)($salesByDayStock[$d] ?? 0), 2)]
         );
 
-        // 4) Devoluções por dia — módulo SaleReturn (CONVERT_TZ no banco)
+        // 4) Devoluções por dia — módulo SaleReturn
         $returnsChartBase = SaleReturn::where('company_id', $companyId);
         if ($chartFrom && $chartTo) {
             $returnsChartBase->whereBetween('created_at', [
@@ -213,23 +213,27 @@ class DashboardController extends Controller
             ->merge($returnsByDayStock->keys())
             ->unique();
         $returnsByDay = $allReturnDays->mapWithKeys(
-            fn($d) => [$d => (float)($returnsByDayModule[$d] ?? 0) + (float)($returnsByDayStock[$d] ?? 0)]
+            fn($d) => [$d => round((float)($returnsByDayModule[$d] ?? 0) + (float)($returnsByDayStock[$d] ?? 0), 2)]
         );
 
-        // 7) Dados finais do gráfico
+        // 7) Dados finais:
+        //    chartData        = bruto por dia (barra azul)
+        //    chartReturnsData = devoluções por dia (barra vermelha)
+        //    chartNetData     = líquido por dia (exibido apenas no tooltip)
         $allDays          = $salesByDay->keys()->merge($returnsByDay->keys())->unique()->sort()->values();
         $chartLabels      = $allDays->map(fn($d) => date('d/m', strtotime($d)));
-        $chartData        = $allDays->map(
+        $chartData        = $allDays->map(fn($d) => (float)($salesByDay[$d] ?? 0));
+        $chartReturnsData = $allDays->map(fn($d) => (float)($returnsByDay[$d] ?? 0));
+        $chartNetData     = $allDays->map(
             fn($d) => round((float)($salesByDay[$d] ?? 0) - (float)($returnsByDay[$d] ?? 0), 2)
         );
-        $chartReturnsData = $allDays->map(fn($d) => (float)($returnsByDay[$d] ?? 0));
 
         return view('dashboard', compact(
             'totalProducts', 'totalCategories', 'totalSales', 'totalRevenue',
             'averageTicket', 'salesToday', 'salesTodayNet',
             'lowStockProducts', 'criticalStockProducts',
             'latestSales', 'topSellingProducts',
-            'chartLabels', 'chartData', 'chartReturnsData',
+            'chartLabels', 'chartData', 'chartReturnsData', 'chartNetData',
             'from', 'to', 'interval',
             'periodSalesCount', 'periodRevenue', 'periodAverageTicket',
             'periodMaxSale', 'periodMinSale',
