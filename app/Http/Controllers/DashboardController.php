@@ -53,15 +53,14 @@ class DashboardController extends Controller
         $returnsCountModule = (clone $saleReturnsQuery)->count();
 
         // ── Fonte 2: devoluções avulsas via tela de estoque ────────────
-        // StockMovement com reason=devolucao que NÃO vieram do SaleReturn
-        // Valor estimado = abs(quantity) × preço atual do produto
+        // Apenas movimentos com reason=devolucao E source_type IS NULL
+        // (sem origem conhecida = devolução manual legítima)
+        // Excluídos: source_type=Sale (estorno de edição) e source_type=SaleReturn (já na Fonte 1)
         $stockRetQuery = StockMovement::with('product')
             ->where('company_id', $companyId)
             ->where('reason', 'devolucao')
-            ->where(function ($q) {
-                $q->whereNull('source_type')
-                  ->orWhere('source_type', '!=', 'App\Models\SaleReturn');
-            });
+            ->whereNull('source_type');
+
         if ($from && $to) {
             $stockRetQuery->whereBetween('created_at', [
                 Carbon::parse($from)->startOfDay(),
@@ -120,11 +119,8 @@ class DashboardController extends Controller
         $returnsTodayStock = StockMovement::with('product')
             ->where('company_id', $companyId)
             ->where('reason', 'devolucao')
+            ->whereNull('source_type')
             ->whereBetween('created_at', [now()->startOfDay(), now()->endOfDay()])
-            ->where(function ($q) {
-                $q->whereNull('source_type')
-                  ->orWhere('source_type', '!=', 'App\Models\SaleReturn');
-            })
             ->get()
             ->sum(fn($m) => abs($m->quantity) * (float) optional($m->product)->price);
 
@@ -194,14 +190,12 @@ class DashboardController extends Controller
             ->groupBy(DB::raw('DATE(created_at)'))
             ->pluck('total', 'day');
 
-        // Devoluções por dia — StockMovement avulso
+        // Devoluções por dia — apenas StockMovement avulso (source_type IS NULL)
         $stockRetChartBase = StockMovement::with('product')
             ->where('company_id', $companyId)
             ->where('reason', 'devolucao')
-            ->where(function ($q) {
-                $q->whereNull('source_type')
-                  ->orWhere('source_type', '!=', 'App\Models\SaleReturn');
-            });
+            ->whereNull('source_type');
+
         if ($from && $to) {
             $stockRetChartBase->whereBetween('created_at', [
                 Carbon::parse($from)->startOfDay(),
