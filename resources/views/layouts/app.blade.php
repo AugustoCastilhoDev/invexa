@@ -109,6 +109,7 @@
             <div class="collapse navbar-collapse" id="navbarMain">
                 <ul class="navbar-nav ms-auto mb-2 mb-lg-0 align-items-lg-center gap-1">
 
+                    {{-- Dashboard --}}
                     <li class="nav-item">
                         <a class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}"
                            href="{{ route('dashboard') }}">
@@ -117,6 +118,8 @@
                     </li>
 
                     @if(Auth::check() && Auth::user()->isGerente())
+
+                        {{-- Produtos --}}
                         <li class="nav-item">
                             <a class="nav-link {{ request()->routeIs('products.*') ? 'active' : '' }}"
                                href="{{ route('products.index') }}">
@@ -124,6 +127,7 @@
                             </a>
                         </li>
 
+                        {{-- Categorias --}}
                         <li class="nav-item">
                             <a class="nav-link {{ request()->routeIs('categories.*') ? 'active' : '' }}"
                                href="{{ route('categories.index') }}">
@@ -147,14 +151,16 @@
                             </a>
                             <ul class="dropdown-menu">
                                 <li>
-                                    <a class="dropdown-item" href="{{ route('reports.top-products') }}">
+                                    <a class="dropdown-item" href="{{ route('reports.index') }}">
                                         <i class="bi bi-trophy me-2"></i>Produtos mais vendidos
                                     </a>
                                 </li>
                             </ul>
                         </li>
+
                     @endif
 
+                    {{-- Vendas --}}
                     <li class="nav-item">
                         <a class="nav-link {{ request()->routeIs('sales.*') ? 'active' : '' }}"
                            href="{{ route('sales.index') }}">
@@ -162,17 +168,35 @@
                         </a>
                     </li>
 
+                    {{-- Devoluções --}}
+                    <li class="nav-item">
+                        <a class="nav-link {{ request()->routeIs('returns.*') ? 'active' : '' }}"
+                           href="{{ route('returns.index') }}">
+                            <i class="bi bi-arrow-return-left me-1 opacity-75"></i>Devoluções
+                        </a>
+                    </li>
+
+                    {{-- Clientes --}}
+                    <li class="nav-item">
+                        <a class="nav-link {{ request()->routeIs('customers.*') ? 'active' : '' }}"
+                           href="{{ route('customers.index') }}">
+                            <i class="bi bi-people me-1 opacity-75"></i>Clientes
+                        </a>
+                    </li>
+
                     @if(Auth::check() && Auth::user()->isAdmin())
+                        {{-- Usuários (somente admin) --}}
                         <li class="nav-item">
                             <a class="nav-link {{ request()->routeIs('users.*') ? 'active' : '' }}"
                                href="{{ route('users.index') }}">
-                                <i class="bi bi-people me-1 opacity-75"></i>Usuários
+                                <i class="bi bi-shield-person me-1 opacity-75"></i>Usuários
                             </a>
                         </li>
                     @endif
 
                     <li class="nav-item d-none d-lg-flex"><div class="nav-divider"></div></li>
 
+                    {{-- Menu do usuário --}}
                     <li class="nav-item dropdown">
                         <a class="nav-link d-flex align-items-center gap-2 pe-1" href="#"
                            id="userDropdown" role="button"
@@ -205,7 +229,7 @@
                                 <li><hr class="dropdown-divider"></li>
                             @endif
                             <li>
-                                <form action="{{ route('auth.logout') }}" method="POST">
+                                <form action="{{ route('logout') }}" method="POST">
                                     @csrf
                                     <button type="submit" class="dropdown-item" style="color:#f87171;">
                                         <i class="bi bi-box-arrow-right me-2"></i>Sair
