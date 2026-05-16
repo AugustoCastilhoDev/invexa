@@ -1,0 +1,70 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Category;
+use Illuminate\Http\Request;
+
+class CategoryController extends Controller
+{
+    public function index()
+    {
+        $categories = Category::latest()->paginate(10);
+        $activeCategories = Category::where('active', true)->count();
+        $inactiveCategories = Category::where('active', false)->count();
+
+        return view('categories.index', compact('categories', 'activeCategories', 'inactiveCategories'));
+    }
+
+    public function create()
+    {
+        return view('categories.create');
+    }
+
+    public function store(Request $request)
+    {
+        $data = $request->validate([
+            'name' => 'required|string|max:120|unique:categories,name',
+            'description' => 'nullable|string',
+            'active' => 'nullable|boolean',
+        ]);
+
+        $data['active'] = $request->has('active');
+
+        Category::create($data);
+
+        return redirect()->route('categories.index')->with('success', 'Categoria cadastrada com sucesso!');
+    }
+
+    public function show(Category $category)
+    {
+        return view('categories.show', compact('category'));
+    }
+
+    public function edit(Category $category)
+    {
+        return view('categories.edit', compact('category'));
+    }
+
+    public function update(Request $request, Category $category)
+    {
+        $data = $request->validate([
+            'name' => 'required|string|max:120|unique:categories,name,' . $category->id,
+            'description' => 'nullable|string',
+            'active' => 'nullable|boolean',
+        ]);
+
+        $data['active'] = $request->has('active');
+
+        $category->update($data);
+
+        return redirect()->route('categories.index')->with('success', 'Categoria atualizada com sucesso!');
+    }
+
+    public function destroy(Category $category)
+    {
+        $category->delete();
+
+        return redirect()->route('categories.index')->with('success', 'Categoria removida com sucesso!');
+    }
+}
