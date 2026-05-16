@@ -41,20 +41,16 @@ class DashboardController extends Controller
         $periodMaxSale       = (clone $filteredQuery)->max('total') ?? 0;
         $periodMinSale       = (clone $filteredQuery)->min('total') ?? 0;
 
-        // ── Fonte extra: vendas manuais via tela de estoque ───────────
-        // type=saida, reason=venda, source_type IS NULL
-        // Valor estimado = abs(quantity) × preço atual do produto
-        $stockSalesQuery = $this->stockManualQuery($companyId, 'venda', $from, $to);
-        $stockSalesMovements = $stockSalesQuery->get();
+        // ── Vendas manuais via tela de estoque (type=saida, reason=venda) ──
+        $stockSalesMovements = $this->stockManualQuery($companyId, 'venda', $from, $to)->get();
         $stockSalesRevenue   = $stockSalesMovements->sum(
             fn($m) => abs($m->quantity) * (float) optional($m->product)->price
         );
         $stockSalesCount = $stockSalesMovements->count();
 
-        // Soma ao total do período
-        $periodRevenue    += $stockSalesRevenue;
-        $periodSalesCount += $stockSalesCount;
-        $periodAverageTicket = $periodSalesCount > 0 ? $periodRevenue / $periodSalesCount : 0;
+        $periodRevenue       += $stockSalesRevenue;
+        $periodSalesCount    += $stockSalesCount;
+        $periodAverageTicket  = $periodSalesCount > 0 ? $periodRevenue / $periodSalesCount : 0;
 
         // ── Fonte 1: devoluções via módulo SaleReturn ─────────────────
         $saleReturnsQuery = SaleReturn::where('company_id', $companyId);
@@ -67,10 +63,8 @@ class DashboardController extends Controller
         $returnsFromModule  = (float)(clone $saleReturnsQuery)->sum('total');
         $returnsCountModule = (clone $saleReturnsQuery)->count();
 
-        // ── Fonte 2: devoluções manuais via tela de estoque ───────────
-        // type=entrada, reason=devolucao, source_type IS NULL
-        $stockRetQuery = $this->stockManualQuery($companyId, 'devolucao', $from, $to);
-        $stockRetMovements = $stockRetQuery->get();
+        // ── Fonte 2: devoluções manuais via tela de estoque (reason=devolucao) ──
+        $stockRetMovements = $this->stockManualQuery($companyId, 'devolucao', $from, $to)->get();
         $returnsFromStock  = $stockRetMovements->sum(
             fn($m) => abs($m->quantity) * (float) optional($m->product)->price
         );
@@ -110,25 +104,19 @@ class DashboardController extends Controller
         $totalRevenue    = $periodRevenue;
         $averageTicket   = $periodAverageTicket;
 
-        // Vendas de hoje — módulo /sales
+        // Vendas de hoje — módulo /sales + estoque manual
         $salesToday = (float) Sale::where('company_id', $companyId)
             ->whereBetween('sale_date', [now()->startOfDay(), now()->endOfDay()])
             ->sum('total');
-
-        // Vendas manuais de hoje via estoque
         $salesToday += $this->stockManualQuery($companyId, 'venda', now()->toDateString(), now()->toDateString())
-            ->get()
-            ->sum(fn($m) => abs($m->quantity) * (float) optional($m->product)->price);
+            ->get()->sum(fn($m) => abs($m->quantity) * (float) optional($m->product)->price);
 
-        // Devoluções de hoje — módulo SaleReturn
+        // Devoluções de hoje
         $returnsTodayModule = (float) SaleReturn::where('company_id', $companyId)
             ->whereBetween('created_at', [now()->startOfDay(), now()->endOfDay()])
             ->sum('total');
-
-        // Devoluções manuais de hoje via estoque
-        $returnsTodayStock = $this->stockManualQuery($companyId, 'devolucao', now()->toDateString(), now()->toDateString())
-            ->get()
-            ->sum(fn($m) => abs($m->quantity) * (float) optional($m->product)->price);
+        $returnsTodayStock  = $this->stockManualQuery($companyId, 'devolucao', now()->toDateString(), now()->toDateString())
+            ->get()->sum(fn($m) => abs($m->quantity) * (float) optional($m->product)->price);
 
         $salesTodayNet = $salesToday - $returnsTodayModule - $returnsTodayStock;
 
@@ -164,40 +152,39 @@ class DashboardController extends Controller
             ->limit(5)
             ->get();
 
-        // ── Gráfico: bruto por dia ─────────────────────────────────────
-        $chartQuery = $this->filteredSalesQuery($request, $from, $to);
-        if (!$from && !$to && !$interval) {
-            $chartQuery->whereBetween('sale_date', [
-                now()->subDays(30)->startOfDay(),
-                now()->endOfDay(),
-            ]);
-        }
-        $salesByDay = $chartQuery
-            ->selectRaw('DATE(sale_date) as day, SUM(total) as total')
-            ->groupBy(DB::raw('DATE(sale_date)'))
-            ->orderBy('day')
-            ->pluck('total', 'day')
-            ->map(fn($v) => (float)$v);
-
-        // Vendas manuais de estoque por dia
+        // ── Gráfico ─────────────────────────────────────────────────
+        // Determina o intervalo do gráfico
         $chartFrom = $from;
         $chartTo   = $to;
         if (!$chartFrom && !$chartTo && !$interval) {
             $chartFrom = now()->subDays(30)->toDateString();
             $chartTo   = now()->toDateString();
         }
-        $stockSalesByDay = $this->stockManualQuery($companyId, 'venda', $chartFrom, $chartTo)
+
+        // 1) Vendas do módulo /sales por dia
+        $chartQuery = $this->filteredSalesQuery($request, $chartFrom, $chartTo);
+        $salesByDayModule = $chartQuery
+            ->selectRaw('DATE(sale_date) as day, SUM(total) as total')
+            ->groupBy(DB::raw('DATE(sale_date)'))
+            ->orderBy('day')
+            ->pluck('total', 'day')
+            ->map(fn($v) => (float) $v);
+
+        // 2) Vendas manuais de estoque por dia — agrupadas por created_at
+        $salesByDayStock = $this->stockManualQuery($companyId, 'venda', $chartFrom, $chartTo)
             ->get()
             ->groupBy(fn($m) => $m->created_at->toDateString())
             ->map(fn($g) => $g->sum(fn($m) => abs($m->quantity) * (float) optional($m->product)->price));
 
-        // Merge: vendas do módulo + vendas manuais
-        $allSaleDays = collect($salesByDay->keys())->merge($stockSalesByDay->keys())->unique();
-        $salesByDay  = $allSaleDays->mapWithKeys(fn($d) =>
-            [$d => (float)($salesByDay[$d] ?? 0) + (float)($stockSalesByDay[$d] ?? 0)]
+        // 3) Merge vendas: módulo + estoque manual
+        $allSaleDays = collect($salesByDayModule->keys())
+            ->merge($salesByDayStock->keys())
+            ->unique();
+        $salesByDay = $allSaleDays->mapWithKeys(fn($d) =>
+            [$d => (float)($salesByDayModule[$d] ?? 0) + (float)($salesByDayStock[$d] ?? 0)]
         );
 
-        // Devoluções por dia — módulo SaleReturn
+        // 4) Devoluções por dia — módulo SaleReturn
         $returnsChartBase = SaleReturn::where('company_id', $companyId);
         if ($chartFrom && $chartTo) {
             $returnsChartBase->whereBetween('created_at', [
@@ -208,23 +195,28 @@ class DashboardController extends Controller
         $returnsByDayModule = $returnsChartBase
             ->selectRaw('DATE(created_at) as day, SUM(total) as total')
             ->groupBy(DB::raw('DATE(created_at)'))
-            ->pluck('total', 'day');
+            ->pluck('total', 'day')
+            ->map(fn($v) => (float) $v);
 
-        // Devoluções manuais de estoque por dia
+        // 5) Devoluções manuais de estoque por dia
         $returnsByDayStock = $this->stockManualQuery($companyId, 'devolucao', $chartFrom, $chartTo)
             ->get()
             ->groupBy(fn($m) => $m->created_at->toDateString())
             ->map(fn($g) => $g->sum(fn($m) => abs($m->quantity) * (float) optional($m->product)->price));
 
-        $allReturnDays = collect($returnsByDayModule->keys())->merge($returnsByDayStock->keys())->unique();
-        $returnsByDay  = $allReturnDays->mapWithKeys(fn($d) =>
+        // 6) Merge devoluções
+        $allReturnDays = collect($returnsByDayModule->keys())
+            ->merge($returnsByDayStock->keys())
+            ->unique();
+        $returnsByDay = $allReturnDays->mapWithKeys(fn($d) =>
             [$d => (float)($returnsByDayModule[$d] ?? 0) + (float)($returnsByDayStock[$d] ?? 0)]
         );
 
+        // 7) Monta dados do gráfico — liquido = bruto - devoluções (sem max para preservar negativos)
         $allDays          = $salesByDay->keys()->merge($returnsByDay->keys())->unique()->sort()->values();
         $chartLabels      = $allDays->map(fn($d) => date('d/m', strtotime($d)));
-        $chartData        = $allDays->map(fn($d) =>
-            max(0, (float)($salesByDay[$d] ?? 0) - (float)($returnsByDay[$d] ?? 0))
+        $chartData        = $allDays->map(
+            fn($d) => round((float)($salesByDay[$d] ?? 0) - (float)($returnsByDay[$d] ?? 0), 2)
         );
         $chartReturnsData = $allDays->map(fn($d) => (float)($returnsByDay[$d] ?? 0));
 
@@ -243,7 +235,7 @@ class DashboardController extends Controller
         ));
     }
 
-    // ── Helper: movimentos manuais de estoque por motivo ─────────────
+    // ── Helper: movimentos manuais de estoque (source_type IS NULL) ─────
     private function stockManualQuery(int $companyId, string $reason, ?string $from, ?string $to)
     {
         $q = StockMovement::with('product')
