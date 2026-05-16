@@ -15,15 +15,15 @@
         </div>
     </div>
     <div class="card-body">
+
+        {{-- Cards de resumo --}}
         <div class="row g-3 mb-4">
             <div class="col-12 col-md-4">
                 <div class="card dashboard-card text-white border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #1d4ed8, #2563eb);">
                     <div class="card-body">
                         <div class="text-soft small text-uppercase fw-semibold mb-2">Categorias</div>
-                        <div class="mb-2">
-                            <h3 class="mb-1">{{ $categories->total() }}</h3>
-                            <div class="text-white-75 small">Total de grupos</div>
-                        </div>
+                        <h3 class="mb-1">{{ $categories->total() }}</h3>
+                        <div class="text-white-75 small">Total de grupos</div>
                     </div>
                 </div>
             </div>
@@ -31,10 +31,8 @@
                 <div class="card dashboard-card text-white border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #16a34a, #22c55e);">
                     <div class="card-body">
                         <div class="text-soft small text-uppercase fw-semibold mb-2">Ativas</div>
-                        <div class="mb-2">
-                            <h3 class="mb-1">{{ $activeCategories ?? 0 }}</h3>
-                            <div class="text-white-75 small">Grupos disponíveis</div>
-                        </div>
+                        <h3 class="mb-1">{{ $activeCategories ?? 0 }}</h3>
+                        <div class="text-white-75 small">Grupos disponíveis</div>
                     </div>
                 </div>
             </div>
@@ -42,15 +40,31 @@
                 <div class="card dashboard-card text-white border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
                     <div class="card-body">
                         <div class="text-soft small text-uppercase fw-semibold mb-2">Inativas</div>
-                        <div class="mb-2">
-                            <h3 class="mb-1">{{ $inactiveCategories ?? 0 }}</h3>
-                            <div class="text-white-75 small">Grupos arquivados</div>
-                        </div>
+                        <h3 class="mb-1">{{ $inactiveCategories ?? 0 }}</h3>
+                        <div class="text-white-75 small">Grupos arquivados</div>
                     </div>
                 </div>
             </div>
         </div>
 
+        {{-- Barra de busca --}}
+        <form method="GET" action="{{ route('categories.index') }}" class="mb-3">
+            <div class="input-group">
+                <input
+                    type="text"
+                    name="search"
+                    class="form-control bg-dark text-white border-secondary"
+                    placeholder="Buscar por nome..."
+                    value="{{ request('search') }}"
+                >
+                <button class="btn btn-outline-light" type="submit">Buscar</button>
+                @if(request('search'))
+                    <a href="{{ route('categories.index') }}" class="btn btn-outline-secondary">Limpar</a>
+                @endif
+            </div>
+        </form>
+
+        {{-- Tabela --}}
         <div class="table-responsive shadow-sm rounded">
             <table class="table table-dark table-hover mb-0 align-middle table-dark-custom">
                 <thead class="table-dark">
@@ -93,9 +107,17 @@
             </table>
         </div>
 
-        <div class="mt-3">
-            {{ $categories->withQueryString()->links('pagination::bootstrap-5') }}
-        </div>
+        {{-- Paginação --}}
+        @if ($categories->hasPages())
+            <div class="d-flex justify-content-between align-items-center mt-3 px-1">
+                <small class="text-soft">
+                    Exibindo {{ $categories->firstItem() }}–{{ $categories->lastItem() }}
+                    de {{ $categories->total() }} categorias
+                </small>
+                {{ $categories->links('pagination::bootstrap-5') }}
+            </div>
+        @endif
+
     </div>
 </div>
 @endsection

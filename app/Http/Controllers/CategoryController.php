@@ -8,10 +8,16 @@ use Illuminate\Validation\Rule;
 
 class CategoryController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $categories       = Category::latest()->paginate(10);
-        $activeCategories = Category::where('active', true)->count();
+        $query = Category::latest();
+
+        if ($request->filled('search')) {
+            $query->where('name', 'like', '%' . $request->search . '%');
+        }
+
+        $categories         = $query->paginate(10)->withQueryString();
+        $activeCategories   = Category::where('active', true)->count();
         $inactiveCategories = Category::where('active', false)->count();
 
         return view('categories.index', compact(

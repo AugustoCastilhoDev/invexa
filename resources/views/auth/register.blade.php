@@ -4,13 +4,13 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Registrar - Estoque e Vendas</title>
+    <title>Registrar - Invexa</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css">
     <style>
         body {
-            background: linear-gradient(135deg, rgba(29,78,216,.1), transparent),
-                        linear-gradient(-135deg, rgba(16,185,129,.1), transparent),
+            background: radial-gradient(circle at top left, rgba(96, 165, 250, 0.10), transparent 20%),
+                        radial-gradient(circle at bottom right, rgba(34, 197, 94, 0.12), transparent 18%),
                         #08101d;
             color: #e2e8f0;
             min-height: 100vh;
@@ -47,16 +47,32 @@
         .form-label { color: #cbd5e1; font-weight: 500; }
         .invalid-feedback { color: #fca5a5; }
         .text-soft { color: rgba(226,232,240,.7); }
-        .logo-text {
+
+        /* ── Brand: idêntico ao login ── */
+        .brand-icon {
+            width: 3.5rem;
+            height: 3.5rem;
+            background: linear-gradient(135deg, #7C3AED, #3B82F6);
+            border-radius: .75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.6rem;
+            color: #fff;
+            margin: 0 auto .75rem;
+        }
+        .brand-name {
             font-weight: 700;
-            font-size: 1.5rem;
-            background: linear-gradient(135deg, #60a5fa, #34d399);
+            font-size: 1.6rem;
+            background: linear-gradient(90deg, #8B5CF6, #3B82F6);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
+            line-height: 1;
         }
-        a { color: #60a5fa; text-decoration: none; }
-        a:hover { color: #93c5fd; }
+
+        a { color: #8B5CF6; text-decoration: none; }
+        a:hover { color: #a78bfa; }
         .section-divider {
             border-color: rgba(148,163,184,.15);
             margin: 1.25rem 0;
@@ -73,11 +89,15 @@
 </head>
 <body>
     <div class="register-container">
+
+        {{-- Logo e nome — idêntico ao login --}}
         <div class="text-center mb-4">
-            <div class="logo-text mb-2">
-                <i class="bi bi-box-seam"></i> Estoque e Vendas
+            <div class="brand-icon">
+                <i class="bi bi-box-seam"></i>
             </div>
-            <p class="text-soft small">Sistema profissional de gestão de estoque e vendas</p>
+            {{-- DEPOIS --}}
+            <div class="brand-name" style="letter-spacing: .08em;">INVEXA</div>
+            <p class="text-soft small mt-1 mb-0">Sistema profissional de gestão de estoque e vendas</p>
         </div>
 
         <div class="card card-auth">
@@ -190,14 +210,14 @@
                 <div class="text-center">
                     <p class="text-soft small mb-0">
                         Já tem uma conta?
-                        <a href="{{ route('login') }}">Faça login aqui</a>
+                        <a href="{{ route('login') }}" class="fw-semibold">Faça login aqui</a>
                     </p>
                 </div>
             </div>
         </div>
 
         <p class="text-center text-soft small mt-4 mb-0">
-            © {{ date('Y') }} Estoque e Vendas ·
+            © {{ date('Y') }} Invexa ·
             <a href="https://www.instagram.com/castilho_digital/" target="_blank">
                 Castilho Soluções Digitais
             </a>
