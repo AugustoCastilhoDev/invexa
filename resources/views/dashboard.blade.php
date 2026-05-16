@@ -164,7 +164,6 @@ body {
                     <div class="kpi-value" style="font-size: 1.55rem;">
                         R$ {{ number_format($periodNetRevenue ?? 0, 2, ',', '.') }}
                     </div>
-                    {{-- Bruto e devoluções como subtexto --}}
                     <div style="font-size:.75rem; opacity:.85; margin-top:.25rem;">
                         Bruto: R$ {{ number_format($periodRevenue ?? 0, 2, ',', '.') }}
                         @if(($periodReturnsTotal ?? 0) > 0)
@@ -196,8 +195,8 @@ body {
         <div class="card dashboard-card card-dark-bg shadow-sm h-100">
             <div class="card-header card-header-dark border-bottom d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
                 <div>
-                    <h5 class="mb-1 text-white">Faturamento líquido por dia</h5>
-                    <p class="text-soft mb-0">Receita bruta menos devoluções no período.</p>
+                    <h5 class="mb-1 text-white">Faturamento por dia</h5>
+                    <p class="text-soft mb-0">Bruto (azul) e devoluções (vermelho). Passe o mouse para ver o líquido.</p>
                 </div>
                 <div class="d-flex gap-2">
                     <a href="{{ route('dashboard', array_merge(request()->all(), ['interval' => 'today'])) }}" class="btn btn-sm {{ $interval === 'today' ? 'btn-primary' : 'btn-outline-light' }}">Hoje</a>
@@ -505,14 +504,15 @@ document.addEventListener('DOMContentLoaded', function () {
     const ctx = document.getElementById('salesTrendChart');
     if (!ctx) return;
 
-    const labels      = {!! json_encode($chartLabels ?? []) !!};
-    const netData     = {!! json_encode($chartData ?? []) !!};
-    const returnData  = {!! json_encode($chartReturnsData ?? []) !!};
+    const labels     = {!! json_encode($chartLabels->values() ?? []) !!};
+    const grossData  = {!! json_encode($chartData->values() ?? []) !!};
+    const returnData = {!! json_encode($chartReturnsData->values() ?? []) !!};
+    const netData    = {!! json_encode($chartNetData->values() ?? []) !!};
 
     const canvasCtx = ctx.getContext('2d');
     const gradient  = canvasCtx.createLinearGradient(0, 0, 0, 300);
     gradient.addColorStop(0, 'rgba(96, 165, 250, 0.90)');
-    gradient.addColorStop(1, 'rgba(96, 165, 250, 0.25)');
+    gradient.addColorStop(1, 'rgba(96, 165, 250, 0.30)');
 
     new Chart(ctx, {
         type: 'bar',
@@ -520,8 +520,8 @@ document.addEventListener('DOMContentLoaded', function () {
             labels: labels,
             datasets: [
                 {
-                    label: 'Líquido',
-                    data: netData,
+                    label: 'Bruto',
+                    data: grossData,
                     backgroundColor: gradient,
                     borderColor: 'transparent',
                     borderWidth: 0,
@@ -561,8 +561,8 @@ document.addEventListener('DOMContentLoaded', function () {
                         color: '#94a3b8', font: { size: 11 }, padding: 8,
                         callback: function (value) {
                             return value >= 1000
-                                ? 'R$ ' + (value/1000).toLocaleString('pt-BR', {minimumFractionDigits:0}) + 'k'
-                                : 'R$ ' + value.toLocaleString('pt-BR', {minimumFractionDigits:0});
+                                ? 'R$ ' + (value / 1000).toLocaleString('pt-BR', { minimumFractionDigits: 0 }) + 'k'
+                                : 'R$ ' + value.toLocaleString('pt-BR', { minimumFractionDigits: 0 });
                         },
                     },
                     border: { display: false },
@@ -577,10 +577,10 @@ document.addEventListener('DOMContentLoaded', function () {
                     backgroundColor: 'rgba(15, 23, 42, 0.95)',
                     borderColor: 'rgba(148, 163, 184, 0.2)',
                     borderWidth: 1,
-                    titleColor: '#94a3b8',
+                    titleColor: '#e2e8f0',
                     bodyColor: '#e2e8f0',
-                    titleFont: { size: 11 },
-                    bodyFont: { size: 13, weight: '600' },
+                    titleFont: { size: 12, weight: '600' },
+                    bodyFont: { size: 12 },
                     padding: { x: 14, y: 10 },
                     cornerRadius: 8,
                     displayColors: true,
@@ -591,6 +591,16 @@ document.addEventListener('DOMContentLoaded', function () {
                             return context.dataset.label + ': R$ ' + Number(value).toLocaleString('pt-BR', {
                                 minimumFractionDigits: 2, maximumFractionDigits: 2
                             });
+                        },
+                        afterBody: function (items) {
+                            const idx = items[0].dataIndex;
+                            const net = netData[idx] ?? 0;
+                            return [
+                                '',
+                                '💰 Líquido: R$ ' + Number(net).toLocaleString('pt-BR', {
+                                    minimumFractionDigits: 2, maximumFractionDigits: 2
+                                })
+                            ];
                         }
                     }
                 }
