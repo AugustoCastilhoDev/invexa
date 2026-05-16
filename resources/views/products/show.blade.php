@@ -1,87 +1,121 @@
 @extends('layouts.app')
 
+@section('title', 'Detalhes do Produto')
+
 @section('content')
-<div class="max-w-3xl mx-auto bg-white shadow rounded-lg p-6">
-    <div class="flex items-center justify-between mb-6">
-        <h2 class="text-2xl font-bold">Detalhes do Produto</h2>
-        <a href="{{ route('products.index') }}" class="text-blue-600 hover:underline">Voltar</a>
-    </div>
-
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-            <p class="text-sm text-gray-500">Nome</p>
-            <p class="font-semibold">{{ $product->name }}</p>
-        </div>
-
-        <div>
-            <p class="text-sm text-gray-500">Categoria</p>
-            <p class="font-semibold">{{ $product->category->name ?? 'Sem categoria' }}</p>
-        </div>
-
-        <div>
-            <p class="text-sm text-gray-500">SKU</p>
-            <p class="font-semibold">{{ $product->sku }}</p>
-        </div>
-
-        <div>
-            <p class="text-sm text-gray-500">Código de barras</p>
-            <p class="font-semibold">{{ $product->barcode ?? '—' }}</p>
-        </div>
-
-        <div>
-            <p class="text-sm text-gray-500">Preço de venda</p>
-            <p class="font-semibold">R$ {{ number_format($product->price, 2, ',', '.') }}</p>
-        </div>
-
-        <div>
-            <p class="text-sm text-gray-500">Custo</p>
-            <p class="font-semibold">R$ {{ number_format($product->cost, 2, ',', '.') }}</p>
-        </div>
-
-        <div>
-            <p class="text-sm text-gray-500">Unidade</p>
-            <p class="font-semibold">{{ $product->unit }}</p>
-        </div>
-
-        <div>
-            <p class="text-sm text-gray-500">Quantidade em estoque</p>
-            <p class="font-semibold">{{ $product->quantity }}</p>
-        </div>
-
-        <div>
-            <p class="text-sm text-gray-500">Estoque mínimo</p>
-            <p class="font-semibold">{{ $product->min_quantity }}</p>
-        </div>
-
-        <div>
-            <p class="text-sm text-gray-500">Status</p>
-            <p class="font-semibold">
-                @if($product->active)
-                    <span class="px-2 py-1 text-xs rounded bg-green-100 text-green-800">Ativo</span>
-                @else
-                    <span class="px-2 py-1 text-xs rounded bg-red-100 text-red-800">Inativo</span>
-                @endif
-            </p>
-        </div>
-
-        <div class="md:col-span-2">
-            <p class="text-sm text-gray-500">Descrição</p>
-            <p class="font-semibold">{{ $product->description ?? 'Sem descrição' }}</p>
+<div class="card dashboard-card card-dark-bg shadow-sm border-0">
+    <div class="card-header card-header-dark border-bottom">
+        <div class="d-flex justify-content-between align-items-center gap-3">
+            <div>
+                <h4 class="mb-1 text-white">Detalhes do Produto</h4>
+                <p class="text-soft mb-0">Informações completas do produto cadastrado.</p>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{{ route('products.edit', $product) }}" class="btn btn-warning btn-sm">Editar</a>
+                <a href="{{ route('products.index') }}" class="btn btn-outline-light btn-sm">Voltar</a>
+            </div>
         </div>
     </div>
 
-    <div class="mt-6 flex gap-3">
-        <a href="{{ route('products.edit', $product) }}" class="bg-yellow-500 hover:bg-yellow-600 text-white px-5 py-2 rounded">
-            Editar
-        </a>
+    <div class="card-body">
 
-        <form action="{{ route('products.destroy', $product) }}" method="POST" onsubmit="return confirm('Tem certeza que deseja excluir?')">
-            @csrf
-            @method('DELETE')
-            <button type="submit" class="bg-red-600 hover:bg-red-700 text-white px-5 py-2 rounded">
-                Excluir
-            </button>
-        </form>
+        <div class="row g-4">
+
+            {{-- Coluna esquerda --}}
+            <div class="col-12 col-md-6">
+                <div class="card card-dark-bg border border-secondary h-100">
+                    <div class="card-body">
+                        <h6 class="text-soft fw-semibold mb-3 text-uppercase" style="font-size:.75rem; letter-spacing:.08em;">Identificação</h6>
+
+                        <div class="mb-3">
+                            <p class="text-soft mb-1" style="font-size:.8rem;">Nome</p>
+                            <p class="text-white fw-semibold mb-0">{{ $product->name }}</p>
+                        </div>
+
+                        <div class="mb-3">
+                            <p class="text-soft mb-1" style="font-size:.8rem;">Categoria</p>
+                            <p class="text-white fw-semibold mb-0">{{ $product->category->name ?? '—' }}</p>
+                        </div>
+
+                        <div class="mb-3">
+                            <p class="text-soft mb-1" style="font-size:.8rem;">SKU</p>
+                            <p class="text-white fw-semibold mb-0">{{ $product->sku ?? '—' }}</p>
+                        </div>
+
+                        <div class="mb-3">
+                            <p class="text-soft mb-1" style="font-size:.8rem;">Código de Barras</p>
+                            <p class="text-white fw-semibold mb-0">{{ $product->barcode ?? '—' }}</p>
+                        </div>
+
+                        <div class="mb-3">
+                            <p class="text-soft mb-1" style="font-size:.8rem;">Unidade</p>
+                            <p class="text-white fw-semibold mb-0">{{ $product->unit ?? '—' }}</p>
+                        </div>
+
+                        <div>
+                            <p class="text-soft mb-1" style="font-size:.8rem;">Status</p>
+                            @if($product->active)
+                                <span class="badge bg-success">Ativo</span>
+                            @else
+                                <span class="badge bg-danger">Inativo</span>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Coluna direita --}}
+            <div class="col-12 col-md-6">
+                <div class="card card-dark-bg border border-secondary h-100">
+                    <div class="card-body">
+                        <h6 class="text-soft fw-semibold mb-3 text-uppercase" style="font-size:.75rem; letter-spacing:.08em;">Estoque & Preços</h6>
+
+                        <div class="mb-3">
+                            <p class="text-soft mb-1" style="font-size:.8rem;">Preço de Venda</p>
+                            <p class="text-white fw-semibold mb-0">R$ {{ number_format($product->price, 2, ',', '.') }}</p>
+                        </div>
+
+                        <div class="mb-3">
+                            <p class="text-soft mb-1" style="font-size:.8rem;">Custo</p>
+                            <p class="text-white fw-semibold mb-0">R$ {{ number_format($product->cost ?? 0, 2, ',', '.') }}</p>
+                        </div>
+
+                        <div class="mb-3">
+                            <p class="text-soft mb-1" style="font-size:.8rem;">Quantidade em Estoque</p>
+                            <p class="fw-semibold mb-0 {{ $product->quantity <= $product->min_quantity ? 'text-danger' : 'text-white' }}">
+                                {{ $product->quantity }} un.
+                                @if($product->quantity <= $product->min_quantity)
+                                    <span class="badge bg-danger ms-1">Estoque baixo</span>
+                                @endif
+                            </p>
+                        </div>
+
+                        <div class="mb-3">
+                            <p class="text-soft mb-1" style="font-size:.8rem;">Estoque Mínimo</p>
+                            <p class="text-white fw-semibold mb-0">{{ $product->min_quantity }} un.</p>
+                        </div>
+
+                        <div>
+                            <p class="text-soft mb-1" style="font-size:.8rem;">Descrição</p>
+                            <p class="text-white fw-semibold mb-0">{{ $product->description ?? 'Sem descrição' }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- Ações --}}
+        <div class="d-flex gap-2 mt-4">
+            <a href="{{ route('products.edit', $product) }}" class="btn btn-warning">Editar Produto</a>
+
+            <form action="{{ route('products.destroy', $product) }}" method="POST"
+                  onsubmit="return confirm('Tem certeza que deseja excluir este produto?')">
+                @csrf
+                @method('DELETE')
+                <button type="submit" class="btn btn-danger">Excluir Produto</button>
+            </form>
+        </div>
+
     </div>
 </div>
 @endsection
