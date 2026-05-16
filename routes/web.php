@@ -54,12 +54,13 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/stock/product/{product}', [StockMovementController::class, 'product'])->name('stock.product');
 
     // Relatórios
-    Route::get('/reports',             [ReportController::class, 'index'])->name('reports.index');
-    Route::get('/reports/export',      [ReportController::class, 'export'])->name('reports.export');
+    Route::get('/reports',                  [ReportController::class, 'index'])->name('reports.index');
+    Route::get('/reports/export',           [ReportController::class, 'export'])->name('reports.export');
     Route::get('/reports/top-products',     [ReportController::class, 'topProducts'])->name('reports.top-products');
     Route::get('/reports/top-products/csv', [ReportController::class, 'topProductsCsv'])->name('reports.top-products.csv');
     Route::get('/reports/top-products/pdf', [ReportController::class, 'topProductsPdf'])->name('reports.top-products.pdf');
 
     // Usuários (admin)
     Route::resource('users', UserController::class);
+    Route::patch('/users/{user}/toggle-active', [UserController::class, 'toggleActive'])->name('users.toggle-active');
 });
