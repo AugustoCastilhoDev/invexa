@@ -28,7 +28,7 @@ class ProductController extends Controller
         $categories      = Category::where('company_id', $companyId)->orderBy('name')->get();
         $categoriesCount = Category::where('company_id', $companyId)->count();
         $lowStockCount   = Product::where('company_id', $companyId)
-                                  ->whereColumn('quantity', '<', 'min_quantity')
+                                  ->whereColumn('quantity', '<=', 'min_quantity')
                                   ->count();
 
         return view('products.index', compact(
