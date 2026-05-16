@@ -9,7 +9,7 @@ use App\Http\Controllers\SaleController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
-// Autenticação
+// ── Autenticação (pública) ────────────────────────────────────────────────────
 Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
 Route::post('/login', [AuthenticatedSessionController::class, 'store'])->name('login.post');
 Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('auth.logout');
@@ -17,32 +17,36 @@ Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name
 Route::get('/register', [RegisteredUserController::class, 'create'])->name('register');
 Route::post('/register', [RegisteredUserController::class, 'store'])->name('register.store');
 
-// Rotas protegidas
-Route::middleware(['auth', 'company', 'verified'])->group(function () {
+// ── Rotas protegidas ──────────────────────────────────────────────────────────
+Route::middleware(['auth', 'company'])->group(function () {
 
+    // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/dashboard/export/csv', [DashboardController::class, 'exportCsv'])->name('dashboard.export.csv');
     Route::get('/dashboard/export/pdf', [DashboardController::class, 'exportPdf'])->name('dashboard.export.pdf');
 
+    // Vendas — listagem e criação para todos os perfis autenticados
     Route::get('/sales', [SaleController::class, 'index'])->name('sales.index');
     Route::get('/sales/create', [SaleController::class, 'create'])->name('sales.create');
     Route::post('/sales', [SaleController::class, 'store'])->name('sales.store');
     Route::get('/sales/{sale}', [SaleController::class, 'show'])->name('sales.show');
 
+    // Vendas — edição e exclusão somente para admin e gerente
     Route::middleware('role:admin,gerente')->group(function () {
         Route::get('/sales/{sale}/edit', [SaleController::class, 'edit'])->name('sales.edit');
         Route::put('/sales/{sale}', [SaleController::class, 'update'])->name('sales.update');
         Route::delete('/sales/{sale}', [SaleController::class, 'destroy'])->name('sales.destroy');
     });
 
+    // Produtos e Categorias — somente admin e gerente
     Route::middleware('role:admin,gerente')->group(function () {
         Route::resource('products', ProductController::class);
         Route::resource('categories', CategoryController::class);
     });
 
+    // Usuários — somente admin
     Route::middleware('role:admin')->group(function () {
         Route::resource('users', UserController::class)->except(['show']);
-
         Route::patch('/users/{user}/toggle-active', [UserController::class, 'toggleActive'])
             ->name('users.toggle-active');
     });

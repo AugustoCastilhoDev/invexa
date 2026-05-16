@@ -1,138 +1,209 @@
 @extends('layouts.app')
 
-@section('title', 'Usuários')
+@section('title', 'Produtos')
 
 @section('content')
-<div class="d-flex justify-content-between align-items-center mb-4 gap-3 flex-wrap">
+<div class="d-flex justify-content-between align-items-start mb-4 gap-3 flex-column flex-md-row">
     <div>
-        <h1 class="h3 mb-1 text-white">Usuários</h1>
-        <p class="text-soft mb-0">Gerencie quem tem acesso à sua empresa.</p>
+        <h1 class="h3 mb-1 text-white">Produtos</h1>
+        <p class="text-soft mb-0">Gerencie o catálogo de produtos e o controle de estoque.</p>
     </div>
-    @if(auth()->user()->isAdmin())
-        <a href="{{ route('users.create') }}" class="btn btn-primary">
-            <i class="bi bi-person-plus me-1"></i> Novo Usuário
+    <div class="d-flex flex-wrap gap-2">
+        <a href="{{ route('dashboard') }}" class="btn btn-outline-light">Voltar ao Dashboard</a>
+        <a href="{{ route('products.create') }}" class="btn btn-primary">
+            <i class="bi bi-plus-circle me-1"></i> Novo Produto
         </a>
-    @endif
+    </div>
 </div>
 
-{{-- Limite do plano --}}
 @php
     $company = auth()->user()->company;
-    $limits  = $company->limits();
-    $total   = $users->count();
+    $limits  = $company ? $company->limits() : ['products' => 50];
 @endphp
+
 <div class="alert d-flex align-items-center gap-3 mb-4"
-     style="background: rgba(59,130,246,.1); border: 1px solid rgba(59,130,246,.2); color: #93c5fd; border-radius: .6rem;">
-    <i class="bi bi-people fs-5"></i>
+     style="background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.2);color:#93c5fd;border-radius:.6rem;">
+    <i class="bi bi-box-seam fs-5"></i>
     <div>
-        Plano <strong>{{ $company->plan_label }}</strong> —
-        {{ $total }} de {{ $limits['users'] }} usuário(s) utilizados.
-        @if($total >= $limits['users'])
-            <span class="text-warning ms-2"><i class="bi bi-exclamation-triangle"></i> Limite atingido.</span>
+        Plano <strong>{{ $company?->plan_label ?? 'Gratuito' }}</strong> —
+        {{ $totalProducts }} de {{ $limits['products'] }} produto(s) utilizados.
+        @if($totalProducts >= $limits['products'])
+            <span class="text-warning ms-2">
+                <i class="bi bi-exclamation-triangle"></i> Limite atingido.
+            </span>
         @endif
     </div>
 </div>
 
-<div class="card card-dark-bg shadow-sm border-0">
+<div class="card dashboard-card card-dark-bg shadow-sm border-0">
+    <div class="card-header card-header-dark border-bottom">
+
+        <div class="row g-3 mb-4">
+            <div class="col-12 col-md-4">
+                <div class="card dashboard-card text-white border-0 shadow-sm"
+                     style="background: linear-gradient(135deg, #1d4ed8, #2563eb);">
+                    <div class="card-body py-3">
+                        <div class="text-soft small text-uppercase fw-semibold mb-1">Total de Produtos</div>
+                        <h3 class="mb-0">{{ $totalProducts }}</h3>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-md-4">
+                <div class="card dashboard-card text-white border-0 shadow-sm"
+                     style="background: linear-gradient(135deg, #0ea5e9, #38bdf8);">
+                    <div class="card-body py-3">
+                        <div class="text-soft small text-uppercase fw-semibold mb-1">Categorias</div>
+                        <h3 class="mb-0">{{ $categoriesCount }}</h3>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-md-4">
+                <div class="card dashboard-card text-white border-0 shadow-sm"
+                     style="background: linear-gradient(135deg, #dc2626, #ef4444);">
+                    <div class="card-body py-3">
+                        <div class="text-soft small text-uppercase fw-semibold mb-1">Estoque Baixo</div>
+                        <h3 class="mb-0">{{ $lowStockCount }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <form method="GET" action="{{ route('products.index') }}" class="row g-2">
+            <div class="col-12 col-md-5">
+                <input type="text" name="search" class="form-control"
+                       placeholder="Buscar por nome..." value="{{ request('search') }}">
+            </div>
+
+            <div class="col-12 col-md-4">
+                <select name="category" class="form-select">
+                    <option value="">Todas as categorias</option>
+                    @foreach($categories as $cat)
+                        <option value="{{ $cat->id }}" @selected(request('category') == $cat->id)>
+                            {{ $cat->name }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div class="col-12 col-md-3 d-flex gap-2">
+                <button type="submit" class="btn btn-primary flex-grow-1">Filtrar</button>
+                <a href="{{ route('products.index') }}" class="btn btn-outline-light flex-grow-1">Limpar</a>
+            </div>
+        </form>
+    </div>
+
     <div class="card-body p-0">
         <div class="table-responsive">
             <table class="table table-dark table-hover mb-0 align-middle"
                    style="background: rgba(15,23,42,.88);">
                 <thead>
-                    <tr style="font-size:.7rem; font-weight:700; letter-spacing:.08em;
-                                text-transform:uppercase; color:rgba(148,163,184,.85);
-                                border-bottom:1px solid rgba(148,163,184,.15);">
-                        <th class="ps-4 py-3">Usuário</th>
-                        <th class="py-3">E-mail</th>
-                        <th class="py-3">Perfil</th>
+                    <tr style="font-size:.7rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
+                               color:rgba(148,163,184,.85); border-bottom:1px solid rgba(148,163,184,.15);">
+                        <th class="ps-4 py-3">Produto</th>
+                        <th class="py-3">SKU</th>
+                        <th class="py-3">Categoria</th>
+                        <th class="py-3">Preço</th>
+                        <th class="py-3">Estoque</th>
                         <th class="py-3">Status</th>
                         <th class="py-3 text-end pe-4">Ações</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse($users as $user)
+                    @forelse($products as $product)
                         <tr style="border-color:rgba(148,163,184,.07);">
                             <td class="ps-4 py-3">
-                                <div class="d-flex align-items-center gap-3">
-                                    {{-- Avatar --}}
-                                    <div style="width:2.2rem; height:2.2rem; border-radius:50%;
-                                                background: linear-gradient(135deg,#4f46e5,#7c3aed);
-                                                display:flex; align-items:center; justify-content:center;
-                                                font-size:.72rem; font-weight:700; color:#fff; flex-shrink:0;">
-                                        {{ $user->initials }}
+                                <div class="fw-semibold text-white">{{ $product->name }}</div>
+                                @if($product->description)
+                                    <div class="text-soft small"
+                                         style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                                        {{ $product->description }}
                                     </div>
-                                    <div>
-                                        <div class="fw-semibold text-white">{{ $user->name }}</div>
-                                        @if($user->id === auth()->id())
-                                            <small class="text-soft">Você</small>
-                                        @endif
+                                @endif
+                            </td>
+
+                            <td class="py-3"
+                                style="color:#94a3b8;font-size:.875rem;font-family:monospace;">
+                                {{ $product->sku }}
+                            </td>
+
+                            <td class="py-3" style="color:#94a3b8;font-size:.875rem;">
+                                {{ optional($product->category)->name ?? '—' }}
+                            </td>
+
+                            <td class="py-3 fw-semibold text-white">
+                                R$ {{ number_format($product->price, 2, ',', '.') }}
+                                @if($product->cost > 0)
+                                    <div class="text-soft" style="font-size:.7rem;">
+                                        Margem: {{ $product->margin }}%
                                     </div>
+                                @endif
+                            </td>
+
+                            <td class="py-3">
+                                @if($product->isLowStock())
+                                    <span style="display:inline-flex;align-items:center;gap:.3rem;font-size:.72rem;
+                                                 font-weight:600;padding:.28rem .65rem;border-radius:999px;
+                                                 background:rgba(239,68,68,.1);color:#f87171;
+                                                 border:1px solid rgba(239,68,68,.2);">
+                                        <i class="bi bi-exclamation-triangle-fill"></i>
+                                        {{ $product->quantity }} {{ $product->unit }}
+                                    </span>
+                                @else
+                                    <span style="color:#4ade80;font-weight:600;">
+                                        {{ $product->quantity }} {{ $product->unit }}
+                                    </span>
+                                @endif
+
+                                <div class="text-soft" style="font-size:.7rem;">
+                                    Mín: {{ $product->min_quantity }}
                                 </div>
                             </td>
-                            <td class="py-3" style="color:#94a3b8; font-size:.875rem;">
-                                {{ $user->email }}
-                            </td>
+
                             <td class="py-3">
-                                <span class="badge bg-{{ $user->role_badge }} bg-opacity-25
-                                             text-{{ $user->role_badge }}"
-                                      style="font-size:.72rem; padding:.3rem .65rem; border-radius:999px;">
-                                    {{ $user->role_label }}
-                                </span>
-                            </td>
-                            <td class="py-3">
-                                @if($user->active)
-                                    <span style="display:inline-flex; align-items:center; gap:.3rem;
-                                                 font-size:.72rem; font-weight:600; padding:.28rem .65rem;
-                                                 border-radius:999px; background:rgba(34,197,94,.12);
-                                                 color:#4ade80; border:1px solid rgba(34,197,94,.25);">
+                                @if($product->active)
+                                    <span style="display:inline-flex;align-items:center;gap:.3rem;font-size:.72rem;
+                                                 font-weight:600;padding:.28rem .65rem;border-radius:999px;
+                                                 background:rgba(34,197,94,.12);color:#4ade80;
+                                                 border:1px solid rgba(34,197,94,.25);">
                                         <span style="width:6px;height:6px;border-radius:50%;background:#4ade80;"></span>
                                         Ativo
                                     </span>
                                 @else
-                                    <span style="display:inline-flex; align-items:center; gap:.3rem;
-                                                 font-size:.72rem; font-weight:600; padding:.28rem .65rem;
-                                                 border-radius:999px; background:rgba(239,68,68,.1);
-                                                 color:#f87171; border:1px solid rgba(239,68,68,.2);">
-                                        <span style="width:6px;height:6px;border-radius:50%;background:#f87171;"></span>
+                                    <span style="display:inline-flex;align-items:center;gap:.3rem;font-size:.72rem;
+                                                 font-weight:600;padding:.28rem .65rem;border-radius:999px;
+                                                 background:rgba(148,163,184,.1);color:#94a3b8;
+                                                 border:1px solid rgba(148,163,184,.2);">
+                                        <span style="width:6px;height:6px;border-radius:50%;background:#94a3b8;"></span>
                                         Inativo
                                     </span>
                                 @endif
                             </td>
+
                             <td class="py-3 text-end pe-4">
-                                @if(auth()->user()->isAdmin())
-                                    <div class="d-flex justify-content-end gap-2">
-                                        <a href="{{ route('users.edit', $user) }}"
-                                           class="btn btn-sm btn-outline-light">
-                                            <i class="bi bi-pencil"></i>
-                                        </a>
-
-                                        @if($user->id !== auth()->id())
-                                            <form action="{{ route('users.toggle-active', $user) }}" method="POST">
-                                                @csrf @method('PATCH')
-                                                <button type="submit"
-                                                        class="btn btn-sm {{ $user->active ? 'btn-outline-warning' : 'btn-outline-success' }}"
-                                                        title="{{ $user->active ? 'Desativar' : 'Ativar' }}">
-                                                    <i class="bi bi-{{ $user->active ? 'pause-circle' : 'play-circle' }}"></i>
-                                                </button>
-                                            </form>
-
-                                            <form action="{{ route('users.destroy', $user) }}" method="POST"
-                                                  onsubmit="return confirm('Remover {{ $user->name }}? Esta ação não pode ser desfeita.')">
-                                                @csrf @method('DELETE')
-                                                <button type="submit" class="btn btn-sm btn-outline-danger">
-                                                    <i class="bi bi-trash"></i>
-                                                </button>
-                                            </form>
-                                        @endif
-                                    </div>
-                                @endif
+                                <div class="d-flex justify-content-end gap-2 flex-wrap">
+                                    <a href="{{ route('products.show', $product) }}" class="btn btn-sm btn-outline-light">
+                                        Ver
+                                    </a>
+                                    <a href="{{ route('products.edit', $product) }}" class="btn btn-sm btn-outline-primary">
+                                        Editar
+                                    </a>
+                                    <form action="{{ route('products.destroy', $product) }}" method="POST"
+                                          onsubmit="return confirm('Tem certeza que deseja excluir este produto?')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                                            Excluir
+                                        </button>
+                                    </form>
+                                </div>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="5" class="text-center text-soft py-5">
-                                <i class="bi bi-people fs-2 d-block mb-2 opacity-25"></i>
-                                Nenhum usuário encontrado.
+                            <td colspan="7" class="text-center py-4 text-soft">
+                                Nenhum produto encontrado.
                             </td>
                         </tr>
                     @endforelse
@@ -140,5 +211,12 @@
             </table>
         </div>
     </div>
+
+    @if(method_exists($products, 'links'))
+        <div class="card-footer border-top-0 pt-3 pb-3 px-4"
+             style="background: rgba(15,23,42,.92);">
+            {{ $products->withQueryString()->links() }}
+        </div>
+    @endif
 </div>
 @endsection

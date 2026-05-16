@@ -4,16 +4,21 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class CategoryController extends Controller
 {
     public function index()
     {
-        $categories = Category::latest()->paginate(10);
+        $categories       = Category::latest()->paginate(10);
         $activeCategories = Category::where('active', true)->count();
         $inactiveCategories = Category::where('active', false)->count();
 
-        return view('categories.index', compact('categories', 'activeCategories', 'inactiveCategories'));
+        return view('categories.index', compact(
+            'categories',
+            'activeCategories',
+            'inactiveCategories'
+        ));
     }
 
     public function create()
@@ -23,17 +28,26 @@ class CategoryController extends Controller
 
     public function store(Request $request)
     {
+        $companyId = auth()->user()->company_id;
+
         $data = $request->validate([
-            'name' => 'required|string|max:120|unique:categories,name',
-            'description' => 'nullable|string',
-            'active' => 'nullable|boolean',
+            'name'        => [
+                'required', 'string', 'max:120',
+                Rule::unique('categories', 'name')->where('company_id', $companyId),
+            ],
+            'description' => ['nullable', 'string'],
+            'active'      => ['nullable', 'boolean'],
+        ], [
+            'name.required' => 'O nome da categoria é obrigatório.',
+            'name.unique'   => 'Já existe uma categoria com este nome.',
         ]);
 
         $data['active'] = $request->has('active');
 
         Category::create($data);
 
-        return redirect()->route('categories.index')->with('success', 'Categoria cadastrada com sucesso!');
+        return redirect()->route('categories.index')
+            ->with('success', 'Categoria cadastrada com sucesso!');
     }
 
     public function show(Category $category)
@@ -48,23 +62,35 @@ class CategoryController extends Controller
 
     public function update(Request $request, Category $category)
     {
+        $companyId = auth()->user()->company_id;
+
         $data = $request->validate([
-            'name' => 'required|string|max:120|unique:categories,name,' . $category->id,
-            'description' => 'nullable|string',
-            'active' => 'nullable|boolean',
+            'name'        => [
+                'required', 'string', 'max:120',
+                Rule::unique('categories', 'name')
+                    ->where('company_id', $companyId)
+                    ->ignore($category->id),
+            ],
+            'description' => ['nullable', 'string'],
+            'active'      => ['nullable', 'boolean'],
+        ], [
+            'name.required' => 'O nome da categoria é obrigatório.',
+            'name.unique'   => 'Já existe uma categoria com este nome.',
         ]);
 
         $data['active'] = $request->has('active');
 
         $category->update($data);
 
-        return redirect()->route('categories.index')->with('success', 'Categoria atualizada com sucesso!');
+        return redirect()->route('categories.index')
+            ->with('success', 'Categoria atualizada com sucesso!');
     }
 
     public function destroy(Category $category)
     {
         $category->delete();
 
-        return redirect()->route('categories.index')->with('success', 'Categoria removida com sucesso!');
+        return redirect()->route('categories.index')
+            ->with('success', 'Categoria removida com sucesso!');
     }
 }

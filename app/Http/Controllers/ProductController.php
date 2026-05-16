@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Category;
 use App\Models\Product;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class ProductController extends Controller
 {
@@ -20,17 +21,31 @@ class ProductController extends Controller
             $query->where('category_id', $request->category);
         }
 
-        $totalProducts = (clone $query)->count();
-        $products = $query->orderBy('name')->paginate(10);
-        $categories = Category::orderBy('name')->get();
+        $totalProducts  = (clone $query)->count();
+        $products       = $query->orderBy('name')->paginate(10);
+        $categories     = Category::orderBy('name')->get();
         $categoriesCount = Category::count();
-        $lowStockCount = Product::whereColumn('quantity', '<', 'min_quantity')->count();
+        $lowStockCount  = Product::whereColumn('quantity', '<', 'min_quantity')->count();
 
-        return view('products.index', compact('products', 'categories', 'totalProducts', 'categoriesCount', 'lowStockCount'));
+        return view('products.index', compact(
+            'products',
+            'categories',
+            'totalProducts',
+            'categoriesCount',
+            'lowStockCount'
+        ));
     }
 
     public function create()
     {
+        // Verifica o limite do plano antes de exibir o formulário
+        $company = auth()->user()->company;
+
+        if ($company && ! $company->canAddProduct()) {
+            return redirect()->route('products.index')
+                ->with('error', 'Limite de produtos do seu plano atingido. Faça upgrade para continuar.');
+        }
+
         $categories = Category::orderBy('name')->get();
 
         return view('products.create', compact('categories'));
@@ -38,30 +53,48 @@ class ProductController extends Controller
 
     public function store(Request $request)
     {
+        // Verifica o limite do plano
+        $company = auth()->user()->company;
+
+        if ($company && ! $company->canAddProduct()) {
+            return redirect()->route('products.index')
+                ->with('error', 'Limite de produtos do seu plano atingido. Faça upgrade para continuar.');
+        }
+
+        $companyId = auth()->user()->company_id;
+
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:200'],
-            'sku' => ['required', 'string', 'max:50', 'unique:products,sku'],
-            'barcode' => ['nullable', 'string', 'max:50', 'unique:products,barcode'],
-            'description' => ['nullable', 'string'],
-            'price' => ['required', 'numeric', 'min:0'],
-            'cost' => ['nullable', 'numeric', 'min:0'],
-            'quantity' => ['required', 'integer', 'min:0'],
+            'name'         => ['required', 'string', 'max:200'],
+            'sku'          => [
+                'required', 'string', 'max:50',
+                Rule::unique('products', 'sku')->where('company_id', $companyId),
+            ],
+            'barcode'      => [
+                'nullable', 'string', 'max:50',
+                Rule::unique('products', 'barcode')->where('company_id', $companyId),
+            ],
+            'description'  => ['nullable', 'string'],
+            'price'        => ['required', 'numeric', 'min:0'],
+            'cost'         => ['nullable', 'numeric', 'min:0'],
+            'quantity'     => ['required', 'integer', 'min:0'],
             'min_quantity' => ['required', 'integer', 'min:0'],
-            'unit' => ['nullable', 'string', 'max:10'],
-            'category_id' => ['nullable', 'exists:categories,id'],
-            'active' => ['nullable', 'boolean'],
+            'unit'         => ['nullable', 'string', 'max:10'],
+            'category_id'  => ['nullable', 'exists:categories,id'],
+            'active'       => ['nullable', 'boolean'],
         ], [
-            'name.required' => 'O nome do produto é obrigatório',
-            'sku.required' => 'O SKU é obrigatório',
-            'sku.unique' => 'Este SKU já existe no sistema',
-            'price.required' => 'O preço é obrigatório',
-            'quantity.required' => 'A quantidade é obrigatória',
+            'name.required'  => 'O nome do produto é obrigatório.',
+            'sku.required'   => 'O SKU é obrigatório.',
+            'sku.unique'     => 'Este SKU já está em uso nesta empresa.',
+            'price.required' => 'O preço é obrigatório.',
+            'quantity.required' => 'A quantidade é obrigatória.',
         ]);
 
         $validated['active'] = $request->boolean('active');
+
         Product::create($validated);
 
-        return redirect()->route('products.index')->with('success', 'Produto cadastrado com sucesso.');
+        return redirect()->route('products.index')
+            ->with('success', 'Produto cadastrado com sucesso.');
     }
 
     public function show(Product $product)
@@ -80,37 +113,47 @@ class ProductController extends Controller
 
     public function update(Request $request, Product $product)
     {
+        $companyId = auth()->user()->company_id;
+
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:200'],
-            'sku' => ['required', 'string', 'max:50', 'unique:products,sku,' . $product->id],
-            'barcode' => ['nullable', 'string', 'max:50', 'unique:products,barcode,' . $product->id],
-            'description' => ['nullable', 'string'],
-            'price' => ['required', 'numeric', 'min:0'],
-            'cost' => ['nullable', 'numeric', 'min:0'],
-            'quantity' => ['required', 'integer', 'min:0'],
+            'name'         => ['required', 'string', 'max:200'],
+            'sku'          => [
+                'required', 'string', 'max:50',
+                Rule::unique('products', 'sku')->where('company_id', $companyId)->ignore($product->id),
+            ],
+            'barcode'      => [
+                'nullable', 'string', 'max:50',
+                Rule::unique('products', 'barcode')->where('company_id', $companyId)->ignore($product->id),
+            ],
+            'description'  => ['nullable', 'string'],
+            'price'        => ['required', 'numeric', 'min:0'],
+            'cost'         => ['nullable', 'numeric', 'min:0'],
+            'quantity'     => ['required', 'integer', 'min:0'],
             'min_quantity' => ['required', 'integer', 'min:0'],
-            'unit' => ['nullable', 'string', 'max:10'],
-            'category_id' => ['nullable', 'exists:categories,id'],
-            'active' => ['nullable', 'boolean'],
+            'unit'         => ['nullable', 'string', 'max:10'],
+            'category_id'  => ['nullable', 'exists:categories,id'],
+            'active'       => ['nullable', 'boolean'],
         ], [
-            'name.required' => 'O nome do produto é obrigatório',
-            'sku.required' => 'O SKU é obrigatório',
-            'sku.unique' => 'Este SKU já existe no sistema',
-            'price.required' => 'O preço é obrigatório',
-            'quantity.required' => 'A quantidade é obrigatória',
+            'name.required'  => 'O nome do produto é obrigatório.',
+            'sku.required'   => 'O SKU é obrigatório.',
+            'sku.unique'     => 'Este SKU já está em uso nesta empresa.',
+            'price.required' => 'O preço é obrigatório.',
+            'quantity.required' => 'A quantidade é obrigatória.',
         ]);
 
         $validated['active'] = $request->boolean('active');
 
         $product->update($validated);
 
-        return redirect()->route('products.index')->with('success', 'Produto atualizado com sucesso.');
+        return redirect()->route('products.index')
+            ->with('success', 'Produto atualizado com sucesso.');
     }
 
     public function destroy(Product $product)
     {
         $product->delete();
 
-        return redirect()->route('products.index')->with('success', 'Produto excluído com sucesso.');
+        return redirect()->route('products.index')
+            ->with('success', 'Produto excluído com sucesso.');
     }
 }
