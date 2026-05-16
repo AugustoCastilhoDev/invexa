@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Product;
 use App\Models\Sale;
 use App\Models\SaleItem;
+use App\Models\StockMovement;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -87,11 +88,14 @@ class SaleController extends Controller
                 ]);
 
                 foreach ($validated['items'] as $item) {
-                    $product = Product::findOrFail($item['product_id']);
+                    $product = Product::lockForUpdate()->findOrFail($item['product_id']);
 
                     if ($product->quantity < $item['quantity']) {
-                        throw new \Exception("Estoque insuficiente para o produto \"{$product->name}\". Disponível: {$product->quantity} un.");
+                        throw new \Exception("Estoque insuficiente para \"{ $product->name}\". Disponível: {$product->quantity} un.");
                     }
+
+                    $before = $product->quantity;
+                    $after  = $before - $item['quantity'];
 
                     SaleItem::create([
                         'sale_id'    => $sale->id,
@@ -101,7 +105,21 @@ class SaleController extends Controller
                         'subtotal'   => $item['quantity'] * $item['price'],
                     ]);
 
-                    $product->decrement('quantity', $item['quantity']);
+                    $product->update(['quantity' => $after]);
+
+                    StockMovement::create([
+                        'product_id'      => $product->id,
+                        'company_id'      => $companyId,
+                        'user_id'         => auth()->id(),
+                        'type'            => 'saida',
+                        'quantity'        => -$item['quantity'],
+                        'quantity_before' => $before,
+                        'quantity_after'  => $after,
+                        'reason'          => 'venda',
+                        'notes'           => "Venda #{$sale->id}" . ($validated['customer_name'] ? " — {$validated['customer_name']}" : ''),
+                        'source_type'     => Sale::class,
+                        'source_id'       => $sale->id,
+                    ]);
                 }
             });
 
@@ -109,16 +127,13 @@ class SaleController extends Controller
                 ->with('success', 'Venda registrada com sucesso.');
 
         } catch (\Exception $e) {
-            return back()
-                ->withInput()
-                ->with('error', $e->getMessage());
+            return back()->withInput()->with('error', $e->getMessage());
         }
     }
 
     public function show(Sale $sale)
     {
         $sale->load(['items.product']);
-
         return view('sales.show', compact('sale'));
     }
 
@@ -153,10 +168,27 @@ class SaleController extends Controller
             DB::transaction(function () use ($sale, $validated, $companyId) {
                 $sale->load('items.product');
 
+                // Devolve estoque dos itens antigos e registra movimento de estorno
                 foreach ($sale->items as $oldItem) {
                     $oldProduct = Product::find($oldItem->product_id);
                     if ($oldProduct) {
-                        $oldProduct->increment('quantity', $oldItem->quantity);
+                        $before = $oldProduct->quantity;
+                        $after  = $before + $oldItem->quantity;
+                        $oldProduct->update(['quantity' => $after]);
+
+                        StockMovement::create([
+                            'product_id'      => $oldProduct->id,
+                            'company_id'      => $companyId,
+                            'user_id'         => auth()->id(),
+                            'type'            => 'entrada',
+                            'quantity'        => +$oldItem->quantity,
+                            'quantity_before' => $before,
+                            'quantity_after'  => $after,
+                            'reason'          => 'devolucao',
+                            'notes'           => "Estorno da edição da Venda #{$sale->id}",
+                            'source_type'     => Sale::class,
+                            'source_id'       => $sale->id,
+                        ]);
                     }
                 }
 
@@ -175,12 +207,16 @@ class SaleController extends Controller
                     'total'         => $total,
                 ]);
 
+                // Registra os novos itens com saída de estoque
                 foreach ($validated['items'] as $item) {
-                    $product = Product::findOrFail($item['product_id']);
+                    $product = Product::lockForUpdate()->findOrFail($item['product_id']);
 
                     if ($product->quantity < $item['quantity']) {
-                        throw new \Exception("Estoque insuficiente para o produto \"{$product->name}\". Disponível: {$product->quantity} un.");
+                        throw new \Exception("Estoque insuficiente para \"{$product->name}\". Disponível: {$product->quantity} un.");
                     }
+
+                    $before = $product->quantity;
+                    $after  = $before - $item['quantity'];
 
                     SaleItem::create([
                         'sale_id'    => $sale->id,
@@ -190,7 +226,21 @@ class SaleController extends Controller
                         'subtotal'   => $item['quantity'] * $item['price'],
                     ]);
 
-                    $product->decrement('quantity', $item['quantity']);
+                    $product->update(['quantity' => $after]);
+
+                    StockMovement::create([
+                        'product_id'      => $product->id,
+                        'company_id'      => $companyId,
+                        'user_id'         => auth()->id(),
+                        'type'            => 'saida',
+                        'quantity'        => -$item['quantity'],
+                        'quantity_before' => $before,
+                        'quantity_after'  => $after,
+                        'reason'          => 'venda',
+                        'notes'           => "Venda #{$sale->id} (editada)" . ($validated['customer_name'] ? " — {$validated['customer_name']}" : ''),
+                        'source_type'     => Sale::class,
+                        'source_id'       => $sale->id,
+                    ]);
                 }
             });
 
@@ -198,21 +248,37 @@ class SaleController extends Controller
                 ->with('success', 'Venda atualizada com sucesso.');
 
         } catch (\Exception $e) {
-            return back()
-                ->withInput()
-                ->with('error', $e->getMessage());
+            return back()->withInput()->with('error', $e->getMessage());
         }
     }
 
     public function destroy(Sale $sale)
     {
-        DB::transaction(function () use ($sale) {
+        $companyId = auth()->user()->company_id;
+
+        DB::transaction(function () use ($sale, $companyId) {
             $sale->load('items.product');
 
             foreach ($sale->items as $item) {
                 $product = Product::find($item->product_id);
                 if ($product) {
-                    $product->increment('quantity', $item->quantity);
+                    $before = $product->quantity;
+                    $after  = $before + $item->quantity;
+                    $product->update(['quantity' => $after]);
+
+                    StockMovement::create([
+                        'product_id'      => $product->id,
+                        'company_id'      => $companyId,
+                        'user_id'         => auth()->id(),
+                        'type'            => 'entrada',
+                        'quantity'        => +$item->quantity,
+                        'quantity_before' => $before,
+                        'quantity_after'  => $after,
+                        'reason'          => 'devolucao',
+                        'notes'           => "Estorno por exclusão da Venda #{$sale->id}",
+                        'source_type'     => Sale::class,
+                        'source_id'       => $sale->id,
+                    ]);
                 }
             }
 
@@ -221,6 +287,6 @@ class SaleController extends Controller
         });
 
         return redirect()->route('sales.index')
-            ->with('success', 'Venda excuída e estoque restaurado com sucesso.');
+            ->with('success', 'Venda excluída e estoque restaurado com sucesso.');
     }
 }
