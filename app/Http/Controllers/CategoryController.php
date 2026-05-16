@@ -48,7 +48,8 @@ class CategoryController extends Controller
             'name.unique'   => 'Já existe uma categoria com este nome.',
         ]);
 
-        $data['active'] = $request->has('active');
+        $data['active']     = $request->has('active');
+        $data['company_id'] = $companyId;
 
         Category::create($data);
 
@@ -84,7 +85,8 @@ class CategoryController extends Controller
             'name.unique'   => 'Já existe uma categoria com este nome.',
         ]);
 
-        $data['active'] = $request->has('active');
+        $data['active']     = $request->has('active');
+        $data['company_id'] = $companyId;
 
         $category->update($data);
 
