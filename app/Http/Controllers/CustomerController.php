@@ -3,10 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\Customer;
+use App\Models\SaleReturn;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class CustomerController extends Controller
 {
+    private string $tz = 'America/Sao_Paulo';
+
     public function index(Request $request)
     {
         $companyId = auth()->user()->company_id;
@@ -63,17 +67,52 @@ class CustomerController extends Controller
             ->with('success', 'Cliente cadastrado com sucesso.');
     }
 
-    public function show(Customer $customer)
+    public function show(Request $request, Customer $customer)
     {
         $this->authorizeCustomer($customer);
 
-        $customer->load(['sales' => fn($q) => $q->latest()->limit(10)]);
+        $from   = $request->input('from');
+        $to     = $request->input('to');
+        $status = $request->input('status');
 
+        // ── Query base do histórico ────────────────────────────────────
+        $salesQuery = $customer->sales()->latest('sale_date');
+
+        if ($from) {
+            $salesQuery->where('sale_date', '>=', Carbon::parse($from, $this->tz)->startOfDay());
+        }
+        if ($to) {
+            $salesQuery->where('sale_date', '<=', Carbon::parse($to, $this->tz)->endOfDay());
+        }
+        if ($status) {
+            $salesQuery->where('status', $status);
+        }
+
+        $sales = $salesQuery->with('items.product')->paginate(15)->withQueryString();
+
+        // ── Métricas totais (sem filtro) ───────────────────────────────
         $totalSales  = $customer->sales()->count();
         $totalSpent  = (float) $customer->sales()->sum('total');
         $lastSale    = $customer->sales()->latest('sale_date')->first();
+        $avgTicket   = $totalSales > 0 ? $totalSpent / $totalSales : 0;
 
-        return view('customers.show', compact('customer', 'totalSales', 'totalSpent', 'lastSale'));
+        // ── Devoluções do cliente ──────────────────────────────────────
+        $returnsTotal = (float) SaleReturn::whereHas('sale', fn($q) =>
+            $q->where('customer_id', $customer->id)
+        )->sum('total');
+        $returnsCount = SaleReturn::whereHas('sale', fn($q) =>
+            $q->where('customer_id', $customer->id)
+        )->count();
+
+        $netSpent = $totalSpent - $returnsTotal;
+
+        return view('customers.show', compact(
+            'customer', 'sales',
+            'totalSales', 'totalSpent', 'netSpent',
+            'avgTicket', 'lastSale',
+            'returnsTotal', 'returnsCount',
+            'from', 'to', 'status'
+        ));
     }
 
     public function edit(Customer $customer)
@@ -110,7 +149,6 @@ class CustomerController extends Controller
     {
         $this->authorizeCustomer($customer);
 
-        // Desvincula vendas antes de excluir (nullOnDelete já faz no banco, mas garante em memória)
         $customer->sales()->update(['customer_id' => null]);
         $customer->delete();
 

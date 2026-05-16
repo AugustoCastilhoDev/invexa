@@ -12,9 +12,15 @@ body { background: radial-gradient(circle at top left,rgba(96,165,250,.10),trans
 .kpi-mini .value { font-size:1.45rem; font-weight:700; color:#f1f5f9; line-height:1.1; margin-top:.2rem; }
 .table-dark-custom thead th { font-size:.70rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:rgba(148,163,184,.88) !important; border-bottom:1px solid rgba(148,163,184,.28) !important; padding:.9rem .75rem; white-space:nowrap; }
 .table-dark-custom tbody td { font-size:.875rem; color:#cbd5e1; border-color:rgba(148,163,184,.07); vertical-align:middle; padding:.7rem .75rem; }
-.badge-concluida { background:rgba(25,135,84,.20); color:#4ade80; border:1px solid rgba(25,135,84,.25); padding:.28rem .65rem; border-radius:999px; font-size:.72rem; font-weight:600; }
-.badge-pendente  { background:rgba(255,193,7,.16);  color:#facc15; border:1px solid rgba(255,193,7,.24);  padding:.28rem .65rem; border-radius:999px; font-size:.72rem; font-weight:600; }
-.badge-cancelada { background:rgba(220,53,69,.14);  color:#f87171; border:1px solid rgba(220,53,69,.22);  padding:.28rem .65rem; border-radius:999px; font-size:.72rem; font-weight:600; }
+.badge-status { display:inline-flex; align-items:center; gap:.3rem; font-size:.72rem; font-weight:600; padding:.28rem .65rem; border-radius:999px; }
+.badge-status::before { content:''; width:6px; height:6px; border-radius:50%; flex-shrink:0; }
+.badge-concluida { background:rgba(25,135,84,.20); color:#4ade80; border:1px solid rgba(25,135,84,.25); }
+.badge-concluida::before { background:#4ade80; }
+.badge-pendente  { background:rgba(255,193,7,.16);  color:#facc15; border:1px solid rgba(255,193,7,.24); }
+.badge-pendente::before  { background:#facc15; }
+.badge-cancelada { background:rgba(220,53,69,.14);  color:#f87171; border:1px solid rgba(220,53,69,.22); }
+.badge-cancelada::before { background:#f87171; }
+.filter-bar { background:rgba(255,255,255,.03); border:1px solid rgba(148,163,184,.10); border-radius:.65rem; padding:1rem 1.25rem; }
 </style>
 @endpush
 
@@ -59,31 +65,44 @@ body { background: radial-gradient(circle at top left,rgba(96,165,250,.10),trans
 
 {{-- KPIs --}}
 <div class="row g-3 mb-4">
-    <div class="col-6 col-md-3">
+    <div class="col-6 col-md-2">
         <div class="kpi-mini">
-            <div class="label">Total de compras</div>
+            <div class="label">Compras</div>
             <div class="value">{{ $totalSales }}</div>
         </div>
     </div>
-    <div class="col-6 col-md-3">
+    <div class="col-6 col-md-2">
         <div class="kpi-mini">
-            <div class="label">Total gasto</div>
-            <div class="value" style="font-size:1.2rem;">R$ {{ number_format($totalSpent, 2, ',', '.') }}</div>
+            <div class="label">Total bruto</div>
+            <div class="value" style="font-size:1.15rem;">R$ {{ number_format($totalSpent, 2, ',', '.') }}</div>
         </div>
     </div>
-    <div class="col-6 col-md-3">
+    <div class="col-6 col-md-2">
+        <div class="kpi-mini">
+            <div class="label">Devoluções ({{ $returnsCount }})</div>
+            <div class="value" style="font-size:1.15rem; color:#f87171;">
+                @if($returnsTotal > 0) &minus; @endif
+                R$ {{ number_format($returnsTotal, 2, ',', '.') }}
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-2">
+        <div class="kpi-mini" style="border-color:rgba(251,191,36,.2);">
+            <div class="label">Total líquido</div>
+            <div class="value" style="font-size:1.15rem; color:#fbbf24;">R$ {{ number_format($netSpent, 2, ',', '.') }}</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-2">
+        <div class="kpi-mini">
+            <div class="label">Ticket médio</div>
+            <div class="value" style="font-size:1.15rem;">R$ {{ number_format($avgTicket, 2, ',', '.') }}</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-2">
         <div class="kpi-mini">
             <div class="label">Última compra</div>
             <div class="value" style="font-size:1rem;">
                 {{ $lastSale ? optional($lastSale->sale_date)->format('d/m/Y') : '—' }}
-            </div>
-        </div>
-    </div>
-    <div class="col-6 col-md-3">
-        <div class="kpi-mini">
-            <div class="label">Ticket médio</div>
-            <div class="value" style="font-size:1.2rem;">
-                R$ {{ $totalSales > 0 ? number_format($totalSpent / $totalSales, 2, ',', '.') : '0,00' }}
             </div>
         </div>
     </div>
@@ -122,51 +141,104 @@ body { background: radial-gradient(circle at top left,rgba(96,165,250,.10),trans
         </div>
     </div>
 
-    {{-- Histórico de vendas --}}
+    {{-- Histórico de compras --}}
     <div class="col-12 col-xl-8">
-        <div class="card card-dark-bg shadow-sm h-100">
-            <div class="card-header card-header-dark border-bottom d-flex justify-content-between align-items-center">
-                <h5 class="mb-0 text-white">Histórico de compras</h5>
-                <small class="text-soft">Últimas 10 vendas</small>
+        <div class="card card-dark-bg shadow-sm">
+            <div class="card-header card-header-dark border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div>
+                    <h5 class="mb-0 text-white">Histórico de compras</h5>
+                    <small class="text-soft">{{ $sales->total() }} venda(s) encontrada(s)</small>
+                </div>
             </div>
-            <div class="card-body p-0">
+
+            {{-- Filtros --}}
+            <div class="px-3 pt-3">
+                <form method="GET" action="{{ route('customers.show', $customer) }}" class="filter-bar">
+                    <div class="row g-2 align-items-end">
+                        <div class="col-12 col-md-4">
+                            <label class="text-soft" style="font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.07em;">De</label>
+                            <input type="date" name="from" value="{{ $from }}" class="form-control form-control-sm bg-transparent border-secondary text-white">
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label class="text-soft" style="font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.07em;">Até</label>
+                            <input type="date" name="to" value="{{ $to }}" class="form-control form-control-sm bg-transparent border-secondary text-white">
+                        </div>
+                        <div class="col-12 col-md-2">
+                            <label class="text-soft" style="font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.07em;">Status</label>
+                            <select name="status" class="form-select form-select-sm bg-transparent border-secondary text-white">
+                                <option value="">Todos</option>
+                                <option value="concluida" {{ $status === 'concluida' ? 'selected' : '' }}>Concluída</option>
+                                <option value="pendente"  {{ $status === 'pendente'  ? 'selected' : '' }}>Pendente</option>
+                                <option value="cancelada" {{ $status === 'cancelada' ? 'selected' : '' }}>Cancelada</option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-2 d-flex gap-2">
+                            <button type="submit" class="btn btn-sm btn-primary w-100">Filtrar</button>
+                            <a href="{{ route('customers.show', $customer) }}" class="btn btn-sm btn-outline-secondary w-100">Limpar</a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <div class="card-body p-0 mt-2">
                 <div class="table-responsive">
                     <table class="table table-dark table-hover mb-0 table-dark-custom">
                         <thead>
                             <tr>
                                 <th class="ps-3">#</th>
                                 <th>Data</th>
+                                <th>Itens</th>
                                 <th>Total</th>
                                 <th>Status</th>
                                 <th></th>
                             </tr>
                         </thead>
                         <tbody>
-                            @forelse($customer->sales as $sale)
+                            @forelse($sales as $sale)
                                 <tr>
                                     <td class="ps-3 text-soft">{{ $sale->id }}</td>
                                     <td>{{ optional($sale->sale_date)->format('d/m/Y H:i') }}</td>
+                                    <td class="text-soft" style="font-size:.82rem;">
+                                        @if($sale->items->isNotEmpty())
+                                            {{ $sale->items->take(2)->map(fn($i) => $i->product->name ?? 'Produto')->join(', ') }}
+                                            @if($sale->items->count() > 2)
+                                                <span class="text-soft"> +{{ $sale->items->count() - 2 }}</span>
+                                            @endif
+                                        @else
+                                            —
+                                        @endif
+                                    </td>
                                     <td class="fw-semibold text-white">R$ {{ number_format($sale->total, 2, ',', '.') }}</td>
                                     <td>
                                         @php
-                                            $map = ['concluida'=>['badge-concluida','Concluída'],'pendente'=>['badge-pendente','Pendente'],'cancelada'=>['badge-cancelada','Cancelada']];
-                                            [$cls, $lbl] = $map[$sale->status] ?? ['badge-default',ucfirst($sale->status)];
+                                            $map = [
+                                                'concluida' => ['badge-status badge-concluida', 'Concluída'],
+                                                'pendente'  => ['badge-status badge-pendente',  'Pendente'],
+                                                'cancelada' => ['badge-status badge-cancelada', 'Cancelada'],
+                                            ];
+                                            [$cls, $lbl] = $map[$sale->status] ?? ['badge-status', ucfirst($sale->status)];
                                         @endphp
                                         <span class="{{ $cls }}">{{ $lbl }}</span>
                                     </td>
                                     <td class="pe-3">
-                                        <a href="{{ route('sales.show', $sale) }}"
-                                           class="btn btn-sm btn-outline-light">Ver</a>
+                                        <a href="{{ route('sales.show', $sale) }}" class="btn btn-sm btn-outline-light">Ver</a>
                                     </td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="5" class="text-center text-soft py-4">Nenhuma compra registrada.</td>
+                                    <td colspan="6" class="text-center text-soft py-4">Nenhuma compra encontrada para os filtros selecionados.</td>
                                 </tr>
                             @endforelse
                         </tbody>
                     </table>
                 </div>
+
+                {{-- Paginação --}}
+                @if($sales->hasPages())
+                    <div class="d-flex justify-content-center py-3">
+                        {{ $sales->links() }}
+                    </div>
+                @endif
             </div>
         </div>
     </div>
