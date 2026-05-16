@@ -10,6 +10,18 @@ use Illuminate\Support\Facades\DB;
 
 class ReportController extends Controller
 {
+    // ── index = página principal de relatórios (produtos mais vendidos) ──
+    public function index(Request $request)
+    {
+        return $this->topProducts($request);
+    }
+
+    // ── export = exportação CSV padrão ──────────────────────────────
+    public function export(Request $request)
+    {
+        return $this->topProductsCsv($request);
+    }
+
     private function getProductsQuery(string $companyId, Carbon $from, Carbon $to)
     {
         return SaleItem::query()
