@@ -10,15 +10,17 @@ class CategoryController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Category::latest();
+        $companyId = auth()->user()->company_id;
+
+        $query = Category::where('company_id', $companyId)->latest();
 
         if ($request->filled('search')) {
             $query->where('name', 'like', '%' . $request->search . '%');
         }
 
         $categories         = $query->paginate(10)->withQueryString();
-        $activeCategories   = Category::where('active', true)->count();
-        $inactiveCategories = Category::where('active', false)->count();
+        $activeCategories   = Category::where('company_id', $companyId)->where('active', true)->count();
+        $inactiveCategories = Category::where('company_id', $companyId)->where('active', false)->count();
 
         return view('categories.index', compact(
             'categories',

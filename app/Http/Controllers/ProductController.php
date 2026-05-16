@@ -11,7 +11,9 @@ class ProductController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Product::with('category');
+        $companyId = auth()->user()->company_id;
+
+        $query = Product::with('category')->where('company_id', $companyId);
 
         if ($request->filled('search')) {
             $query->where('name', 'like', '%' . $request->search . '%');
@@ -21,11 +23,13 @@ class ProductController extends Controller
             $query->where('category_id', $request->category);
         }
 
-        $totalProducts  = (clone $query)->count();
-        $products       = $query->orderBy('name')->paginate(10);
-        $categories     = Category::orderBy('name')->get();
-        $categoriesCount = Category::count();
-        $lowStockCount  = Product::whereColumn('quantity', '<', 'min_quantity')->count();
+        $totalProducts   = (clone $query)->count();
+        $products        = $query->orderBy('name')->paginate(10);
+        $categories      = Category::where('company_id', $companyId)->orderBy('name')->get();
+        $categoriesCount = Category::where('company_id', $companyId)->count();
+        $lowStockCount   = Product::where('company_id', $companyId)
+                                  ->whereColumn('quantity', '<', 'min_quantity')
+                                  ->count();
 
         return view('products.index', compact(
             'products',
@@ -38,30 +42,31 @@ class ProductController extends Controller
 
     public function create()
     {
-        // Verifica o limite do plano antes de exibir o formulário
-        $company = auth()->user()->company;
+        $companyId = auth()->user()->company_id;
+        $company   = auth()->user()->company;
 
         if ($company && ! $company->canAddProduct()) {
             return redirect()->route('products.index')
                 ->with('error', 'Limite de produtos do seu plano atingido. Faça upgrade para continuar.');
         }
 
-        $categories = Category::orderBy('name')->get();
+        $categories = Category::where('company_id', $companyId)
+                              ->where('active', true)
+                              ->orderBy('name')
+                              ->get();
 
         return view('products.create', compact('categories'));
     }
 
     public function store(Request $request)
     {
-        // Verifica o limite do plano
-        $company = auth()->user()->company;
+        $companyId = auth()->user()->company_id;
+        $company   = auth()->user()->company;
 
         if ($company && ! $company->canAddProduct()) {
             return redirect()->route('products.index')
                 ->with('error', 'Limite de produtos do seu plano atingido. Faça upgrade para continuar.');
         }
-
-        $companyId = auth()->user()->company_id;
 
         $validated = $request->validate([
             'name'         => ['required', 'string', 'max:200'],
@@ -82,14 +87,15 @@ class ProductController extends Controller
             'category_id'  => ['nullable', 'exists:categories,id'],
             'active'       => ['nullable', 'boolean'],
         ], [
-            'name.required'  => 'O nome do produto é obrigatório.',
-            'sku.required'   => 'O SKU é obrigatório.',
-            'sku.unique'     => 'Este SKU já está em uso nesta empresa.',
-            'price.required' => 'O preço é obrigatório.',
+            'name.required'     => 'O nome do produto é obrigatório.',
+            'sku.required'      => 'O SKU é obrigatório.',
+            'sku.unique'        => 'Este SKU já está em uso nesta empresa.',
+            'price.required'    => 'O preço é obrigatório.',
             'quantity.required' => 'A quantidade é obrigatória.',
         ]);
 
-        $validated['active'] = $request->boolean('active');
+        $validated['active']     = $request->boolean('active');
+        $validated['company_id'] = $companyId;
 
         Product::create($validated);
 
@@ -106,7 +112,11 @@ class ProductController extends Controller
 
     public function edit(Product $product)
     {
-        $categories = Category::orderBy('name')->get();
+        $companyId  = auth()->user()->company_id;
+        $categories = Category::where('company_id', $companyId)
+                              ->where('active', true)
+                              ->orderBy('name')
+                              ->get();
 
         return view('products.edit', compact('product', 'categories'));
     }
@@ -134,10 +144,10 @@ class ProductController extends Controller
             'category_id'  => ['nullable', 'exists:categories,id'],
             'active'       => ['nullable', 'boolean'],
         ], [
-            'name.required'  => 'O nome do produto é obrigatório.',
-            'sku.required'   => 'O SKU é obrigatório.',
-            'sku.unique'     => 'Este SKU já está em uso nesta empresa.',
-            'price.required' => 'O preço é obrigatório.',
+            'name.required'     => 'O nome do produto é obrigatório.',
+            'sku.required'      => 'O SKU é obrigatório.',
+            'sku.unique'        => 'Este SKU já está em uso nesta empresa.',
+            'price.required'    => 'O preço é obrigatório.',
             'quantity.required' => 'A quantidade é obrigatória.',
         ]);
 
