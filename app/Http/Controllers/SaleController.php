@@ -13,7 +13,9 @@ class SaleController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Sale::with(['items.product']);
+        $companyId = auth()->user()->company_id;
+
+        $query = Sale::with(['items.product'])->where('company_id', $companyId);
 
         if ($request->filled('search')) {
             $query->where('customer_name', 'like', '%' . $request->search . '%');
@@ -43,13 +45,19 @@ class SaleController extends Controller
 
     public function create()
     {
-        $products = Product::orderBy('name')->get();
+        $companyId = auth()->user()->company_id;
+        $products  = Product::where('company_id', $companyId)
+                            ->where('active', true)
+                            ->orderBy('name')
+                            ->get(['id', 'name', 'quantity', 'price']);
 
         return view('sales.create', compact('products'));
     }
 
     public function store(Request $request)
     {
+        $companyId = auth()->user()->company_id;
+
         $validated = $request->validate([
             'customer_name'          => ['nullable', 'string', 'max:255'],
             'sale_date'              => ['required', 'date'],
@@ -62,7 +70,7 @@ class SaleController extends Controller
         ]);
 
         try {
-            DB::transaction(function () use ($validated) {
+            DB::transaction(function () use ($validated, $companyId) {
                 $total = 0;
 
                 foreach ($validated['items'] as $item) {
@@ -70,6 +78,7 @@ class SaleController extends Controller
                 }
 
                 $sale = Sale::create([
+                    'company_id'    => $companyId,
                     'customer_name' => $validated['customer_name'] ?? null,
                     'sale_date'     => Carbon::parse($validated['sale_date'], config('app.timezone')),
                     'status'        => $validated['status'],
@@ -85,11 +94,11 @@ class SaleController extends Controller
                     }
 
                     SaleItem::create([
-                        'sale_id'  => $sale->id,
+                        'sale_id'    => $sale->id,
                         'product_id' => $product->id,
-                        'quantity' => $item['quantity'],
-                        'price'    => $item['price'],
-                        'subtotal' => $item['quantity'] * $item['price'],
+                        'quantity'   => $item['quantity'],
+                        'price'      => $item['price'],
+                        'subtotal'   => $item['quantity'] * $item['price'],
                     ]);
 
                     $product->decrement('quantity', $item['quantity']);
@@ -115,14 +124,20 @@ class SaleController extends Controller
 
     public function edit(Sale $sale)
     {
+        $companyId = auth()->user()->company_id;
         $sale->load(['items.product']);
-        $products = Product::orderBy('name')->get();
+        $products = Product::where('company_id', $companyId)
+                           ->where('active', true)
+                           ->orderBy('name')
+                           ->get(['id', 'name', 'quantity', 'price']);
 
         return view('sales.edit', compact('sale', 'products'));
     }
 
     public function update(Request $request, Sale $sale)
     {
+        $companyId = auth()->user()->company_id;
+
         $validated = $request->validate([
             'customer_name'          => ['nullable', 'string', 'max:255'],
             'sale_date'              => ['required', 'date'],
@@ -135,10 +150,9 @@ class SaleController extends Controller
         ]);
 
         try {
-            DB::transaction(function () use ($sale, $validated) {
+            DB::transaction(function () use ($sale, $validated, $companyId) {
                 $sale->load('items.product');
 
-                // Devolve o estoque dos itens anteriores
                 foreach ($sale->items as $oldItem) {
                     $oldProduct = Product::find($oldItem->product_id);
                     if ($oldProduct) {
@@ -149,7 +163,6 @@ class SaleController extends Controller
                 $sale->items()->delete();
 
                 $total = 0;
-
                 foreach ($validated['items'] as $item) {
                     $total += $item['quantity'] * $item['price'];
                 }
@@ -162,7 +175,6 @@ class SaleController extends Controller
                     'total'         => $total,
                 ]);
 
-                // Verifica e decrementa com os novos itens
                 foreach ($validated['items'] as $item) {
                     $product = Product::findOrFail($item['product_id']);
 
@@ -209,6 +221,6 @@ class SaleController extends Controller
         });
 
         return redirect()->route('sales.index')
-            ->with('success', 'Venda excluída e estoque restaurado com sucesso.');
+            ->with('success', 'Venda excuída e estoque restaurado com sucesso.');
     }
 }

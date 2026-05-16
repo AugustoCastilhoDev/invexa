@@ -17,8 +17,17 @@
     <div class="card-body">
         @if ($errors->any())
             <div class="alert alert-danger">
-                <strong>Corrija os erros abaixo.</strong>
+                <strong>Corrija os erros abaixo:</strong>
+                <ul class="mb-0 mt-1">
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
             </div>
+        @endif
+
+        @if (session('error'))
+            <div class="alert alert-danger">{{ session('error') }}</div>
         @endif
 
         <form action="{{ route('sales.store') }}" method="POST" id="sale-form">
@@ -92,10 +101,11 @@
                                     <div class="col-12 col-md-6">
                                         <label class="form-label text-soft fw-semibold">Produto</label>
                                         <select name="items[{{ $index }}][product_id]"
-                                            class="form-select @error('items.' . $index . '.product_id') is-invalid @enderror">
+                                            class="form-select product-select @error('items.' . $index . '.product_id') is-invalid @enderror">
                                             <option value="">Selecione</option>
                                             @foreach ($products as $product)
                                                 <option value="{{ $product->id }}"
+                                                    data-price="{{ $product->price }}"
                                                     @selected((string)($item['product_id'] ?? '') === (string)$product->id)>
                                                     {{ $product->name }} (Estoque: {{ $product->quantity }})
                                                 </option>
@@ -123,8 +133,9 @@
                                             <span class="input-group-text bg-black border-secondary text-soft">R$</span>
                                             <input type="number" step="0.01" min="0"
                                                 name="items[{{ $index }}][price]"
-                                                class="form-control @error('items.' . $index . '.price') is-invalid @enderror"
-                                                value="{{ $item['price'] ?? '' }}">
+                                                class="form-control price-input @error('items.' . $index . '.price') is-invalid @enderror"
+                                                value="{{ $item['price'] ?? '' }}"
+                                                placeholder="0.00">
                                         </div>
                                         @error('items.' . $index . '.price')
                                             <div class="invalid-feedback">{{ $message }}</div>
@@ -154,10 +165,12 @@
         <div class="row g-3 align-items-end">
             <div class="col-12 col-md-6">
                 <label class="form-label text-soft fw-semibold">Produto</label>
-                <select name="items[__INDEX__][product_id]" class="form-select">
+                <select name="items[__INDEX__][product_id]" class="form-select product-select">
                     <option value="">Selecione</option>
                     @foreach ($products as $product)
-                        <option value="{{ $product->id }}">{{ $product->name }} (Estoque: {{ $product->quantity }})</option>
+                        <option value="{{ $product->id }}" data-price="{{ $product->price }}">
+                            {{ $product->name }} (Estoque: {{ $product->quantity }})
+                        </option>
                     @endforeach
                 </select>
             </div>
@@ -171,7 +184,10 @@
                 <label class="form-label text-soft fw-semibold">Preço Unitário</label>
                 <div class="input-group">
                     <span class="input-group-text bg-black border-secondary text-soft">R$</span>
-                    <input type="number" step="0.01" min="0" name="items[__INDEX__][price]" class="form-control">
+                    <input type="number" step="0.01" min="0"
+                           name="items[__INDEX__][price]"
+                           class="form-control price-input"
+                           placeholder="0.00">
                 </div>
             </div>
 
@@ -190,8 +206,26 @@ document.addEventListener('DOMContentLoaded', function () {
     const template  = document.getElementById('item-template').innerHTML;
     const addButton = document.getElementById('add-item');
 
+    // Preenche o preço ao selecionar produto
+    function bindProductSelect(row) {
+        const select     = row.querySelector('.product-select');
+        const priceInput = row.querySelector('.price-input');
+
+        if (!select || !priceInput) return;
+
+        select.addEventListener('change', function () {
+            const selected = this.options[this.selectedIndex];
+            const price    = selected ? selected.dataset.price : '';
+            if (price) {
+                priceInput.value = parseFloat(price).toFixed(2);
+            } else {
+                priceInput.value = '';
+            }
+        });
+    }
+
     function bindRemoveButtons() {
-        document.querySelectorAll('.remove-item').forEach(button => {
+        container.querySelectorAll('.remove-item').forEach(button => {
             button.onclick = function () {
                 const items = container.querySelectorAll('.item-row');
                 if (items.length > 1) {
@@ -214,8 +248,13 @@ document.addEventListener('DOMContentLoaded', function () {
     addButton.addEventListener('click', function () {
         const index = container.querySelectorAll('.item-row').length;
         container.insertAdjacentHTML('beforeend', template.replaceAll('__INDEX__', index));
+        const newRow = container.querySelectorAll('.item-row')[index];
+        bindProductSelect(newRow);
         refreshIndexes();
     });
+
+    // Bind nos itens já existentes na página
+    container.querySelectorAll('.item-row').forEach(row => bindProductSelect(row));
 
     bindRemoveButtons();
 });
