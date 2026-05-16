@@ -33,15 +33,36 @@
         <form action="{{ route('sales.store') }}" method="POST" id="sale-form">
             @csrf
 
+            {{-- hidden que guarda o ID do cliente selecionado --}}
+            <input type="hidden" name="customer_id" id="customer_id" value="{{ old('customer_id') }}">
+
             <div class="row g-3 mb-4">
+
+                {{-- Campo cliente com autocomplete --}}
                 <div class="col-12 col-md-4">
-                    <label for="customer_name" class="form-label text-soft fw-semibold">Cliente</label>
-                    <input type="text" id="customer_name" name="customer_name"
-                        class="form-control @error('customer_name') is-invalid @enderror"
-                        value="{{ old('customer_name') }}" placeholder="Nome do cliente">
-                    @error('customer_name')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
+                    <label for="customer_search" class="form-label text-soft fw-semibold">
+                        Cliente
+                        <small class="text-soft fw-normal ms-1">(cadastrado ou texto livre)</small>
+                    </label>
+                    <div class="position-relative">
+                        <input type="text" id="customer_search" name="customer_name"
+                            class="form-control @error('customer_name') is-invalid @enderror"
+                            value="{{ old('customer_name') }}"
+                            placeholder="Digite para buscar ou escreva um nome..."
+                            autocomplete="off">
+                        <div id="customer-suggestions"
+                             class="position-absolute w-100 z-3"
+                             style="top:100%; display:none; background:rgba(10,18,35,.98);
+                                    border:1px solid rgba(148,163,184,.18); border-radius:.5rem;
+                                    box-shadow:0 12px 28px rgba(0,0,0,.45); max-height:220px; overflow-y:auto;">
+                        </div>
+                    </div>
+                    <small class="text-soft" id="customer-selected-hint" style="display:none;">
+                        <i class="bi bi-check-circle-fill text-success me-1"></i>
+                        <span id="customer-selected-name"></span>
+                        <a href="#" id="customer-clear" class="ms-2" style="color:#f87171;font-size:.8rem;">remover</a>
+                    </small>
+                    @error('customer_name')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
 
                 <div class="col-12 col-md-4">
@@ -49,31 +70,23 @@
                     <input type="datetime-local" id="sale_date" name="sale_date"
                         class="form-control @error('sale_date') is-invalid @enderror"
                         value="{{ old('sale_date', now()->format('Y-m-d\\TH:i')) }}">
-                    @error('sale_date')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
+                    @error('sale_date')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
 
                 <div class="col-12 col-md-2">
                     <label for="status" class="form-label text-soft fw-semibold">Status</label>
                     <select id="status" name="status" class="form-select @error('status') is-invalid @enderror">
-                        <option value="concluida" @selected(old('status', 'concluida') === 'concluida')>Concluída</option>
-                        <option value="pendente"  @selected(old('status') === 'pendente')>Pendente</option>
-                        <option value="cancelada" @selected(old('status') === 'cancelada')>Cancelada</option>
+                        <option value="concluida" @selected(old('status','concluida')==='concluida')>Concluída</option>
+                        <option value="pendente"  @selected(old('status')==='pendente')>Pendente</option>
+                        <option value="cancelada" @selected(old('status')==='cancelada')>Cancelada</option>
                     </select>
-                    @error('status')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
                 </div>
 
                 <div class="col-12 col-md-2">
                     <label for="notes" class="form-label text-soft fw-semibold">Observações</label>
                     <input type="text" id="notes" name="notes"
-                        class="form-control @error('notes') is-invalid @enderror"
+                        class="form-control"
                         value="{{ old('notes') }}" placeholder="Opcional">
-                    @error('notes')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
                 </div>
             </div>
 
@@ -84,64 +97,42 @@
                         <i class="bi bi-plus-circle"></i> Adicionar item
                     </button>
                 </div>
-
                 <div class="card-body">
-                    @error('items')
-                        <div class="alert alert-danger">{{ $message }}</div>
-                    @enderror
+                    @error('items')<div class="alert alert-danger">{{ $message }}</div>@enderror
 
                     <div id="items-container" class="vstack gap-3">
-                        @php
-                            $oldItems = old('items', [['product_id' => '', 'quantity' => 1, 'price' => '']]);
-                        @endphp
+                        @php $oldItems = old('items', [['product_id'=>'','quantity'=>1,'price'=>'']]); @endphp
 
                         @foreach ($oldItems as $index => $item)
                             <div class="border rounded p-3 item-row">
                                 <div class="row g-3 align-items-end">
                                     <div class="col-12 col-md-6">
                                         <label class="form-label text-soft fw-semibold">Produto</label>
-                                        <select name="items[{{ $index }}][product_id]"
-                                            class="form-select product-select @error('items.' . $index . '.product_id') is-invalid @enderror">
+                                        <select name="items[{{ $index }}][product_id]" class="form-select product-select">
                                             <option value="">Selecione</option>
                                             @foreach ($products as $product)
-                                                <option value="{{ $product->id }}"
-                                                    data-price="{{ $product->price }}"
-                                                    @selected((string)($item['product_id'] ?? '') === (string)$product->id)>
+                                                <option value="{{ $product->id }}" data-price="{{ $product->price }}"
+                                                    @selected((string)($item['product_id']??'') === (string)$product->id)>
                                                     {{ $product->name }} (Estoque: {{ $product->quantity }})
                                                 </option>
                                             @endforeach
                                         </select>
-                                        @error('items.' . $index . '.product_id')
-                                            <div class="invalid-feedback">{{ $message }}</div>
-                                        @enderror
                                     </div>
-
                                     <div class="col-6 col-md-2">
                                         <label class="form-label text-soft fw-semibold">Quantidade</label>
-                                        <input type="number" min="1"
-                                            name="items[{{ $index }}][quantity]"
-                                            class="form-control @error('items.' . $index . '.quantity') is-invalid @enderror"
-                                            value="{{ $item['quantity'] ?? 1 }}">
-                                        @error('items.' . $index . '.quantity')
-                                            <div class="invalid-feedback">{{ $message }}</div>
-                                        @enderror
+                                        <input type="number" min="1" name="items[{{ $index }}][quantity]"
+                                               class="form-control" value="{{ $item['quantity']??1 }}">
                                     </div>
-
                                     <div class="col-6 col-md-2">
-                                        <label class="form-label text-soft fw-semibold">Preço Unitário</label>
+                                        <label class="form-label text-soft fw-semibold">Preço Unit.</label>
                                         <div class="input-group">
                                             <span class="input-group-text bg-black border-secondary text-soft">R$</span>
                                             <input type="number" step="0.01" min="0"
-                                                name="items[{{ $index }}][price]"
-                                                class="form-control price-input @error('items.' . $index . '.price') is-invalid @enderror"
-                                                value="{{ $item['price'] ?? '' }}"
-                                                placeholder="0.00">
+                                                   name="items[{{ $index }}][price]"
+                                                   class="form-control price-input"
+                                                   value="{{ $item['price']??'' }}" placeholder="0.00">
                                         </div>
-                                        @error('items.' . $index . '.price')
-                                            <div class="invalid-feedback">{{ $message }}</div>
-                                        @enderror
                                     </div>
-
                                     <div class="col-12 col-md-2 d-grid">
                                         <button type="button" class="btn btn-outline-danger remove-item">Remover</button>
                                     </div>
@@ -174,23 +165,18 @@
                     @endforeach
                 </select>
             </div>
-
             <div class="col-6 col-md-2">
                 <label class="form-label text-soft fw-semibold">Quantidade</label>
                 <input type="number" min="1" name="items[__INDEX__][quantity]" class="form-control" value="1">
             </div>
-
             <div class="col-6 col-md-2">
-                <label class="form-label text-soft fw-semibold">Preço Unitário</label>
+                <label class="form-label text-soft fw-semibold">Preço Unit.</label>
                 <div class="input-group">
                     <span class="input-group-text bg-black border-secondary text-soft">R$</span>
-                    <input type="number" step="0.01" min="0"
-                           name="items[__INDEX__][price]"
-                           class="form-control price-input"
-                           placeholder="0.00">
+                    <input type="number" step="0.01" min="0" name="items[__INDEX__][price]"
+                           class="form-control price-input" placeholder="0.00">
                 </div>
             </div>
-
             <div class="col-12 col-md-2 d-grid">
                 <button type="button" class="btn btn-outline-danger remove-item">Remover</button>
             </div>
@@ -202,33 +188,82 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+
+    // ── Autocomplete de cliente ──────────────────────────────────────
+    const searchUrl   = '{{ route('customers.search') }}';
+    const searchInput = document.getElementById('customer_search');
+    const hiddenId    = document.getElementById('customer_id');
+    const suggestions = document.getElementById('customer-suggestions');
+    const hint        = document.getElementById('customer-selected-hint');
+    const hintName    = document.getElementById('customer-selected-name');
+    const clearBtn    = document.getElementById('customer-clear');
+    let   debounce;
+
+    searchInput.addEventListener('input', function () {
+        clearTimeout(debounce);
+        hiddenId.value = '';        // limpa seleção anterior ao digitar
+        hint.style.display = 'none';
+
+        const q = this.value.trim();
+        if (q.length < 2) { suggestions.style.display = 'none'; suggestions.innerHTML = ''; return; }
+
+        debounce = setTimeout(() => {
+            fetch(`${searchUrl}?q=${encodeURIComponent(q)}`)
+                .then(r => r.json())
+                .then(data => {
+                    suggestions.innerHTML = '';
+                    if (!data.length) { suggestions.style.display = 'none'; return; }
+
+                    data.forEach(c => {
+                        const item = document.createElement('div');
+                        item.style.cssText = 'padding:.55rem .85rem; cursor:pointer; font-size:.875rem; color:#cbd5e1; border-bottom:1px solid rgba(148,163,184,.10);';
+                        item.innerHTML = `<span class="fw-semibold text-white">${c.name}</span>`
+                            + (c.document ? ` <small class="text-soft ms-2">${c.document}</small>` : '')
+                            + (c.phone    ? ` <small class="text-soft ms-2"><i class="bi bi-telephone"></i> ${c.phone}</small>` : '');
+
+                        item.addEventListener('mousedown', function (e) {
+                            e.preventDefault();
+                            searchInput.value  = c.name;
+                            hiddenId.value     = c.id;
+                            hintName.textContent = c.name;
+                            hint.style.display = 'inline';
+                            suggestions.style.display = 'none';
+                        });
+                        suggestions.appendChild(item);
+                    });
+                    suggestions.style.display = 'block';
+                });
+        }, 280);
+    });
+
+    searchInput.addEventListener('blur', () => setTimeout(() => { suggestions.style.display = 'none'; }, 150));
+
+    clearBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+        hiddenId.value     = '';
+        searchInput.value  = '';
+        hint.style.display = 'none';
+    });
+
+    // ── Itens da venda ───────────────────────────────────────────────
     const container = document.getElementById('items-container');
     const template  = document.getElementById('item-template').innerHTML;
     const addButton = document.getElementById('add-item');
 
-    // Preenche o preço ao selecionar produto
     function bindProductSelect(row) {
-        const select     = row.querySelector('.product-select');
-        const priceInput = row.querySelector('.price-input');
-
-        if (!select || !priceInput) return;
-
-        select.addEventListener('change', function () {
-            const selected = this.options[this.selectedIndex];
-            const price    = selected ? selected.dataset.price : '';
-            if (price) {
-                priceInput.value = parseFloat(price).toFixed(2);
-            } else {
-                priceInput.value = '';
-            }
+        const sel   = row.querySelector('.product-select');
+        const price = row.querySelector('.price-input');
+        if (!sel || !price) return;
+        sel.addEventListener('change', function () {
+            const p = this.options[this.selectedIndex]?.dataset.price;
+            price.value = p ? parseFloat(p).toFixed(2) : '';
         });
     }
 
     function bindRemoveButtons() {
-        container.querySelectorAll('.remove-item').forEach(button => {
-            button.onclick = function () {
-                const items = container.querySelectorAll('.item-row');
-                if (items.length > 1) {
+        container.querySelectorAll('.remove-item').forEach(btn => {
+            btn.onclick = function () {
+                if (container.querySelectorAll('.item-row').length > 1) {
                     this.closest('.item-row').remove();
                     refreshIndexes();
                 }
@@ -237,25 +272,22 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function refreshIndexes() {
-        container.querySelectorAll('.item-row').forEach((row, index) => {
-            row.querySelectorAll('select, input').forEach(field => {
-                field.name = field.name.replace(/items\[\d+\]/, `items[${index}]`);
+        container.querySelectorAll('.item-row').forEach((row, i) => {
+            row.querySelectorAll('select, input').forEach(f => {
+                f.name = f.name.replace(/items\[\d+\]/, `items[${i}]`);
             });
         });
         bindRemoveButtons();
     }
 
     addButton.addEventListener('click', function () {
-        const index = container.querySelectorAll('.item-row').length;
-        container.insertAdjacentHTML('beforeend', template.replaceAll('__INDEX__', index));
-        const newRow = container.querySelectorAll('.item-row')[index];
-        bindProductSelect(newRow);
+        const i = container.querySelectorAll('.item-row').length;
+        container.insertAdjacentHTML('beforeend', template.replaceAll('__INDEX__', i));
+        bindProductSelect(container.querySelectorAll('.item-row')[i]);
         refreshIndexes();
     });
 
-    // Bind nos itens já existentes na página
     container.querySelectorAll('.item-row').forEach(row => bindProductSelect(row));
-
     bindRemoveButtons();
 });
 </script>
