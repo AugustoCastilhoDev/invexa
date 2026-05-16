@@ -28,4 +28,21 @@ class Sale extends Model
     {
         return $this->hasMany(SaleItem::class);
     }
+
+    public function returns()
+    {
+        return $this->hasMany(SaleReturn::class);
+    }
+
+    /** Soma de todas as devoluções desta venda **/
+    public function getTotalReturnedAttribute(): float
+    {
+        return (float) $this->returns->sum('total');
+    }
+
+    /** Valor líquido (venda - devoluções) **/
+    public function getNetTotalAttribute(): float
+    {
+        return (float) $this->total - $this->total_returned;
+    }
 }
