@@ -1,11 +1,10 @@
 <?php
 
-use App\Http\Controllers\Auth\AuthenticatedSessionController;
-use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProductController;
-use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SaleController;
 use App\Http\Controllers\SaleReturnController;
@@ -13,71 +12,51 @@ use App\Http\Controllers\StockMovementController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
-// ── Autenticação (pública)
-Route::get('/login',  [AuthenticatedSessionController::class, 'create'])->name('login');
-Route::post('/login', [AuthenticatedSessionController::class, 'store'])->name('login.post');
-Route::post('/logout',[AuthenticatedSessionController::class, 'destroy'])->name('auth.logout');
-Route::get('/register',  [RegisteredUserController::class, 'create'])->name('register');
-Route::post('/register', [RegisteredUserController::class, 'store'])->name('register.store');
+// ── Autenticação (guest) ───────────────────────────────────────────
+Route::middleware('guest')->group(function () {
+    Route::get('/login',           [AuthController::class, 'showLogin'])->name('login');
+    Route::post('/login',          [AuthController::class, 'login']);
+    Route::get('/register',        [AuthController::class, 'showRegister'])->name('register');
+    Route::post('/register',       [AuthController::class, 'register']);
+});
 
-// ── Rotas protegidas
-Route::middleware(['auth', 'company'])->group(function () {
+Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middleware('auth');
+
+// ── Área autenticada ───────────────────────────────────────────────
+Route::middleware(['auth'])->group(function () {
 
     // Dashboard
-    Route::get('/dashboard',            [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/',         [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard',[DashboardController::class, 'index']);
     Route::get('/dashboard/export/csv', [DashboardController::class, 'exportCsv'])->name('dashboard.export.csv');
     Route::get('/dashboard/export/pdf', [DashboardController::class, 'exportPdf'])->name('dashboard.export.pdf');
 
-    // Relatórios
-    Route::middleware('role:admin,gerente')->group(function () {
-        Route::get('/reports/top-products',     [ReportController::class, 'topProducts'])->name('reports.top-products');
-        Route::get('/reports/top-products/csv', [ReportController::class, 'topProductsCsv'])->name('reports.top-products.csv');
-        Route::get('/reports/top-products/pdf', [ReportController::class, 'topProductsPdf'])->name('reports.top-products.pdf');
-    });
+    // Produtos
+    Route::resource('products', ProductController::class);
 
-    // Estoque
-    Route::middleware('role:admin,gerente')->group(function () {
-        Route::get('/stock',                   [StockMovementController::class, 'index'])->name('stock.index');
-        Route::get('/stock/create',            [StockMovementController::class, 'create'])->name('stock.create');
-        Route::post('/stock',                  [StockMovementController::class, 'store'])->name('stock.store');
-        Route::get('/stock/product/{product}', [StockMovementController::class, 'product'])->name('stock.product');
-    });
+    // Categorias
+    Route::resource('categories', CategoryController::class);
 
-    // Devoluções
-    Route::middleware('role:admin,gerente')->group(function () {
-        Route::get('/returns',                    [SaleReturnController::class, 'index'])->name('returns.index');
-        Route::get('/returns/create',             [SaleReturnController::class, 'create'])->name('returns.create');
-        Route::post('/returns',                   [SaleReturnController::class, 'store'])->name('returns.store');
-        Route::get('/returns/{return}',           [SaleReturnController::class, 'show'])->name('returns.show');
-        Route::get('/returns/sale-items/{sale}',  [SaleReturnController::class, 'saleItems'])->name('returns.sale-items');
-    });
-
-    // Perfil
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    // Clientes
+    Route::get('customers/search',  [CustomerController::class, 'search'])->name('customers.search');
+    Route::resource('customers',    CustomerController::class);
 
     // Vendas
-    Route::get('/sales',         [SaleController::class, 'index'])->name('sales.index');
-    Route::get('/sales/create',  [SaleController::class, 'create'])->name('sales.create');
-    Route::post('/sales',        [SaleController::class, 'store'])->name('sales.store');
-    Route::get('/sales/{sale}',  [SaleController::class, 'show'])->name('sales.show');
+    Route::resource('sales', SaleController::class);
+    Route::get('/sales/{sale}/invoice', [SaleController::class, 'invoice'])->name('sales.invoice');
 
-    Route::middleware('role:admin,gerente')->group(function () {
-        Route::get('/sales/{sale}/edit', [SaleController::class, 'edit'])->name('sales.edit');
-        Route::put('/sales/{sale}',      [SaleController::class, 'update'])->name('sales.update');
-        Route::delete('/sales/{sale}',   [SaleController::class, 'destroy'])->name('sales.destroy');
-    });
+    // Devoluções
+    Route::resource('returns', SaleReturnController::class);
+    Route::get('/returns/{saleReturn}/items', [SaleReturnController::class, 'getItems'])->name('returns.items');
 
-    // Produtos e Categorias
-    Route::middleware('role:admin,gerente')->group(function () {
-        Route::resource('products', ProductController::class);
-        Route::resource('categories', CategoryController::class);
-    });
+    // Estoque
+    Route::resource('stock', StockMovementController::class)->only(['index','create','store']);
+    Route::get('/stock/product/{product}', [StockMovementController::class, 'product'])->name('stock.product');
 
-    // Usuários
-    Route::middleware('role:admin')->group(function () {
-        Route::resource('users', UserController::class)->except(['show']);
-        Route::patch('/users/{user}/toggle-active', [UserController::class, 'toggleActive'])
-            ->name('users.toggle-active');
-    });
+    // Relatórios
+    Route::get('/reports',          [ReportController::class, 'index'])->name('reports.index');
+    Route::get('/reports/export',   [ReportController::class, 'export'])->name('reports.export');
+
+    // Usuários (admin)
+    Route::resource('users', UserController::class);
 });
