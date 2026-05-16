@@ -6,11 +6,12 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SaleController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
-// ── Autenticação (pública) ────────────────────────────────────────────────────
+// ── Autenticação (pública) ────────────────────────────────────────────
 Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
 Route::post('/login', [AuthenticatedSessionController::class, 'store'])->name('login.post');
 Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('auth.logout');
@@ -18,13 +19,19 @@ Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name
 Route::get('/register', [RegisteredUserController::class, 'create'])->name('register');
 Route::post('/register', [RegisteredUserController::class, 'store'])->name('register.store');
 
-// ── Rotas protegidas ──────────────────────────────────────────────────────────
+// ── Rotas protegidas ────────────────────────────────────────────
 Route::middleware(['auth', 'company'])->group(function () {
 
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/dashboard/export/csv', [DashboardController::class, 'exportCsv'])->name('dashboard.export.csv');
     Route::get('/dashboard/export/pdf', [DashboardController::class, 'exportPdf'])->name('dashboard.export.pdf');
+
+    // Relatórios — visível para admin e gerente
+    Route::middleware('role:admin,gerente')->group(function () {
+        Route::get('/reports/top-products', [ReportController::class, 'topProducts'])->name('reports.top-products');
+        Route::get('/reports/top-products/csv', [ReportController::class, 'topProductsCsv'])->name('reports.top-products.csv');
+    });
 
     // Perfil do usuário autenticado
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

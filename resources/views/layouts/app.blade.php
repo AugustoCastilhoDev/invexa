@@ -207,7 +207,7 @@
                         </a>
                     </li>
 
-                    {{-- Produtos — visível para admin e gerente --}}
+                    {{-- Produtos e Categorias — visível para admin e gerente --}}
                     @if(Auth::check() && Auth::user()->isGerente())
                         <li class="nav-item">
                             <a class="nav-link {{ request()->routeIs('products.*') ? 'active' : '' }}"
@@ -216,12 +216,26 @@
                             </a>
                         </li>
 
-                        {{-- Categorias — visível para admin e gerente --}}
                         <li class="nav-item">
                             <a class="nav-link {{ request()->routeIs('categories.*') ? 'active' : '' }}"
                                href="{{ route('categories.index') }}">
                                 <i class="bi bi-tag me-1 opacity-75"></i>Categorias
                             </a>
+                        </li>
+
+                        {{-- Relatórios — dropdown para admin e gerente --}}
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle {{ request()->routeIs('reports.*') ? 'active' : '' }}"
+                               href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-bar-chart-line me-1 opacity-75"></i>Relatórios
+                            </a>
+                            <ul class="dropdown-menu">
+                                <li>
+                                    <a class="dropdown-item" href="{{ route('reports.top-products') }}">
+                                        <i class="bi bi-trophy me-2"></i>Produtos mais vendidos
+                                    </a>
+                                </li>
+                            </ul>
                         </li>
                     @endif
 
