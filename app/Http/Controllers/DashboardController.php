@@ -164,7 +164,7 @@ class DashboardController extends Controller
             $chartTo   = now($this->tz)->toDateString();
         }
 
-        // 1) Vendas do módulo /sales por dia (sale_date já é DATE, sem problema de tz)
+        // 1) Vendas do módulo /sales por dia
         $chartQuery       = $this->filteredSalesQuery($request, $chartFrom, $chartTo);
         $salesByDayModule = $chartQuery
             ->selectRaw('DATE(sale_date) as day, SUM(total) as total')
@@ -173,7 +173,7 @@ class DashboardController extends Controller
             ->pluck('total', 'day')
             ->map(fn($v) => (float) $v);
 
-        // 2) Vendas manuais de estoque por dia — converter created_at para tz local
+        // 2) Vendas manuais de estoque por dia (agrupadas no tz local)
         $salesByDayStock = $this->stockManualQuery($companyId, 'venda', $chartFrom, $chartTo)
             ->get()
             ->groupBy(fn($m) => $m->created_at->timezone($this->tz)->toDateString())
@@ -183,11 +183,11 @@ class DashboardController extends Controller
         $allSaleDays = collect($salesByDayModule->keys())
             ->merge($salesByDayStock->keys())
             ->unique();
-        $salesByDay = $allSaleDays->mapWithKeys(fn($d) =>
-            [$d => (float)($salesByDayModule[$d] ?? 0) + (float)($salesByDayStock[$d] ?? 0)]
+        $salesByDay = $allSaleDays->mapWithKeys(
+            fn($d) => [$d => (float)($salesByDayModule[$d] ?? 0) + (float)($salesByDayStock[$d] ?? 0)]
         );
 
-        // 4) Devoluções por dia — módulo SaleReturn
+        // 4) Devoluções por dia — módulo SaleReturn (CONVERT_TZ no banco)
         $returnsChartBase = SaleReturn::where('company_id', $companyId);
         if ($chartFrom && $chartTo) {
             $returnsChartBase->whereBetween('created_at', [
@@ -195,10 +195,10 @@ class DashboardController extends Controller
                 Carbon::parse($chartTo, $this->tz)->endOfDay(),
             ]);
         }
+        $convertTzExpr      = "DATE(CONVERT_TZ(created_at, '+00:00', '-03:00'))";
         $returnsByDayModule = $returnsChartBase
-            ->selectRaw('DATE(CONVERT_TZ(created_at, \'+00:00\', \'-03:00\')) as day, SUM(total) as total')
-            ->groupBy(DB::raw('DATE(CONVERT_TZ(created_at, \'+00:00\', \'-03:00\')'))
-            )
+            ->selectRaw($convertTzExpr . ' as day, SUM(total) as total')
+            ->groupBy(DB::raw($convertTzExpr))
             ->pluck('total', 'day')
             ->map(fn($v) => (float) $v);
 
@@ -212,8 +212,8 @@ class DashboardController extends Controller
         $allReturnDays = collect($returnsByDayModule->keys())
             ->merge($returnsByDayStock->keys())
             ->unique();
-        $returnsByDay = $allReturnDays->mapWithKeys(fn($d) =>
-            [$d => (float)($returnsByDayModule[$d] ?? 0) + (float)($returnsByDayStock[$d] ?? 0)]
+        $returnsByDay = $allReturnDays->mapWithKeys(
+            fn($d) => [$d => (float)($returnsByDayModule[$d] ?? 0) + (float)($returnsByDayStock[$d] ?? 0)]
         );
 
         // 7) Dados finais do gráfico
@@ -239,7 +239,7 @@ class DashboardController extends Controller
         ));
     }
 
-    // ── Helper: movimentos manuais (source_type IS NULL) com tz correto ──
+    // ── Helper: movimentos manuais com tz correto ─────────────────────
     private function stockManualQuery(int $companyId, string $reason, ?string $from, ?string $to)
     {
         $q = StockMovement::with('product')
