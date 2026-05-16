@@ -17,7 +17,11 @@
             <div class="d-flex gap-2 flex-wrap">
                 <a href="{{ route('reports.top-products.csv', request()->query()) }}"
                    class="btn btn-success btn-sm">
-                    <i class="bi bi-download me-1"></i>Exportar CSV
+                    <i class="bi bi-filetype-csv me-1"></i>Exportar CSV
+                </a>
+                <a href="{{ route('reports.top-products.pdf', request()->query()) }}"
+                   class="btn btn-danger btn-sm">
+                    <i class="bi bi-filetype-pdf me-1"></i>Exportar PDF
                 </a>
                 <a href="{{ route('dashboard') }}" class="btn btn-outline-light btn-sm">Voltar</a>
             </div>
@@ -33,10 +37,10 @@
                     <label class="form-label text-soft" style="font-size:.78rem;">Período</label>
                     <select name="period" id="periodSelect" class="form-select form-select-sm"
                             onchange="toggleCustomDates(this.value)">
-                        <option value="7"   {{ $period=='7'   ?'selected':'' }}>Últimos 7 dias</option>
-                        <option value="30"  {{ $period=='30'  ?'selected':'' }}>Últimos 30 dias</option>
-                        <option value="90"  {{ $period=='90'  ?'selected':'' }}>Últimos 90 dias</option>
-                        <option value="365" {{ $period=='365' ?'selected':'' }}>Último ano</option>
+                        <option value="7"      {{ $period=='7'     ?'selected':'' }}>Últimos 7 dias</option>
+                        <option value="30"     {{ $period=='30'    ?'selected':'' }}>Últimos 30 dias</option>
+                        <option value="90"     {{ $period=='90'    ?'selected':'' }}>Últimos 90 dias</option>
+                        <option value="365"    {{ $period=='365'   ?'selected':'' }}>Último ano</option>
                         <option value="custom" {{ $period=='custom'?'selected':'' }}>Personalizado</option>
                     </select>
                 </div>

@@ -3,32 +3,16 @@
 namespace App\Http\Controllers;
 
 use App\Models\SaleItem;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class ReportController extends Controller
 {
-    public function topProducts(Request $request)
+    private function getProductsQuery(string $companyId, Carbon $from, Carbon $to)
     {
-        $companyId = auth()->user()->company_id;
-
-        $period = $request->get('period', '30');
-
-        $from = match ($period) {
-            '7'    => Carbon::now()->subDays(7)->startOfDay(),
-            '30'   => Carbon::now()->subDays(30)->startOfDay(),
-            '90'   => Carbon::now()->subDays(90)->startOfDay(),
-            '365'  => Carbon::now()->subDays(365)->startOfDay(),
-            'custom' => Carbon::parse($request->get('from'))->startOfDay(),
-            default => Carbon::now()->subDays(30)->startOfDay(),
-        };
-
-        $to = $period === 'custom'
-            ? Carbon::parse($request->get('to'))->endOfDay()
-            : Carbon::now()->endOfDay();
-
-        $products = SaleItem::query()
+        return SaleItem::query()
             ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
             ->join('products', 'sale_items.product_id', '=', 'products.id')
             ->leftJoin('categories', 'products.category_id', '=', 'categories.id')
@@ -47,8 +31,35 @@ class ReportController extends Controller
             ->orderByDesc('total_qty')
             ->limit(20)
             ->get();
+    }
 
-        // Dados para o gráfico (top 8)
+    private function resolvePeriod(Request $request): array
+    {
+        $period = $request->get('period', '30');
+
+        $from = match ($period) {
+            '7'      => Carbon::now()->subDays(7)->startOfDay(),
+            '30'     => Carbon::now()->subDays(30)->startOfDay(),
+            '90'     => Carbon::now()->subDays(90)->startOfDay(),
+            '365'    => Carbon::now()->subDays(365)->startOfDay(),
+            'custom' => Carbon::parse($request->get('from'))->startOfDay(),
+            default  => Carbon::now()->subDays(30)->startOfDay(),
+        };
+
+        $to = $period === 'custom'
+            ? Carbon::parse($request->get('to'))->endOfDay()
+            : Carbon::now()->endOfDay();
+
+        return [$period, $from, $to];
+    }
+
+    public function topProducts(Request $request)
+    {
+        $companyId = auth()->user()->company_id;
+        [$period, $from, $to] = $this->resolvePeriod($request);
+
+        $products = $this->getProductsQuery($companyId, $from, $to);
+
         $chartLabels  = $products->take(8)->pluck('product_name');
         $chartQty     = $products->take(8)->pluck('total_qty');
         $chartRevenue = $products->take(8)->pluck('total_revenue');
@@ -62,38 +73,9 @@ class ReportController extends Controller
     public function topProductsCsv(Request $request)
     {
         $companyId = auth()->user()->company_id;
-        $period    = $request->get('period', '30');
+        [, $from, $to] = $this->resolvePeriod($request);
 
-        $from = match ($period) {
-            '7'    => Carbon::now()->subDays(7)->startOfDay(),
-            '30'   => Carbon::now()->subDays(30)->startOfDay(),
-            '90'   => Carbon::now()->subDays(90)->startOfDay(),
-            '365'  => Carbon::now()->subDays(365)->startOfDay(),
-            'custom' => Carbon::parse($request->get('from'))->startOfDay(),
-            default => Carbon::now()->subDays(30)->startOfDay(),
-        };
-
-        $to = $period === 'custom'
-            ? Carbon::parse($request->get('to'))->endOfDay()
-            : Carbon::now()->endOfDay();
-
-        $products = SaleItem::query()
-            ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
-            ->join('products', 'sale_items.product_id', '=', 'products.id')
-            ->leftJoin('categories', 'products.category_id', '=', 'categories.id')
-            ->where('sales.company_id', $companyId)
-            ->where('sales.status', 'concluida')
-            ->whereBetween('sales.sale_date', [$from, $to])
-            ->select(
-                'products.name as product_name',
-                'categories.name as category_name',
-                DB::raw('SUM(sale_items.quantity) as total_qty'),
-                DB::raw('SUM(sale_items.subtotal) as total_revenue'),
-                DB::raw('COUNT(DISTINCT sale_items.sale_id) as total_sales')
-            )
-            ->groupBy('products.name', 'categories.name')
-            ->orderByDesc('total_qty')
-            ->get();
+        $products = $this->getProductsQuery($companyId, $from, $to);
 
         $filename = 'produtos_mais_vendidos_' . now()->format('Ymd_His') . '.csv';
 
@@ -104,7 +86,6 @@ class ReportController extends Controller
 
         $callback = function () use ($products) {
             $file = fopen('php://output', 'w');
-            // BOM para Excel PT-BR
             fputs($file, "\xEF\xBB\xBF");
             fputcsv($file, ['Produto', 'Categoria', 'Qtd. Vendida', 'Receita (R$)', 'Nº de Vendas'], ';');
 
@@ -122,5 +103,18 @@ class ReportController extends Controller
         };
 
         return response()->stream($callback, 200, $headers);
+    }
+
+    public function topProductsPdf(Request $request)
+    {
+        $companyId = auth()->user()->company_id;
+        [$period, $from, $to] = $this->resolvePeriod($request);
+
+        $products = $this->getProductsQuery($companyId, $from, $to);
+
+        $pdf = Pdf::loadView('exports.top-products-pdf', compact('products', 'from', 'to', 'period'))
+            ->setPaper('a4', 'portrait');
+
+        return $pdf->download('produtos_mais_vendidos_' . now()->format('Ymd_His') . '.pdf');
     }
 }
