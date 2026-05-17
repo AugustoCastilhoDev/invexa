@@ -136,7 +136,11 @@ class SaleReturnController extends Controller
     {
         abort_if($saleReturn->company_id !== auth()->user()->company_id, 403);
         $saleReturn->load(['sale.items.product', 'items.product', 'user']);
-        return view('returns.show', compact('saleReturn'));
+
+        // Alias para manter compatibilidade com a view que usa $return
+        $return = $saleReturn;
+
+        return view('returns.show', compact('return'));
     }
 
     /**
@@ -148,7 +152,6 @@ class SaleReturnController extends Controller
         abort_if($sale->company_id !== auth()->user()->company_id, 403);
         $sale->load('items.product');
 
-        // Soma devoluções anteriores por produto nesta venda
         $alreadyReturned = SaleReturnItem::whereHas('saleReturn', fn($q) => $q->where('sale_id', $sale->id))
             ->selectRaw('product_id, SUM(quantity) as total_returned')
             ->groupBy('product_id')
