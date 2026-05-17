@@ -7,6 +7,7 @@ use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\PurchaseOrderController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SaleController;
 use App\Http\Controllers\SaleReturnController;
@@ -35,14 +36,12 @@ Route::middleware(['auth', 'company'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
 
-    // Vendas — listagem e criação para todos os perfis
+    // Vendas
     Route::get('/sales',        [SaleController::class, 'index'])->name('sales.index');
     Route::get('/sales/create', [SaleController::class, 'create'])->name('sales.create');
     Route::post('/sales',       [SaleController::class, 'store'])->name('sales.store');
     Route::get('/sales/{sale}', [SaleController::class, 'show'])->name('sales.show');
     Route::get('/sales/{sale}/invoice', [SaleController::class, 'invoice'])->name('sales.invoice');
-
-    // Vendas — edição, cancelamento e lixeira somente para admin e gerente
     Route::middleware('role:admin,gerente')->group(function () {
         Route::get('/sales/{sale}/edit',    [SaleController::class, 'edit'])->name('sales.edit');
         Route::put('/sales/{sale}',         [SaleController::class, 'update'])->name('sales.update');
@@ -50,8 +49,6 @@ Route::middleware(['auth', 'company'])->group(function () {
         Route::delete('/sales/{sale}',      [SaleController::class, 'destroy'])->name('sales.destroy');
         Route::patch('/sales/{id}/restore', [SaleController::class, 'restore'])->name('sales.restore');
     });
-
-    // Exclusão permanente — somente admin
     Route::middleware('role:admin')->group(function () {
         Route::delete('/sales/{id}/force', [SaleController::class, 'forceDestroy'])->name('sales.force-destroy');
     });
@@ -70,7 +67,7 @@ Route::middleware(['auth', 'company'])->group(function () {
     Route::delete('/stock/{stock}', [StockMovementController::class, 'destroy'])->name('stock.destroy');
     Route::get('/stock/product/{product}', [StockMovementController::class, 'product'])->name('stock.product');
 
-    // Clientes — search ANTES do resource para não conflitar com {customer}
+    // Clientes
     Route::get('/customers/search', [CustomerController::class, 'search'])->name('customers.search');
     Route::resource('customers', CustomerController::class);
 
@@ -79,8 +76,7 @@ Route::middleware(['auth', 'company'])->group(function () {
     Route::get('/reports/export/csv', [ReportController::class, 'export'])->name('reports.export.csv');
     Route::get('/reports/export/pdf', [ReportController::class, 'topProductsPdf'])->name('reports.export.pdf');
 
-    // Fornecedores
-    // IMPORTANTE: rotas estáticas (index, create, store) ANTES do wildcard {supplier}
+    // Fornecedores — rotas estáticas antes do wildcard {supplier}
     Route::get('/suppliers',        [SupplierController::class, 'index'])->name('suppliers.index');
     Route::middleware('role:admin,gerente')->group(function () {
         Route::get('/suppliers/create',          [SupplierController::class, 'create'])->name('suppliers.create');
@@ -89,8 +85,19 @@ Route::middleware(['auth', 'company'])->group(function () {
         Route::put('/suppliers/{supplier}',      [SupplierController::class, 'update'])->name('suppliers.update');
         Route::delete('/suppliers/{supplier}',   [SupplierController::class, 'destroy'])->name('suppliers.destroy');
     });
-    // show com wildcard DEPOIS das rotas estáticas
     Route::get('/suppliers/{supplier}', [SupplierController::class, 'show'])->name('suppliers.show');
+
+    // Ordens de Compra — todos leem, admin/gerente criam e gerenciam
+    Route::get('/purchase-orders', [PurchaseOrderController::class, 'index'])->name('purchase-orders.index');
+    Route::get('/purchase-orders/{purchaseOrder}', [PurchaseOrderController::class, 'show'])->name('purchase-orders.show');
+    Route::middleware('role:admin,gerente')->group(function () {
+        Route::get('/purchase-orders/create',                          [PurchaseOrderController::class, 'create'])->name('purchase-orders.create');
+        Route::post('/purchase-orders',                                [PurchaseOrderController::class, 'store'])->name('purchase-orders.store');
+        Route::get('/purchase-orders/{purchaseOrder}/receive',         [PurchaseOrderController::class, 'receiveForm'])->name('purchase-orders.receive-form');
+        Route::post('/purchase-orders/{purchaseOrder}/receive',        [PurchaseOrderController::class, 'receive'])->name('purchase-orders.receive');
+        Route::patch('/purchase-orders/{purchaseOrder}/send',          [PurchaseOrderController::class, 'send'])->name('purchase-orders.send');
+        Route::patch('/purchase-orders/{purchaseOrder}/cancel',        [PurchaseOrderController::class, 'cancel'])->name('purchase-orders.cancel');
+    });
 
     // Produtos e Categorias — somente admin e gerente
     Route::middleware('role:admin,gerente')->group(function () {
