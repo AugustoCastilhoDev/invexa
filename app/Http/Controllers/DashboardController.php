@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Category;
+use App\Models\Payable;
 use App\Models\Product;
+use App\Models\Receivable;
 use App\Models\Sale;
 use App\Models\SaleReturn;
 use App\Models\StockMovement;
@@ -14,18 +16,12 @@ use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
-    private string $tz     = 'America/Sao_Paulo';
+    private string $tz       = 'America/Sao_Paulo';
     private string $tzOffset = '-03:00';
 
-    /**
-     * Aplica filtro de data em SaleReturn usando CONVERT_TZ,
-     * evitando que registros em UTC vazem para o dia errado em BRT.
-     */
     private function applyReturnDateFilter($query, ?string $from, ?string $to)
     {
         if ($from && $to) {
-            $start = Carbon::parse($from, $this->tz)->startOfDay()->utc()->toDateTimeString();
-            $end   = Carbon::parse($to,   $this->tz)->endOfDay()->utc()->toDateTimeString();
             $query->whereRaw(
                 "CONVERT_TZ(created_at, '+00:00', ?) BETWEEN ? AND ?",
                 [$this->tzOffset,
@@ -56,14 +52,12 @@ class DashboardController extends Controller
 
         $filteredQuery = $this->filteredSalesQuery($request, $from, $to);
 
-        // ── Métricas brutas (módulo /sales) ───────────────────────────
         $periodSalesCount    = (clone $filteredQuery)->count();
         $periodRevenue       = (float)(clone $filteredQuery)->sum('total');
         $periodAverageTicket = $periodSalesCount > 0 ? $periodRevenue / $periodSalesCount : 0;
         $periodMaxSale       = (clone $filteredQuery)->max('total') ?? 0;
         $periodMinSale       = (clone $filteredQuery)->min('total') ?? 0;
 
-        // ── Vendas manuais via tela de estoque ────────────────────────
         $stockSalesMovements = $this->stockManualQuery($companyId, 'venda', $from, $to)->get();
         $stockSalesRevenue   = $stockSalesMovements->sum(
             fn($m) => abs($m->quantity) * (float) optional($m->product)->price
@@ -74,25 +68,21 @@ class DashboardController extends Controller
         $periodSalesCount   += $stockSalesCount;
         $periodAverageTicket = $periodSalesCount > 0 ? $periodRevenue / $periodSalesCount : 0;
 
-        // ── Devoluções via módulo SaleReturn (filtro com CONVERT_TZ) ──
         $saleReturnsQuery = SaleReturn::where('company_id', $companyId);
         $this->applyReturnDateFilter($saleReturnsQuery, $from, $to);
         $returnsFromModule  = (float)(clone $saleReturnsQuery)->sum('total');
         $returnsCountModule = (clone $saleReturnsQuery)->count();
 
-        // ── Devoluções manuais via tela de estoque ─────────────────
         $stockRetMovements = $this->stockManualQuery($companyId, 'devolucao', $from, $to)->get();
         $returnsFromStock  = $stockRetMovements->sum(
             fn($m) => abs($m->quantity) * (float) optional($m->product)->price
         );
         $returnsCountStock = $stockRetMovements->count();
 
-        // ── Totais ────────────────────────────────────────────────
         $periodReturnsTotal = $returnsFromModule + $returnsFromStock;
         $periodReturnsCount = $returnsCountModule + $returnsCountStock;
         $periodNetRevenue   = $periodRevenue - $periodReturnsTotal;
 
-        // ── Variação vs período anterior ──────────────────────────────
         $previousRevenue      = 0;
         $revenueChange        = 0;
         $revenueChangePercent = null;
@@ -114,14 +104,12 @@ class DashboardController extends Controller
                 : null;
         }
 
-        // ── Totais gerais ─────────────────────────────────────────────
         $totalProducts   = Product::where('company_id', $companyId)->count();
         $totalCategories = Category::where('company_id', $companyId)->count();
         $totalSales      = $periodSalesCount;
         $totalRevenue    = $periodRevenue;
         $averageTicket   = $periodAverageTicket;
 
-        // ── Vendas e devoluções de hoje (sempre BRT) ──────────────────
         $todayStr = now($this->tz)->toDateString();
 
         $salesToday = (float) Sale::where('company_id', $companyId)
@@ -142,7 +130,6 @@ class DashboardController extends Controller
 
         $salesTodayNet = $salesToday - $returnsTodayModule - $returnsTodayStock;
 
-        // ── Listas ────────────────────────────────────────────────────
         $lowStockProducts = Product::with('category')
             ->where('company_id', $companyId)
             ->whereColumn('quantity', '<=', 'min_quantity')
@@ -174,7 +161,7 @@ class DashboardController extends Controller
             ->limit(5)
             ->get();
 
-        // ── Gráfico ─────────────────────────────────────────────────
+        // ── Gráfico de vendas ─────────────────────────────────────────
         $chartFrom = $from;
         $chartTo   = $to;
         if (!$chartFrom && !$chartTo && !$interval) {
@@ -182,7 +169,6 @@ class DashboardController extends Controller
             $chartTo   = now($this->tz)->toDateString();
         }
 
-        // 1) Vendas do módulo /sales por dia
         $chartQuery       = $this->filteredSalesQuery($request, $chartFrom, $chartTo);
         $salesByDayModule = $chartQuery
             ->selectRaw('DATE(sale_date) as day, SUM(total) as total')
@@ -191,13 +177,11 @@ class DashboardController extends Controller
             ->pluck('total', 'day')
             ->map(fn($v) => (float) $v);
 
-        // 2) Vendas manuais de estoque por dia
         $salesByDayStock = $this->stockManualQuery($companyId, 'venda', $chartFrom, $chartTo)
             ->get()
             ->groupBy(fn($m) => $m->created_at->timezone($this->tz)->toDateString())
             ->map(fn($g) => $g->sum(fn($m) => abs($m->quantity) * (float) optional($m->product)->price));
 
-        // 3) Merge vendas — bruto total por dia
         $allSaleDays = collect($salesByDayModule->keys())
             ->merge($salesByDayStock->keys())
             ->unique();
@@ -205,7 +189,6 @@ class DashboardController extends Controller
             fn($d) => [$d => round((float)($salesByDayModule[$d] ?? 0) + (float)($salesByDayStock[$d] ?? 0), 2)]
         );
 
-        // 4) Devoluções por dia — módulo SaleReturn (CONVERT_TZ no GROUP BY)
         $convertTzExpr      = "DATE(CONVERT_TZ(created_at, '+00:00', '{$this->tzOffset}'))";
         $returnsChartBase   = SaleReturn::where('company_id', $companyId);
         $this->applyReturnDateFilter($returnsChartBase, $chartFrom, $chartTo);
@@ -215,13 +198,11 @@ class DashboardController extends Controller
             ->pluck('total', 'day')
             ->map(fn($v) => (float) $v);
 
-        // 5) Devoluções manuais de estoque por dia
         $returnsByDayStock = $this->stockManualQuery($companyId, 'devolucao', $chartFrom, $chartTo)
             ->get()
             ->groupBy(fn($m) => $m->created_at->timezone($this->tz)->toDateString())
             ->map(fn($g) => $g->sum(fn($m) => abs($m->quantity) * (float) optional($m->product)->price));
 
-        // 6) Merge devoluções
         $allReturnDays = collect($returnsByDayModule->keys())
             ->merge($returnsByDayStock->keys())
             ->unique();
@@ -229,7 +210,6 @@ class DashboardController extends Controller
             fn($d) => [$d => round((float)($returnsByDayModule[$d] ?? 0) + (float)($returnsByDayStock[$d] ?? 0), 2)]
         );
 
-        // 7) Dados finais do gráfico
         $allDays          = $salesByDay->keys()->merge($returnsByDay->keys())->unique()->sort()->values();
         $chartLabels      = $allDays->map(fn($d) => date('d/m', strtotime($d)));
         $chartData        = $allDays->map(fn($d) => (float)($salesByDay[$d] ?? 0));
@@ -237,6 +217,71 @@ class DashboardController extends Controller
         $chartNetData     = $allDays->map(
             fn($d) => round((float)($salesByDay[$d] ?? 0) - (float)($returnsByDay[$d] ?? 0), 2)
         );
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // MÓDULO 3.5 — Painel Financeiro
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        $today   = now($this->tz)->startOfDay();
+        $in7days = now($this->tz)->addDays(7)->endOfDay();
+
+        // KPIs Contas a Receber
+        $finReceivablePending = (float) Receivable::where('company_id', $companyId)
+            ->whereIn('status', ['pendente', 'vencida'])
+            ->sum('amount');
+        $finReceivableOverdue = (float) Receivable::where('company_id', $companyId)
+            ->where('status', 'vencida')
+            ->sum('amount');
+
+        // KPIs Contas a Pagar
+        $finPayablePending = (float) Payable::where('company_id', $companyId)
+            ->whereIn('status', ['pendente', 'vencida'])
+            ->sum('amount');
+        $finPayableOverdue = (float) Payable::where('company_id', $companyId)
+            ->where('status', 'vencida')
+            ->sum('amount');
+
+        // Saldo previsto = total a receber - total a pagar (pendentes/vencidas)
+        $finCashBalance = $finReceivablePending - $finPayablePending;
+
+        // Vencimentos próximos 7 dias
+        $upcomingPayables = Payable::where('company_id', $companyId)
+            ->whereIn('status', ['pendente', 'vencida'])
+            ->whereBetween('due_date', [$today, $in7days])
+            ->orderBy('due_date')
+            ->limit(6)
+            ->get();
+
+        $upcomingReceivables = Receivable::where('company_id', $companyId)
+            ->whereIn('status', ['pendente', 'vencida'])
+            ->whereBetween('due_date', [$today, $in7days])
+            ->orderBy('due_date')
+            ->limit(6)
+            ->get();
+
+        // Gráfico de fluxo de caixa (30 dias — recebíveis vs pagáveis por vencimento)
+        $cfStart = now($this->tz)->startOfMonth()->toDateString();
+        $cfEnd   = now($this->tz)->endOfMonth()->toDateString();
+
+        $cfReceivables = Receivable::where('company_id', $companyId)
+            ->whereIn('status', ['pendente', 'vencida', 'recebida'])
+            ->whereBetween('due_date', [$cfStart, $cfEnd])
+            ->selectRaw('DATE(due_date) as day, SUM(amount) as total')
+            ->groupBy(DB::raw('DATE(due_date)'))
+            ->pluck('total', 'day')
+            ->map(fn($v) => (float) $v);
+
+        $cfPayables = Payable::where('company_id', $companyId)
+            ->whereIn('status', ['pendente', 'vencida', 'paga'])
+            ->whereBetween('due_date', [$cfStart, $cfEnd])
+            ->selectRaw('DATE(due_date) as day, SUM(amount) as total')
+            ->groupBy(DB::raw('DATE(due_date)'))
+            ->pluck('total', 'day')
+            ->map(fn($v) => (float) $v);
+
+        $cfAllDays   = collect($cfReceivables->keys())->merge($cfPayables->keys())->unique()->sort()->values();
+        $cfLabels    = $cfAllDays->map(fn($d) => date('d/m', strtotime($d)));
+        $cfDataRec   = $cfAllDays->map(fn($d) => (float)($cfReceivables[$d] ?? 0));
+        $cfDataPay   = $cfAllDays->map(fn($d) => (float)($cfPayables[$d] ?? 0));
 
         return view('dashboard', compact(
             'totalProducts', 'totalCategories', 'totalSales', 'totalRevenue',
@@ -249,11 +294,15 @@ class DashboardController extends Controller
             'periodMaxSale', 'periodMinSale',
             'previousRevenue', 'revenueChange', 'revenueChangePercent',
             'periodReturnsTotal', 'periodReturnsCount', 'periodNetRevenue',
-            'latestReturns'
+            'latestReturns',
+            // 3.5 financeiro
+            'finReceivablePending', 'finReceivableOverdue',
+            'finPayablePending', 'finPayableOverdue', 'finCashBalance',
+            'upcomingPayables', 'upcomingReceivables',
+            'cfLabels', 'cfDataRec', 'cfDataPay'
         ));
     }
 
-    // ── Helper: movimentos manuais com tz correto ─────────────────────
     private function stockManualQuery(int $companyId, string $reason, ?string $from, ?string $to)
     {
         $q = StockMovement::with('product')
