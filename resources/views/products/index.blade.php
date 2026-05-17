@@ -20,7 +20,6 @@
     $company = auth()->user()->company;
     $limits  = $company ? $company->limits() : ['products' => 50];
 @endphp
-
 <div class="alert d-flex align-items-center gap-3 mb-4"
      style="background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.2);color:#93c5fd;border-radius:.6rem;">
     <i class="bi bi-box-seam fs-5"></i>
@@ -37,7 +36,6 @@
 
 <div class="card dashboard-card card-dark-bg shadow-sm border-0">
     <div class="card-header card-header-dark border-bottom">
-
         <div class="row g-3 mb-4">
             <div class="col-12 col-md-4">
                 <div class="card dashboard-card text-white border-0 shadow-sm"
@@ -48,7 +46,6 @@
                     </div>
                 </div>
             </div>
-
             <div class="col-12 col-md-4">
                 <div class="card dashboard-card text-white border-0 shadow-sm"
                      style="background: linear-gradient(135deg, #0ea5e9, #38bdf8);">
@@ -58,7 +55,6 @@
                     </div>
                 </div>
             </div>
-
             <div class="col-12 col-md-4">
                 <div class="card dashboard-card text-white border-0 shadow-sm"
                      style="background: linear-gradient(135deg, #dc2626, #ef4444);">
@@ -75,7 +71,6 @@
                 <input type="text" name="search" class="form-control"
                        placeholder="Buscar por nome..." value="{{ request('search') }}">
             </div>
-
             <div class="col-12 col-md-4">
                 <select name="category" class="form-select">
                     <option value="">Todas as categorias</option>
@@ -86,7 +81,6 @@
                     @endforeach
                 </select>
             </div>
-
             <div class="col-12 col-md-3 d-flex gap-2">
                 <button type="submit" class="btn btn-primary flex-grow-1">Filtrar</button>
                 <a href="{{ route('products.index') }}" class="btn btn-outline-light flex-grow-1">Limpar</a>
@@ -99,8 +93,8 @@
             <table class="table table-dark table-hover mb-0 align-middle"
                    style="background: rgba(15,23,42,.88);">
                 <thead>
-                    <tr style="font-size:.7rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
-                               color:rgba(148,163,184,.85); border-bottom:1px solid rgba(148,163,184,.15);">
+                    <tr style="font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+                                color:rgba(148,163,184,.85);border-bottom:1px solid rgba(148,163,184,.15);">
                         <th class="ps-4 py-3">Produto</th>
                         <th class="py-3">SKU</th>
                         <th class="py-3">Categoria</th>
@@ -122,16 +116,12 @@
                                     </div>
                                 @endif
                             </td>
-
-                            <td class="py-3"
-                                style="color:#94a3b8;font-size:.875rem;font-family:monospace;">
+                            <td class="py-3" style="color:#94a3b8;font-size:.875rem;font-family:monospace;">
                                 {{ $product->sku }}
                             </td>
-
                             <td class="py-3" style="color:#94a3b8;font-size:.875rem;">
                                 {{ optional($product->category)->name ?? '—' }}
                             </td>
-
                             <td class="py-3 fw-semibold text-white">
                                 R$ {{ number_format($product->price, 2, ',', '.') }}
                                 @if($product->cost > 0)
@@ -140,7 +130,6 @@
                                     </div>
                                 @endif
                             </td>
-
                             <td class="py-3">
                                 @if($product->isLowStock())
                                     <span style="display:inline-flex;align-items:center;gap:.3rem;font-size:.72rem;
@@ -155,12 +144,10 @@
                                         {{ $product->quantity }} {{ $product->unit }}
                                     </span>
                                 @endif
-
                                 <div class="text-soft" style="font-size:.7rem;">
                                     Mín: {{ $product->min_quantity }}
                                 </div>
                             </td>
-
                             <td class="py-3">
                                 @if($product->active)
                                     <span style="display:inline-flex;align-items:center;gap:.3rem;font-size:.72rem;
@@ -180,21 +167,22 @@
                                     </span>
                                 @endif
                             </td>
-
                             <td class="py-3 text-end pe-4">
-                                <div class="d-flex justify-content-end gap-2 flex-wrap">
-                                    <a href="{{ route('products.show', $product) }}" class="btn btn-sm btn-outline-light">
-                                        Ver
+                                <div class="d-flex justify-content-end gap-2">
+                                    <a href="{{ route('products.show', $product) }}"
+                                       class="btn btn-sm btn-outline-light" title="Ver detalhes">
+                                        <i class="bi bi-eye"></i>
                                     </a>
-                                    <a href="{{ route('products.edit', $product) }}" class="btn btn-sm btn-outline-primary">
-                                        Editar
+                                    <a href="{{ route('products.edit', $product) }}"
+                                       class="btn btn-sm btn-outline-primary" title="Editar">
+                                        <i class="bi bi-pencil"></i>
                                     </a>
                                     <form action="{{ route('products.destroy', $product) }}" method="POST"
-                                          onsubmit="return confirm('Tem certeza que deseja excluir este produto?')">
+                                          onsubmit="return confirm('Excluir o produto {{ addslashes($product->name) }}?')">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="btn btn-sm btn-outline-danger">
-                                            Excluir
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Excluir">
+                                            <i class="bi bi-trash"></i>
                                         </button>
                                     </form>
                                 </div>
@@ -202,21 +190,23 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="text-center py-4 text-soft">
+                            <td colspan="7" class="text-center text-soft py-5">
+                                <i class="bi bi-box-seam fs-2 d-block mb-2 opacity-25"></i>
                                 Nenhum produto encontrado.
+                                <div class="mt-2">
+                                    <a href="{{ route('products.create') }}" class="btn btn-sm btn-primary">
+                                        Cadastrar primeiro produto
+                                    </a>
+                                </div>
                             </td>
                         </tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
-    </div>
-
-    @if(method_exists($products, 'links'))
-        <div class="card-footer border-top-0 pt-3 pb-3 px-4"
-             style="background: rgba(15,23,42,.92);">
-            {{ $products->withQueryString()->links() }}
+        <div class="p-3">
+            {{ $products->withQueryString()->links('pagination::bootstrap-5') }}
         </div>
-    @endif
+    </div>
 </div>
 @endsection

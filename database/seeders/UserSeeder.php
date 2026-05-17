@@ -11,7 +11,6 @@ class UserSeeder extends Seeder
 {
     public function run(): void
     {
-        // ── Empresa de demonstração ───────────────────────────────────────────
         $company = Company::firstOrCreate(
             ['slug' => 'empresa-demo'],
             [
@@ -22,7 +21,6 @@ class UserSeeder extends Seeder
             ]
         );
 
-        // ── Administrador ─────────────────────────────────────────────────────
         User::firstOrCreate(
             ['email' => 'admin@estoque.com'],
             [
@@ -34,7 +32,6 @@ class UserSeeder extends Seeder
             ]
         );
 
-        // ── Gerente ───────────────────────────────────────────────────────────
         User::firstOrCreate(
             ['email' => 'gerente@estoque.com'],
             [
@@ -46,7 +43,6 @@ class UserSeeder extends Seeder
             ]
         );
 
-        // ── Vendedor ──────────────────────────────────────────────────────────
         User::firstOrCreate(
             ['email' => 'vendedor@estoque.com'],
             [
@@ -58,9 +54,9 @@ class UserSeeder extends Seeder
             ]
         );
 
-        $this->command->info('✅ Usuários criados:');
-        $this->command->line('   admin@estoque.com    → Admin@123    (Administrador)');
-        $this->command->line('   gerente@estoque.com  → Gerente@123  (Gerente)');
-        $this->command->line('   vendedor@estoque.com → Vendedor@123 (Vendedor)');
+        $this->command->info('Usuários criados:');
+        $this->command->line('   admin@estoque.com    → Admin@123');
+        $this->command->line('   gerente@estoque.com  → Gerente@123');
+        $this->command->line('   vendedor@estoque.com → Vendedor@123');
     }
 }

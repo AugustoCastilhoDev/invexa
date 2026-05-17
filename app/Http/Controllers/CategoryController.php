@@ -8,19 +8,11 @@ use Illuminate\Validation\Rule;
 
 class CategoryController extends Controller
 {
-    public function index(Request $request)
+    public function index()
     {
-        $companyId = auth()->user()->company_id;
-
-        $query = Category::where('company_id', $companyId)->latest();
-
-        if ($request->filled('search')) {
-            $query->where('name', 'like', '%' . $request->search . '%');
-        }
-
-        $categories         = $query->paginate(10)->withQueryString();
-        $activeCategories   = Category::where('company_id', $companyId)->where('active', true)->count();
-        $inactiveCategories = Category::where('company_id', $companyId)->where('active', false)->count();
+        $categories         = Category::latest()->paginate(10);
+        $activeCategories   = Category::where('active', true)->count();
+        $inactiveCategories = Category::where('active', false)->count();
 
         return view('categories.index', compact(
             'categories',
@@ -44,13 +36,13 @@ class CategoryController extends Controller
                 Rule::unique('categories', 'name')->where('company_id', $companyId),
             ],
             'description' => ['nullable', 'string'],
+            'active'      => ['nullable', 'boolean'],
         ], [
             'name.required' => 'O nome da categoria é obrigatório.',
             'name.unique'   => 'Já existe uma categoria com este nome.',
         ]);
 
-        $data['active']     = $request->has('active');
-        $data['company_id'] = $companyId;
+        $data['active'] = $request->has('active');
 
         Category::create($data);
 
@@ -80,13 +72,13 @@ class CategoryController extends Controller
                     ->ignore($category->id),
             ],
             'description' => ['nullable', 'string'],
+            'active'      => ['nullable', 'boolean'],
         ], [
             'name.required' => 'O nome da categoria é obrigatório.',
             'name.unique'   => 'Já existe uma categoria com este nome.',
         ]);
 
-        $data['active']     = $request->has('active');
-        $data['company_id'] = $companyId;
+        $data['active'] = $request->has('active');
 
         $category->update($data);
 
