@@ -11,10 +11,11 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SaleController;
 use App\Http\Controllers\SaleReturnController;
 use App\Http\Controllers\StockMovementController;
+use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
-// ── Autenticação (pública) ────────────────────────────────────────────
+// ── Autenticação (pública) ──────────────────────────────────────────
 Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
 Route::post('/login', [AuthenticatedSessionController::class, 'store'])->name('login.post');
 Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
@@ -22,7 +23,7 @@ Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name
 Route::get('/register', [RegisteredUserController::class, 'create'])->name('register');
 Route::post('/register', [RegisteredUserController::class, 'store'])->name('register.store');
 
-// ── Rotas protegidas ────────────────────────────────────────────────
+// ── Rotas protegidas ────────────────────────────────────
 Route::middleware(['auth', 'company'])->group(function () {
 
     // Dashboard
@@ -66,6 +67,8 @@ Route::middleware(['auth', 'company'])->group(function () {
     Route::get('/stock',        [StockMovementController::class, 'index'])->name('stock.index');
     Route::get('/stock/create', [StockMovementController::class, 'create'])->name('stock.create');
     Route::post('/stock',       [StockMovementController::class, 'store'])->name('stock.store');
+    Route::delete('/stock/{stock}', [StockMovementController::class, 'destroy'])->name('stock.destroy');
+    Route::get('/stock/product/{product}', [StockMovementController::class, 'product'])->name('stock.product');
 
     // Clientes — search ANTES do resource para não conflitar com {customer}
     Route::get('/customers/search', [CustomerController::class, 'search'])->name('customers.search');
@@ -75,6 +78,17 @@ Route::middleware(['auth', 'company'])->group(function () {
     Route::get('/reports',            [ReportController::class, 'index'])->name('reports.index');
     Route::get('/reports/export/csv', [ReportController::class, 'export'])->name('reports.export.csv');
     Route::get('/reports/export/pdf', [ReportController::class, 'topProductsPdf'])->name('reports.export.pdf');
+
+    // Fornecedores — todos leem, admin/gerente criam/editam/excluem
+    Route::get('/suppliers', [SupplierController::class, 'index'])->name('suppliers.index');
+    Route::get('/suppliers/{supplier}', [SupplierController::class, 'show'])->name('suppliers.show');
+    Route::middleware('role:admin,gerente')->group(function () {
+        Route::get('/suppliers/create',          [SupplierController::class, 'create'])->name('suppliers.create');
+        Route::post('/suppliers',                [SupplierController::class, 'store'])->name('suppliers.store');
+        Route::get('/suppliers/{supplier}/edit', [SupplierController::class, 'edit'])->name('suppliers.edit');
+        Route::put('/suppliers/{supplier}',      [SupplierController::class, 'update'])->name('suppliers.update');
+        Route::delete('/suppliers/{supplier}',   [SupplierController::class, 'destroy'])->name('suppliers.destroy');
+    });
 
     // Produtos e Categorias — somente admin e gerente
     Route::middleware('role:admin,gerente')->group(function () {

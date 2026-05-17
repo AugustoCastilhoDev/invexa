@@ -144,6 +144,14 @@
                             </a>
                         </li>
 
+                        {{-- Fornecedores --}}
+                        <li class="nav-item">
+                            <a class="nav-link {{ request()->routeIs('suppliers.*') ? 'active' : '' }}"
+                               href="{{ route('suppliers.index') }}">
+                                <i class="bi bi-truck me-1 opacity-75"></i>Fornecedores
+                            </a>
+                        </li>
+
                         {{-- Relatórios --}}
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle {{ request()->routeIs('reports.*') ? 'active' : '' }}"
