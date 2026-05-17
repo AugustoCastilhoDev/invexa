@@ -38,12 +38,12 @@ class SaleReturnController extends Controller
     public function create(Request $request)
     {
         $companyId = auth()->user()->company_id;
-        $saleId    = $request->query('sale_id');
+        $saleId    = $request->query('sale_id', old('sale_id'));
 
         $sale = $saleId
             ? Sale::with('items.product')
                 ->where('company_id', $companyId)
-                ->findOrFail($saleId)
+                ->find($saleId)
             : null;
 
         $sales = Sale::where('company_id', $companyId)
@@ -70,7 +70,6 @@ class SaleReturnController extends Controller
             'items.*.selected'     => ['nullable'],
         ]);
 
-        // Filtra apenas itens marcados
         $selectedItems = collect($validated['items'])
             ->filter(fn($i) => !empty($i['selected']));
 
@@ -100,7 +99,6 @@ class SaleReturnController extends Controller
                         'subtotal'       => $item['quantity'] * $item['price'],
                     ]);
 
-                    // Recarrega o produto com fresh() para garantir quantity_before correto
                     $product = Product::lockForUpdate()->findOrFail($item['product_id']);
                     $product = $product->fresh();
 
@@ -134,24 +132,42 @@ class SaleReturnController extends Controller
     }
 
     /** Detalhe de uma devolução **/
-    public function show(SaleReturn $return)
-    {
-        abort_if($return->company_id !== auth()->user()->company_id, 403);
-        $return->load(['sale.items.product', 'items.product', 'user']);
-        return view('returns.show', compact('return'));
-    }
-
-    /** Busca os itens de uma venda via AJAX (rota: returns.items) **/
-    public function getItems(Sale $saleReturn)
+    public function show(SaleReturn $saleReturn)
     {
         abort_if($saleReturn->company_id !== auth()->user()->company_id, 403);
-        $saleReturn->load('items.product');
-        return response()->json($saleReturn->items->map(fn($i) => [
-            'product_id'   => $i->product_id,
-            'product_name' => $i->product->name ?? 'Produto removido',
-            'quantity'     => $i->quantity,
-            'price'        => $i->price,
-            'subtotal'     => $i->subtotal,
-        ]));
+        $saleReturn->load(['sale.items.product', 'items.product', 'user']);
+        return view('returns.show', compact('saleReturn'));
+    }
+
+    /**
+     * Busca os itens de uma venda via AJAX (rota: returns.items)
+     * Retorna qtd já devolvida para controle de máximo no frontend.
+     */
+    public function getSaleItems(Sale $sale)
+    {
+        abort_if($sale->company_id !== auth()->user()->company_id, 403);
+        $sale->load('items.product');
+
+        // Soma devoluções anteriores por produto nesta venda
+        $alreadyReturned = SaleReturnItem::whereHas('saleReturn', fn($q) => $q->where('sale_id', $sale->id))
+            ->selectRaw('product_id, SUM(quantity) as total_returned')
+            ->groupBy('product_id')
+            ->pluck('total_returned', 'product_id')
+            ->map(fn($v) => (int) $v);
+
+        $items = $sale->items
+            ->filter(fn($i) => $i->product !== null)
+            ->map(fn($i) => [
+                'product_id'       => $i->product_id,
+                'product_name'     => $i->product->name,
+                'quantity'         => $i->quantity,
+                'already_returned' => $alreadyReturned->get($i->product_id, 0),
+                'available'        => max(0, $i->quantity - $alreadyReturned->get($i->product_id, 0)),
+                'price'            => (float) $i->price,
+                'subtotal'         => (float) $i->subtotal,
+            ])
+            ->values();
+
+        return response()->json($items);
     }
 }
