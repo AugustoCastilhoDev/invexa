@@ -268,7 +268,11 @@ body {
     <div class="col-12 col-xl-7">
         <div class="card dashboard-card card-dark-bg shadow-sm h-100">
             <div class="card-header card-header-dark border-bottom">
-                <h5 class="mb-1 text-white"><i class="bi bi-graph-up me-2 text-info"></i>Fluxo de Caixa — {{ now()->format('M/Y') }}</h5>
+                @php
+                    $meses = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+                    $mesAtual = ucfirst($meses[now()->month - 1]) . '/' . now()->year;
+                @endphp
+                <h5 class="mb-1 text-white"><i class="bi bi-graph-up me-2 text-info"></i>Fluxo de Caixa — {{ $mesAtual }}</h5>
                 <p class="text-soft mb-0" style="font-size:.8rem;">Entradas (recebíveis) vs Saídas (pagáveis) por data de vencimento no mês.</p>
             </div>
             <div class="card-body">
