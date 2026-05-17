@@ -105,9 +105,11 @@ class ProductController extends Controller
 
     public function edit(Product $product)
     {
-        $companyId  = auth()->user()->company_id;
-        $categories = Category::where('company_id', $companyId)->where('active', true)->orderBy('name')->get();
-        return view('products.edit', compact('product', 'categories'));
+        $companyId     = auth()->user()->company_id;
+        $categories    = Category::where('company_id', $companyId)->where('active', true)->orderBy('name')->get();
+        $totalProducts = Product::where('company_id', $companyId)->count();
+
+        return view('products.edit', compact('product', 'categories', 'totalProducts'));
     }
 
     public function update(Request $request, Product $product)
