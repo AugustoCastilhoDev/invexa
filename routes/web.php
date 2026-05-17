@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\Route;
 // ── Autenticação (pública) ────────────────────────────────────────────
 Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
 Route::post('/login', [AuthenticatedSessionController::class, 'store'])->name('login.post');
-Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('auth.logout');
+Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 
 Route::get('/register', [RegisteredUserController::class, 'create'])->name('register');
 Route::post('/register', [RegisteredUserController::class, 'store'])->name('register.store');
