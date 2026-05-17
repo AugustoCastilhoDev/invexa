@@ -219,12 +219,12 @@ class DashboardController extends Controller
         );
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // MÓDULO 3.5 — Painel Financeiro (Bill = contas a pagar)
+        // MÓDULO 3.5 — Painel Financeiro
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         $today   = now($this->tz)->startOfDay();
         $in7days = now($this->tz)->addDays(7)->endOfDay();
 
-        // KPIs Contas a Receber
+        // KPIs — sempre totais gerais (sem filtro de período)
         $finReceivablePending = (float) Receivable::where('company_id', $companyId)
             ->whereIn('status', ['pendente', 'vencida'])
             ->sum('amount');
@@ -232,7 +232,6 @@ class DashboardController extends Controller
             ->where('status', 'vencida')
             ->sum('amount');
 
-        // KPIs Contas a Pagar (Bill)
         $finPayablePending = (float) Bill::where('company_id', $companyId)
             ->whereIn('status', ['pendente', 'vencida'])
             ->sum('amount');
@@ -240,7 +239,6 @@ class DashboardController extends Controller
             ->where('status', 'vencida')
             ->sum('amount');
 
-        // Saldo previsto = total a receber - total a pagar (pendentes/vencidas)
         $finCashBalance = $finReceivablePending - $finPayablePending;
 
         // Vencimentos próximos 7 dias
@@ -258,13 +256,25 @@ class DashboardController extends Controller
             ->limit(6)
             ->get();
 
-        // Gráfico de fluxo de caixa (mês atual por vencimento)
-        $cfStart = now($this->tz)->startOfMonth()->toDateString();
-        $cfEnd   = now($this->tz)->endOfMonth()->toDateString();
+        // ── MELHORIA 1: Fluxo de caixa sincronizado com o período ativo ──
+        // Usa o mesmo intervalo do gráfico de faturamento.
+        // Fallback: mês corrente completo quando não há filtro.
+        $cfFrom = $chartFrom ?? now($this->tz)->startOfMonth()->toDateString();
+        $cfTo   = $chartTo   ?? now($this->tz)->endOfMonth()->toDateString();
 
-        $cfReceivables = Receivable::where('company_id', $companyId)
-            ->whereIn('status', ['pendente', 'vencida', 'recebida'])
-            ->whereBetween('due_date', [$cfStart, $cfEnd])
+        // MELHORIA 2: Receivables separados em pendente/vencida vs recebida
+        // — mesmos status dos KPIs para pendentes, série separada para recebidas
+        $cfRecPendente = Receivable::where('company_id', $companyId)
+            ->whereIn('status', ['pendente', 'vencida'])
+            ->whereBetween('due_date', [$cfFrom, $cfTo])
+            ->selectRaw('DATE(due_date) as day, SUM(amount) as total')
+            ->groupBy(DB::raw('DATE(due_date)'))
+            ->pluck('total', 'day')
+            ->map(fn($v) => (float) $v);
+
+        $cfRecRecebida = Receivable::where('company_id', $companyId)
+            ->where('status', 'recebida')
+            ->whereBetween('due_date', [$cfFrom, $cfTo])
             ->selectRaw('DATE(due_date) as day, SUM(amount) as total')
             ->groupBy(DB::raw('DATE(due_date)'))
             ->pluck('total', 'day')
@@ -272,16 +282,48 @@ class DashboardController extends Controller
 
         $cfPayables = Bill::where('company_id', $companyId)
             ->whereIn('status', ['pendente', 'vencida', 'paga'])
-            ->whereBetween('due_date', [$cfStart, $cfEnd])
+            ->whereBetween('due_date', [$cfFrom, $cfTo])
             ->selectRaw('DATE(due_date) as day, SUM(amount) as total')
             ->groupBy(DB::raw('DATE(due_date)'))
             ->pluck('total', 'day')
             ->map(fn($v) => (float) $v);
 
-        $cfAllDays = collect($cfReceivables->keys())->merge($cfPayables->keys())->unique()->sort()->values();
-        $cfLabels  = $cfAllDays->map(fn($d) => date('d/m', strtotime($d)));
-        $cfDataRec = $cfAllDays->map(fn($d) => (float)($cfReceivables[$d] ?? 0));
-        $cfDataPay = $cfAllDays->map(fn($d) => (float)($cfPayables[$d] ?? 0));
+        $cfAllDays = collect($cfRecPendente->keys())
+            ->merge($cfRecRecebida->keys())
+            ->merge($cfPayables->keys())
+            ->unique()->sort()->values();
+
+        $cfLabels       = $cfAllDays->map(fn($d) => date('d/m', strtotime($d)));
+        $cfDataRecPend  = $cfAllDays->map(fn($d) => (float)($cfRecPendente[$d] ?? 0));
+        $cfDataRecReceb = $cfAllDays->map(fn($d) => (float)($cfRecRecebida[$d] ?? 0));
+        $cfDataPay      = $cfAllDays->map(fn($d) => (float)($cfPayables[$d] ?? 0));
+
+        // MELHORIA 3: Saldo acumulado diário (linha sobreposta)
+        // saldo[dia] = entrada_pendente[dia] + entrada_recebida[dia] - saida[dia]
+        // acumulado = soma progressiva dos saldos diários
+        $cfDataBalance = collect();
+        $runningBalance = 0.0;
+        foreach ($cfAllDays as $d) {
+            $runningBalance += (float)($cfRecPendente[$d] ?? 0)
+                             + (float)($cfRecRecebida[$d] ?? 0)
+                             - (float)($cfPayables[$d] ?? 0);
+            $cfDataBalance->push(round($runningBalance, 2));
+        }
+
+        // Rótulo de período para o título do gráfico na view
+        $mesesPt = ['janeiro','fevereiro','março','abril','maio','junho',
+                    'julho','agosto','setembro','outubro','novembro','dezembro'];
+        if ($interval === 'today') {
+            $cfPeriodLabel = 'Hoje';
+        } elseif ($interval === '7d') {
+            $cfPeriodLabel = 'Últimos 7 dias';
+        } elseif ($interval === 'month') {
+            $cfPeriodLabel = 'Mês de ' . ucfirst($mesesPt[now($this->tz)->month - 1]);
+        } elseif ($cfFrom && $cfTo && $cfFrom !== $cfTo) {
+            $cfPeriodLabel = Carbon::parse($cfFrom)->format('d/m') . ' – ' . Carbon::parse($cfTo)->format('d/m/Y');
+        } else {
+            $cfPeriodLabel = ucfirst($mesesPt[now($this->tz)->month - 1]) . '/' . now($this->tz)->year;
+        }
 
         return view('dashboard', compact(
             'totalProducts', 'totalCategories', 'totalSales', 'totalRevenue',
@@ -299,7 +341,8 @@ class DashboardController extends Controller
             'finReceivablePending', 'finReceivableOverdue',
             'finPayablePending', 'finPayableOverdue', 'finCashBalance',
             'upcomingPayables', 'upcomingReceivables',
-            'cfLabels', 'cfDataRec', 'cfDataPay'
+            'cfLabels', 'cfDataRecPend', 'cfDataRecReceb', 'cfDataPay', 'cfDataBalance',
+            'cfPeriodLabel'
         ));
     }
 
