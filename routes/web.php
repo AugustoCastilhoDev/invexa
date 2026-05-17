@@ -87,16 +87,20 @@ Route::middleware(['auth', 'company'])->group(function () {
     });
     Route::get('/suppliers/{supplier}', [SupplierController::class, 'show'])->name('suppliers.show');
 
-    // Ordens de Compra — todos leem, admin/gerente criam e gerenciam
-    Route::get('/purchase-orders', [PurchaseOrderController::class, 'index'])->name('purchase-orders.index');
+    // Ordens de Compra
+    // ATENÇÃO: rotas estáticas (sem wildcard) DEVEM vir antes de {purchaseOrder}
+    Route::get('/purchase-orders',        [PurchaseOrderController::class, 'index'])->name('purchase-orders.index');
+    Route::middleware('role:admin,gerente')->group(function () {
+        Route::get('/purchase-orders/create',  [PurchaseOrderController::class, 'create'])->name('purchase-orders.create');
+        Route::post('/purchase-orders',        [PurchaseOrderController::class, 'store'])->name('purchase-orders.store');
+    });
+    // Rotas com wildcard {purchaseOrder} — após as estáticas
     Route::get('/purchase-orders/{purchaseOrder}', [PurchaseOrderController::class, 'show'])->name('purchase-orders.show');
     Route::middleware('role:admin,gerente')->group(function () {
-        Route::get('/purchase-orders/create',                          [PurchaseOrderController::class, 'create'])->name('purchase-orders.create');
-        Route::post('/purchase-orders',                                [PurchaseOrderController::class, 'store'])->name('purchase-orders.store');
-        Route::get('/purchase-orders/{purchaseOrder}/receive',         [PurchaseOrderController::class, 'receiveForm'])->name('purchase-orders.receive-form');
-        Route::post('/purchase-orders/{purchaseOrder}/receive',        [PurchaseOrderController::class, 'receive'])->name('purchase-orders.receive');
-        Route::patch('/purchase-orders/{purchaseOrder}/send',          [PurchaseOrderController::class, 'send'])->name('purchase-orders.send');
-        Route::patch('/purchase-orders/{purchaseOrder}/cancel',        [PurchaseOrderController::class, 'cancel'])->name('purchase-orders.cancel');
+        Route::get('/purchase-orders/{purchaseOrder}/receive',  [PurchaseOrderController::class, 'receiveForm'])->name('purchase-orders.receive-form');
+        Route::post('/purchase-orders/{purchaseOrder}/receive', [PurchaseOrderController::class, 'receive'])->name('purchase-orders.receive');
+        Route::patch('/purchase-orders/{purchaseOrder}/send',   [PurchaseOrderController::class, 'send'])->name('purchase-orders.send');
+        Route::patch('/purchase-orders/{purchaseOrder}/cancel', [PurchaseOrderController::class, 'cancel'])->name('purchase-orders.cancel');
     });
 
     // Produtos e Categorias — somente admin e gerente
