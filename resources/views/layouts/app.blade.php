@@ -112,7 +112,7 @@
         <div class="collapse navbar-collapse" id="navbarMain">
             <ul class="navbar-nav ms-auto mb-2 mb-lg-0 align-items-lg-center gap-1">
 
-                {{-- 1. Dashboard — sempre visível --}}
+                {{-- 1. Dashboard --}}
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}"
                        href="{{ route('dashboard') }}">
@@ -120,7 +120,7 @@
                     </a>
                 </li>
 
-                {{-- 2. Vendas — operação mais frequente, visível a todos --}}
+                {{-- 2. Vendas --}}
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('sales.*') ? 'active' : '' }}"
                        href="{{ route('sales.index') }}">
@@ -128,7 +128,7 @@
                     </a>
                 </li>
 
-                {{-- 3. Clientes — ligado a vendas, visível a todos --}}
+                {{-- 3. Clientes --}}
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('customers.*') ? 'active' : '' }}"
                        href="{{ route('customers.index') }}">
@@ -136,7 +136,7 @@
                     </a>
                 </li>
 
-                {{-- 4. Devoluções — fluxo pós-venda, visível a todos --}}
+                {{-- 4. Devoluções --}}
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('returns.*') ? 'active' : '' }}"
                        href="{{ route('returns.index') }}">
@@ -146,7 +146,7 @@
 
                 @if(Auth::check() && Auth::user()->isGerente())
 
-                    {{-- 5. Estoque — dropdown agrupando Movimentações + Produtos + Categorias --}}
+                    {{-- 5. Estoque (dropdown) --}}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle {{ request()->routeIs('stock.*') || request()->routeIs('products.*') || request()->routeIs('categories.*') ? 'active' : '' }}"
                            href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -158,9 +158,7 @@
                             @endif
                         </a>
                         <ul class="dropdown-menu">
-                            <li>
-                                <span class="dropdown-item-text">ESTOQUE</span>
-                            </li>
+                            <li><span class="dropdown-item-text">ESTOQUE</span></li>
                             <li>
                                 <a class="dropdown-item {{ request()->routeIs('stock.*') ? 'active' : '' }}"
                                    href="{{ route('stock.index') }}">
@@ -168,9 +166,7 @@
                                 </a>
                             </li>
                             <li><hr class="dropdown-divider"></li>
-                            <li>
-                                <span class="dropdown-item-text">CADASTROS</span>
-                            </li>
+                            <li><span class="dropdown-item-text">CADASTROS</span></li>
                             <li>
                                 <a class="dropdown-item {{ request()->routeIs('products.*') ? 'active' : '' }}"
                                    href="{{ route('products.index') }}">
@@ -186,7 +182,7 @@
                         </ul>
                     </li>
 
-                    {{-- 6. Compras — Fornecedores + Ordens de Compra --}}
+                    {{-- 6. Compras (dropdown) --}}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle {{ request()->routeIs('suppliers.*') || request()->routeIs('purchase-orders.*') ? 'active' : '' }}"
                            href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -208,15 +204,29 @@
                         </ul>
                     </li>
 
-                    {{-- 7. Financeiro — link direto (item único, sem dropdown) --}}
-                    <li class="nav-item">
-                        <a class="nav-link {{ request()->routeIs('bills.*') ? 'active' : '' }}"
-                           href="{{ route('bills.index') }}">
+                    {{-- 7. Financeiro (dropdown com 2 itens) --}}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle {{ request()->routeIs('bills.*') || request()->routeIs('receivables.*') ? 'active' : '' }}"
+                           href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="bi bi-wallet2 me-1 opacity-75"></i>Financeiro
                         </a>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <a class="dropdown-item {{ request()->routeIs('bills.*') ? 'active' : '' }}"
+                                   href="{{ route('bills.index') }}">
+                                    <i class="bi bi-credit-card-2-front me-2"></i>Contas a Pagar
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item {{ request()->routeIs('receivables.*') ? 'active' : '' }}"
+                                   href="{{ route('receivables.index') }}">
+                                    <i class="bi bi-cash-coin me-2"></i>Contas a Receber
+                                </a>
+                            </li>
+                        </ul>
                     </li>
 
-                    {{-- 8. Relatórios — sempre ao final das funções gerenciais --}}
+                    {{-- 8. Relatórios (dropdown) --}}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle {{ request()->routeIs('reports.*') ? 'active' : '' }}"
                            href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -240,7 +250,7 @@
 
                 @endif
 
-                {{-- 9. Usuários — apenas admin, gestão interna --}}
+                {{-- 9. Usuários (admin only) --}}
                 @if(Auth::check() && Auth::user()->isAdmin())
                     <li class="nav-item">
                         <a class="nav-link {{ request()->routeIs('users.*') ? 'active' : '' }}"

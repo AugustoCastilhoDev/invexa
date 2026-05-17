@@ -9,6 +9,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PurchaseOrderController;
+use App\Http\Controllers\ReceivableController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SaleController;
 use App\Http\Controllers\SaleReturnController;
@@ -45,11 +46,11 @@ Route::middleware(['auth', 'company'])->group(function () {
     Route::get('/sales/{sale}/invoice', [SaleController::class, 'invoice'])->name('sales.invoice');
     Route::get('/sales/{sale}/pdf',     [SaleController::class, 'pdf'])->name('sales.pdf');
     Route::middleware('role:admin,gerente')->group(function () {
-        Route::get('/sales/{sale}/edit',    [SaleController::class, 'edit'])->name('sales.edit');
-        Route::put('/sales/{sale}',         [SaleController::class, 'update'])->name('sales.update');
-        Route::patch('/sales/{sale}/cancel',[SaleController::class, 'cancel'])->name('sales.cancel');
-        Route::delete('/sales/{sale}',      [SaleController::class, 'destroy'])->name('sales.destroy');
-        Route::patch('/sales/{id}/restore', [SaleController::class, 'restore'])->name('sales.restore');
+        Route::get('/sales/{sale}/edit',     [SaleController::class, 'edit'])->name('sales.edit');
+        Route::put('/sales/{sale}',          [SaleController::class, 'update'])->name('sales.update');
+        Route::patch('/sales/{sale}/cancel', [SaleController::class, 'cancel'])->name('sales.cancel');
+        Route::delete('/sales/{sale}',       [SaleController::class, 'destroy'])->name('sales.destroy');
+        Route::patch('/sales/{id}/restore',  [SaleController::class, 'restore'])->name('sales.restore');
     });
     Route::middleware('role:admin')->group(function () {
         Route::delete('/sales/{id}/force', [SaleController::class, 'forceDestroy'])->name('sales.force-destroy');
@@ -74,15 +75,15 @@ Route::middleware(['auth', 'company'])->group(function () {
     Route::resource('customers', CustomerController::class);
 
     // Relatórios
-    Route::get('/reports',                [ReportController::class, 'index'])->name('reports.index');
-    Route::get('/reports/export/csv',     [ReportController::class, 'export'])->name('reports.export.csv');
-    Route::get('/reports/export/pdf',     [ReportController::class, 'topProductsPdf'])->name('reports.export.pdf');
-    Route::get('/reports/purchases',      [ReportController::class, 'purchases'])->name('reports.purchases');
-    Route::get('/reports/purchases/csv',  [ReportController::class, 'purchasesCsv'])->name('reports.purchases.csv');
-    Route::get('/reports/purchases/pdf',  [ReportController::class, 'purchasesPdf'])->name('reports.purchases.pdf');
+    Route::get('/reports',               [ReportController::class, 'index'])->name('reports.index');
+    Route::get('/reports/export/csv',    [ReportController::class, 'export'])->name('reports.export.csv');
+    Route::get('/reports/export/pdf',    [ReportController::class, 'topProductsPdf'])->name('reports.export.pdf');
+    Route::get('/reports/purchases',     [ReportController::class, 'purchases'])->name('reports.purchases');
+    Route::get('/reports/purchases/csv', [ReportController::class, 'purchasesCsv'])->name('reports.purchases.csv');
+    Route::get('/reports/purchases/pdf', [ReportController::class, 'purchasesPdf'])->name('reports.purchases.pdf');
 
     // Fornecedores
-    Route::get('/suppliers',        [SupplierController::class, 'index'])->name('suppliers.index');
+    Route::get('/suppliers', [SupplierController::class, 'index'])->name('suppliers.index');
     Route::middleware('role:admin,gerente')->group(function () {
         Route::get('/suppliers/create',          [SupplierController::class, 'create'])->name('suppliers.create');
         Route::post('/suppliers',                [SupplierController::class, 'store'])->name('suppliers.store');
@@ -92,11 +93,11 @@ Route::middleware(['auth', 'company'])->group(function () {
     });
     Route::get('/suppliers/{supplier}', [SupplierController::class, 'show'])->name('suppliers.show');
 
-    // Ordens de Compra — estáticas ANTES do wildcard
-    Route::get('/purchase-orders',       [PurchaseOrderController::class, 'index'])->name('purchase-orders.index');
+    // Ordens de Compra
+    Route::get('/purchase-orders', [PurchaseOrderController::class, 'index'])->name('purchase-orders.index');
     Route::middleware('role:admin,gerente')->group(function () {
-        Route::get('/purchase-orders/create',  [PurchaseOrderController::class, 'create'])->name('purchase-orders.create');
-        Route::post('/purchase-orders',        [PurchaseOrderController::class, 'store'])->name('purchase-orders.store');
+        Route::get('/purchase-orders/create', [PurchaseOrderController::class, 'create'])->name('purchase-orders.create');
+        Route::post('/purchase-orders',       [PurchaseOrderController::class, 'store'])->name('purchase-orders.store');
     });
     Route::get('/purchase-orders/{purchaseOrder}', [PurchaseOrderController::class, 'show'])->name('purchase-orders.show');
     Route::middleware('role:admin,gerente')->group(function () {
@@ -107,15 +108,26 @@ Route::middleware(['auth', 'company'])->group(function () {
     });
 
     // Contas a Pagar
-    Route::get('/bills',              [BillController::class, 'index'])->name('bills.index');
-    Route::get('/bills/create',       [BillController::class, 'create'])->name('bills.create');
-    Route::post('/bills',             [BillController::class, 'store'])->name('bills.store');
-    Route::get('/bills/{bill}',       [BillController::class, 'show'])->name('bills.show');
-    Route::get('/bills/{bill}/edit',  [BillController::class, 'edit'])->name('bills.edit');
-    Route::put('/bills/{bill}',       [BillController::class, 'update'])->name('bills.update');
-    Route::post('/bills/{bill}/pay',  [BillController::class, 'pay'])->name('bills.pay');
+    Route::get('/bills',                 [BillController::class, 'index'])->name('bills.index');
+    Route::get('/bills/create',          [BillController::class, 'create'])->name('bills.create');
+    Route::post('/bills',                [BillController::class, 'store'])->name('bills.store');
+    Route::get('/bills/{bill}',          [BillController::class, 'show'])->name('bills.show');
+    Route::get('/bills/{bill}/edit',     [BillController::class, 'edit'])->name('bills.edit');
+    Route::put('/bills/{bill}',          [BillController::class, 'update'])->name('bills.update');
+    Route::post('/bills/{bill}/pay',     [BillController::class, 'pay'])->name('bills.pay');
     Route::patch('/bills/{bill}/cancel', [BillController::class, 'cancel'])->name('bills.cancel');
-    Route::delete('/bills/{bill}',    [BillController::class, 'destroy'])->name('bills.destroy');
+    Route::delete('/bills/{bill}',       [BillController::class, 'destroy'])->name('bills.destroy');
+
+    // Contas a Receber
+    Route::get('/receivables',                       [ReceivableController::class, 'index'])->name('receivables.index');
+    Route::get('/receivables/create',                [ReceivableController::class, 'create'])->name('receivables.create');
+    Route::post('/receivables',                      [ReceivableController::class, 'store'])->name('receivables.store');
+    Route::get('/receivables/{receivable}',          [ReceivableController::class, 'show'])->name('receivables.show');
+    Route::get('/receivables/{receivable}/edit',     [ReceivableController::class, 'edit'])->name('receivables.edit');
+    Route::put('/receivables/{receivable}',          [ReceivableController::class, 'update'])->name('receivables.update');
+    Route::post('/receivables/{receivable}/receive', [ReceivableController::class, 'receive'])->name('receivables.receive');
+    Route::patch('/receivables/{receivable}/cancel', [ReceivableController::class, 'cancel'])->name('receivables.cancel');
+    Route::delete('/receivables/{receivable}',       [ReceivableController::class, 'destroy'])->name('receivables.destroy');
 
     // Produtos e Categorias
     Route::middleware('role:admin,gerente')->group(function () {
