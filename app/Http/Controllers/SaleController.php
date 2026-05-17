@@ -6,6 +6,7 @@ use App\Models\Customer;
 use App\Models\Product;
 use App\Models\Sale;
 use App\Models\SaleItem;
+use App\Models\SaleReturnItem;
 use App\Models\StockMovement;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -65,18 +66,17 @@ class SaleController extends Controller
         $companyId = auth()->user()->company_id;
 
         $validated = $request->validate([
-            'customer_id'            => ['nullable', 'exists:customers,id'],
-            'customer_name'          => ['nullable', 'string', 'max:255'],
-            'sale_date'              => ['required', 'date'],
-            'status'                 => ['required', 'in:concluida,pendente,cancelada'],
-            'notes'                  => ['nullable', 'string'],
-            'items'                  => ['required', 'array', 'min:1'],
-            'items.*.product_id'     => ['required', 'exists:products,id'],
-            'items.*.quantity'       => ['required', 'integer', 'min:1'],
-            'items.*.price'          => ['required', 'numeric', 'min:0'],
+            'customer_id'        => ['nullable', 'exists:customers,id'],
+            'customer_name'      => ['nullable', 'string', 'max:255'],
+            'sale_date'          => ['required', 'date'],
+            'status'             => ['required', 'in:concluida,pendente,cancelada'],
+            'notes'              => ['nullable', 'string'],
+            'items'              => ['required', 'array', 'min:1'],
+            'items.*.product_id' => ['required', 'exists:products,id'],
+            'items.*.quantity'   => ['required', 'integer', 'min:1'],
+            'items.*.price'      => ['required', 'numeric', 'min:0'],
         ]);
 
-        // Se um cliente cadastrado foi selecionado, usa o nome dele
         $customerName = $validated['customer_name'] ?? null;
         if (!empty($validated['customer_id'])) {
             $customer     = Customer::find($validated['customer_id']);
@@ -165,15 +165,15 @@ class SaleController extends Controller
         $companyId = auth()->user()->company_id;
 
         $validated = $request->validate([
-            'customer_id'            => ['nullable', 'exists:customers,id'],
-            'customer_name'          => ['nullable', 'string', 'max:255'],
-            'sale_date'              => ['required', 'date'],
-            'status'                 => ['required', 'in:concluida,pendente,cancelada'],
-            'notes'                  => ['nullable', 'string'],
-            'items'                  => ['required', 'array', 'min:1'],
-            'items.*.product_id'     => ['required', 'exists:products,id'],
-            'items.*.quantity'       => ['required', 'integer', 'min:1'],
-            'items.*.price'          => ['required', 'numeric', 'min:0'],
+            'customer_id'        => ['nullable', 'exists:customers,id'],
+            'customer_name'      => ['nullable', 'string', 'max:255'],
+            'sale_date'          => ['required', 'date'],
+            'status'             => ['required', 'in:concluida,pendente,cancelada'],
+            'notes'              => ['nullable', 'string'],
+            'items'              => ['required', 'array', 'min:1'],
+            'items.*.product_id' => ['required', 'exists:products,id'],
+            'items.*.quantity'   => ['required', 'integer', 'min:1'],
+            'items.*.price'      => ['required', 'numeric', 'min:0'],
         ]);
 
         $customerName = $validated['customer_name'] ?? null;
@@ -186,27 +186,41 @@ class SaleController extends Controller
             DB::transaction(function () use ($sale, $validated, $companyId, $customerName) {
                 $sale->load('items.product');
 
-                foreach ($sale->items as $oldItem) {
-                    $oldProduct = Product::find($oldItem->product_id);
-                    if ($oldProduct) {
-                        $before = $oldProduct->quantity;
-                        $after  = $before + $oldItem->quantity;
-                        $oldProduct->update(['quantity' => $after]);
+                // Calcula por produto quantas unidades já foram devolvidas nesta venda
+                // para não estornar o que já voltou ao estoque via SaleReturn
+                $alreadyReturned = SaleReturnItem::whereHas('saleReturn', fn($q) => $q->where('sale_id', $sale->id))
+                    ->selectRaw('product_id, SUM(quantity) as total_returned')
+                    ->groupBy('product_id')
+                    ->pluck('total_returned', 'product_id')
+                    ->map(fn($v) => (int) $v);
 
-                        StockMovement::create([
-                            'product_id'      => $oldProduct->id,
-                            'company_id'      => $companyId,
-                            'user_id'         => auth()->id(),
-                            'type'            => 'entrada',
-                            'quantity'        => +$oldItem->quantity,
-                            'quantity_before' => $before,
-                            'quantity_after'  => $after,
-                            'reason'          => 'devolucao',
-                            'notes'           => "Estorno da edição da Venda #{$sale->id}",
-                            'source_type'     => Sale::class,
-                            'source_id'       => $sale->id,
-                        ]);
-                    }
+                foreach ($sale->items as $oldItem) {
+                    $oldProduct = Product::lockForUpdate()->find($oldItem->product_id);
+                    if (!$oldProduct) continue;
+
+                    // Quantidade líquida que ainda está "no cliente" (vendida - já devolvida)
+                    $returnedQty = $alreadyReturned->get($oldItem->product_id, 0);
+                    $netQty      = max(0, $oldItem->quantity - $returnedQty);
+
+                    if ($netQty === 0) continue; // tudo já foi devolvido, nada a estornar
+
+                    $before = $oldProduct->fresh()->quantity;
+                    $after  = $before + $netQty;
+                    $oldProduct->update(['quantity' => $after]);
+
+                    StockMovement::create([
+                        'product_id'      => $oldProduct->id,
+                        'company_id'      => $companyId,
+                        'user_id'         => auth()->id(),
+                        'type'            => 'entrada',
+                        'quantity'        => $netQty,
+                        'quantity_before' => $before,
+                        'quantity_after'  => $after,
+                        'reason'          => 'devolucao',
+                        'notes'           => "Estorno da edição da Venda #{$sale->id}",
+                        'source_type'     => Sale::class,
+                        'source_id'       => $sale->id,
+                    ]);
                 }
 
                 $sale->items()->delete();
@@ -230,7 +244,7 @@ class SaleController extends Controller
                         throw new \Exception("Estoque insuficiente para \"{$product->name}\". Disponível: {$product->quantity} un.");
                     }
 
-                    $before = $product->quantity;
+                    $before = $product->fresh()->quantity;
                     $after  = $before - $item['quantity'];
 
                     SaleItem::create([
@@ -274,27 +288,39 @@ class SaleController extends Controller
         DB::transaction(function () use ($sale, $companyId) {
             $sale->load('items.product');
 
+            // Calcula por produto quantas unidades já foram devolvidas
+            $alreadyReturned = SaleReturnItem::whereHas('saleReturn', fn($q) => $q->where('sale_id', $sale->id))
+                ->selectRaw('product_id, SUM(quantity) as total_returned')
+                ->groupBy('product_id')
+                ->pluck('total_returned', 'product_id')
+                ->map(fn($v) => (int) $v);
+
             foreach ($sale->items as $item) {
                 $product = Product::find($item->product_id);
-                if ($product) {
-                    $before = $product->quantity;
-                    $after  = $before + $item->quantity;
-                    $product->update(['quantity' => $after]);
+                if (!$product) continue;
 
-                    StockMovement::create([
-                        'product_id'      => $product->id,
-                        'company_id'      => $companyId,
-                        'user_id'         => auth()->id(),
-                        'type'            => 'entrada',
-                        'quantity'        => +$item->quantity,
-                        'quantity_before' => $before,
-                        'quantity_after'  => $after,
-                        'reason'          => 'devolucao',
-                        'notes'           => "Estorno por exclusão da Venda #{$sale->id}",
-                        'source_type'     => Sale::class,
-                        'source_id'       => $sale->id,
-                    ]);
-                }
+                $returnedQty = $alreadyReturned->get($item->product_id, 0);
+                $netQty      = max(0, $item->quantity - $returnedQty);
+
+                if ($netQty === 0) continue;
+
+                $before = $product->fresh()->quantity;
+                $after  = $before + $netQty;
+                $product->update(['quantity' => $after]);
+
+                StockMovement::create([
+                    'product_id'      => $product->id,
+                    'company_id'      => $companyId,
+                    'user_id'         => auth()->id(),
+                    'type'            => 'entrada',
+                    'quantity'        => $netQty,
+                    'quantity_before' => $before,
+                    'quantity_after'  => $after,
+                    'reason'          => 'devolucao',
+                    'notes'           => "Estorno por exclusão da Venda #{$sale->id}",
+                    'source_type'     => Sale::class,
+                    'source_id'       => $sale->id,
+                ]);
             }
 
             $sale->items()->delete();
