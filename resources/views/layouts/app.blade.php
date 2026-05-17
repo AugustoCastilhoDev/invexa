@@ -98,7 +98,6 @@
         <div class="collapse navbar-collapse" id="navbarMain">
             <ul class="navbar-nav ms-auto mb-2 mb-lg-0 align-items-lg-center gap-1">
 
-                {{-- Dashboard --}}
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}"
                        href="{{ route('dashboard') }}">
@@ -108,7 +107,6 @@
 
                 @if(Auth::check() && Auth::user()->isGerente())
 
-                    {{-- Produtos --}}
                     <li class="nav-item">
                         <a class="nav-link {{ request()->routeIs('products.*') ? 'active' : '' }}"
                            href="{{ route('products.index') }}">
@@ -116,7 +114,6 @@
                         </a>
                     </li>
 
-                    {{-- Categorias --}}
                     <li class="nav-item">
                         <a class="nav-link {{ request()->routeIs('categories.*') ? 'active' : '' }}"
                            href="{{ route('categories.index') }}">
@@ -124,7 +121,6 @@
                         </a>
                     </li>
 
-                    {{-- Estoque --}}
                     <li class="nav-item">
                         <a class="nav-link {{ request()->routeIs('stock.*') ? 'active' : '' }}"
                            href="{{ route('stock.index') }}">
@@ -132,7 +128,7 @@
                         </a>
                     </li>
 
-                    {{-- Compras (dropdown) --}}
+                    {{-- Dropdown: Compras --}}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle {{ request()->routeIs('suppliers.*') || request()->routeIs('purchase-orders.*') ? 'active' : '' }}"
                            href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -154,7 +150,7 @@
                         </ul>
                     </li>
 
-                    {{-- Relatórios --}}
+                    {{-- Dropdown: Relatórios --}}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle {{ request()->routeIs('reports.*') ? 'active' : '' }}"
                            href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -162,8 +158,15 @@
                         </a>
                         <ul class="dropdown-menu">
                             <li>
-                                <a class="dropdown-item" href="{{ route('reports.index') }}">
+                                <a class="dropdown-item {{ request()->routeIs('reports.index') ? 'active' : '' }}"
+                                   href="{{ route('reports.index') }}">
                                     <i class="bi bi-trophy me-2"></i>Produtos mais vendidos
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item {{ request()->routeIs('reports.purchases*') ? 'active' : '' }}"
+                                   href="{{ route('reports.purchases') }}">
+                                    <i class="bi bi-graph-up me-2"></i>Relatório de Compras
                                 </a>
                             </li>
                         </ul>
@@ -171,7 +174,6 @@
 
                 @endif
 
-                {{-- Vendas --}}
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('sales.*') ? 'active' : '' }}"
                        href="{{ route('sales.index') }}">
@@ -179,7 +181,6 @@
                     </a>
                 </li>
 
-                {{-- Devoluções --}}
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('returns.*') ? 'active' : '' }}"
                        href="{{ route('returns.index') }}">
@@ -187,7 +188,6 @@
                     </a>
                 </li>
 
-                {{-- Clientes --}}
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('customers.*') ? 'active' : '' }}"
                        href="{{ route('customers.index') }}">
@@ -206,7 +206,6 @@
 
                 <li class="nav-item d-none d-lg-flex"><div class="nav-divider"></div></li>
 
-                {{-- Menu do usuário --}}
                 <li class="nav-item dropdown">
                     <a class="nav-link d-flex align-items-center gap-2 pe-1 {{ request()->routeIs('profile.*') ? 'active' : '' }}"
                        href="#" id="userDropdown" role="button"

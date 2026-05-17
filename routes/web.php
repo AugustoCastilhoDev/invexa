@@ -72,11 +72,13 @@ Route::middleware(['auth', 'company'])->group(function () {
     Route::resource('customers', CustomerController::class);
 
     // Relatórios
-    Route::get('/reports',            [ReportController::class, 'index'])->name('reports.index');
-    Route::get('/reports/export/csv', [ReportController::class, 'export'])->name('reports.export.csv');
-    Route::get('/reports/export/pdf', [ReportController::class, 'topProductsPdf'])->name('reports.export.pdf');
+    Route::get('/reports',                [ReportController::class, 'index'])->name('reports.index');
+    Route::get('/reports/export/csv',     [ReportController::class, 'export'])->name('reports.export.csv');
+    Route::get('/reports/export/pdf',     [ReportController::class, 'topProductsPdf'])->name('reports.export.pdf');
+    Route::get('/reports/purchases',      [ReportController::class, 'purchases'])->name('reports.purchases');
+    Route::get('/reports/purchases/csv',  [ReportController::class, 'purchasesCsv'])->name('reports.purchases.csv');
 
-    // Fornecedores — rotas estáticas antes do wildcard {supplier}
+    // Fornecedores
     Route::get('/suppliers',        [SupplierController::class, 'index'])->name('suppliers.index');
     Route::middleware('role:admin,gerente')->group(function () {
         Route::get('/suppliers/create',          [SupplierController::class, 'create'])->name('suppliers.create');
@@ -87,14 +89,12 @@ Route::middleware(['auth', 'company'])->group(function () {
     });
     Route::get('/suppliers/{supplier}', [SupplierController::class, 'show'])->name('suppliers.show');
 
-    // Ordens de Compra
-    // ATENÇÃO: rotas estáticas (sem wildcard) DEVEM vir antes de {purchaseOrder}
-    Route::get('/purchase-orders',        [PurchaseOrderController::class, 'index'])->name('purchase-orders.index');
+    // Ordens de Compra — estáticas ANTES do wildcard
+    Route::get('/purchase-orders',       [PurchaseOrderController::class, 'index'])->name('purchase-orders.index');
     Route::middleware('role:admin,gerente')->group(function () {
         Route::get('/purchase-orders/create',  [PurchaseOrderController::class, 'create'])->name('purchase-orders.create');
         Route::post('/purchase-orders',        [PurchaseOrderController::class, 'store'])->name('purchase-orders.store');
     });
-    // Rotas com wildcard {purchaseOrder} — após as estáticas
     Route::get('/purchase-orders/{purchaseOrder}', [PurchaseOrderController::class, 'show'])->name('purchase-orders.show');
     Route::middleware('role:admin,gerente')->group(function () {
         Route::get('/purchase-orders/{purchaseOrder}/receive',  [PurchaseOrderController::class, 'receiveForm'])->name('purchase-orders.receive-form');
@@ -103,13 +103,13 @@ Route::middleware(['auth', 'company'])->group(function () {
         Route::patch('/purchase-orders/{purchaseOrder}/cancel', [PurchaseOrderController::class, 'cancel'])->name('purchase-orders.cancel');
     });
 
-    // Produtos e Categorias — somente admin e gerente
+    // Produtos e Categorias
     Route::middleware('role:admin,gerente')->group(function () {
         Route::resource('products', ProductController::class);
         Route::resource('categories', CategoryController::class);
     });
 
-    // Usuários — somente admin
+    // Usuários
     Route::middleware('role:admin')->group(function () {
         Route::resource('users', UserController::class)->except(['show']);
         Route::patch('/users/{user}/toggle-active', [UserController::class, 'toggleActive'])
