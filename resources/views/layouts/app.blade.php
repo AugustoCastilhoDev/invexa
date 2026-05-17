@@ -112,6 +112,7 @@
         <div class="collapse navbar-collapse" id="navbarMain">
             <ul class="navbar-nav ms-auto mb-2 mb-lg-0 align-items-lg-center gap-1">
 
+                {{-- 1. Dashboard — sempre visível --}}
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}"
                        href="{{ route('dashboard') }}">
@@ -119,35 +120,73 @@
                     </a>
                 </li>
 
+                {{-- 2. Vendas — operação mais frequente, visível a todos --}}
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('sales.*') ? 'active' : '' }}"
+                       href="{{ route('sales.index') }}">
+                        <i class="bi bi-basket3 me-1 opacity-75"></i>Vendas
+                    </a>
+                </li>
+
+                {{-- 3. Clientes — ligado a vendas, visível a todos --}}
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('customers.*') ? 'active' : '' }}"
+                       href="{{ route('customers.index') }}">
+                        <i class="bi bi-people me-1 opacity-75"></i>Clientes
+                    </a>
+                </li>
+
+                {{-- 4. Devoluções — fluxo pós-venda, visível a todos --}}
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('returns.*') ? 'active' : '' }}"
+                       href="{{ route('returns.index') }}">
+                        <i class="bi bi-arrow-return-left me-1 opacity-75"></i>Devoluções
+                    </a>
+                </li>
+
                 @if(Auth::check() && Auth::user()->isGerente())
 
-                    <li class="nav-item">
-                        <a class="nav-link {{ request()->routeIs('products.*') ? 'active' : '' }}"
-                           href="{{ route('products.index') }}">
-                            <i class="bi bi-box-seam me-1 opacity-75"></i>Produtos
+                    {{-- 5. Estoque — dropdown agrupando Movimentações + Produtos + Categorias --}}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle {{ request()->routeIs('stock.*') || request()->routeIs('products.*') || request()->routeIs('categories.*') ? 'active' : '' }}"
+                           href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-boxes me-1 opacity-75"></i>Estoque
                             @if(!empty($lowStockAlert) && $lowStockAlert > 0)
                                 <span class="stock-alert-badge" title="{{ $lowStockAlert }} produto(s) com estoque abaixo do mínimo">
                                     {{ $lowStockAlert > 99 ? '99+' : $lowStockAlert }}
                                 </span>
                             @endif
                         </a>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <span class="dropdown-item-text">ESTOQUE</span>
+                            </li>
+                            <li>
+                                <a class="dropdown-item {{ request()->routeIs('stock.*') ? 'active' : '' }}"
+                                   href="{{ route('stock.index') }}">
+                                    <i class="bi bi-arrow-left-right me-2"></i>Movimentações
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <span class="dropdown-item-text">CADASTROS</span>
+                            </li>
+                            <li>
+                                <a class="dropdown-item {{ request()->routeIs('products.*') ? 'active' : '' }}"
+                                   href="{{ route('products.index') }}">
+                                    <i class="bi bi-box-seam me-2"></i>Produtos
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item {{ request()->routeIs('categories.*') ? 'active' : '' }}"
+                                   href="{{ route('categories.index') }}">
+                                    <i class="bi bi-tag me-2"></i>Categorias
+                                </a>
+                            </li>
+                        </ul>
                     </li>
 
-                    <li class="nav-item">
-                        <a class="nav-link {{ request()->routeIs('categories.*') ? 'active' : '' }}"
-                           href="{{ route('categories.index') }}">
-                            <i class="bi bi-tag me-1 opacity-75"></i>Categorias
-                        </a>
-                    </li>
-
-                    <li class="nav-item">
-                        <a class="nav-link {{ request()->routeIs('stock.*') ? 'active' : '' }}"
-                           href="{{ route('stock.index') }}">
-                            <i class="bi bi-arrow-left-right me-1 opacity-75"></i>Estoque
-                        </a>
-                    </li>
-
-                    {{-- Dropdown: Compras --}}
+                    {{-- 6. Compras — Fornecedores + Ordens de Compra --}}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle {{ request()->routeIs('suppliers.*') || request()->routeIs('purchase-orders.*') ? 'active' : '' }}"
                            href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -169,23 +208,15 @@
                         </ul>
                     </li>
 
-                    {{-- Dropdown: Financeiro --}}
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle {{ request()->routeIs('bills.*') ? 'active' : '' }}"
-                           href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    {{-- 7. Financeiro — link direto (item único, sem dropdown) --}}
+                    <li class="nav-item">
+                        <a class="nav-link {{ request()->routeIs('bills.*') ? 'active' : '' }}"
+                           href="{{ route('bills.index') }}">
                             <i class="bi bi-wallet2 me-1 opacity-75"></i>Financeiro
                         </a>
-                        <ul class="dropdown-menu">
-                            <li>
-                                <a class="dropdown-item {{ request()->routeIs('bills.*') ? 'active' : '' }}"
-                                   href="{{ route('bills.index') }}">
-                                    <i class="bi bi-credit-card-2-front me-2"></i>Contas a Pagar
-                                </a>
-                            </li>
-                        </ul>
                     </li>
 
-                    {{-- Dropdown: Relatórios --}}
+                    {{-- 8. Relatórios — sempre ao final das funções gerenciais --}}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle {{ request()->routeIs('reports.*') ? 'active' : '' }}"
                            href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -209,27 +240,7 @@
 
                 @endif
 
-                <li class="nav-item">
-                    <a class="nav-link {{ request()->routeIs('sales.*') ? 'active' : '' }}"
-                       href="{{ route('sales.index') }}">
-                        <i class="bi bi-basket3 me-1 opacity-75"></i>Vendas
-                    </a>
-                </li>
-
-                <li class="nav-item">
-                    <a class="nav-link {{ request()->routeIs('returns.*') ? 'active' : '' }}"
-                       href="{{ route('returns.index') }}">
-                        <i class="bi bi-arrow-return-left me-1 opacity-75"></i>Devoluções
-                    </a>
-                </li>
-
-                <li class="nav-item">
-                    <a class="nav-link {{ request()->routeIs('customers.*') ? 'active' : '' }}"
-                       href="{{ route('customers.index') }}">
-                        <i class="bi bi-people me-1 opacity-75"></i>Clientes
-                    </a>
-                </li>
-
+                {{-- 9. Usuários — apenas admin, gestão interna --}}
                 @if(Auth::check() && Auth::user()->isAdmin())
                     <li class="nav-item">
                         <a class="nav-link {{ request()->routeIs('users.*') ? 'active' : '' }}"
@@ -241,6 +252,7 @@
 
                 <li class="nav-item d-none d-lg-flex"><div class="nav-divider"></div></li>
 
+                {{-- Avatar / Perfil --}}
                 <li class="nav-item dropdown">
                     <a class="nav-link d-flex align-items-center gap-2 pe-1 {{ request()->routeIs('profile.*') ? 'active' : '' }}"
                        href="#" id="userDropdown" role="button"
