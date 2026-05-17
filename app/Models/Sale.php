@@ -12,6 +12,7 @@ class Sale extends Model
 
     protected $fillable = [
         'company_id',
+        'customer_id',
         'customer_name',
         'sale_date',
         'status',
@@ -27,5 +28,10 @@ class Sale extends Model
     public function items()
     {
         return $this->hasMany(SaleItem::class);
+    }
+
+    public function customer()
+    {
+        return $this->belongsTo(Customer::class);
     }
 }
