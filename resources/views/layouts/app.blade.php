@@ -62,6 +62,7 @@
             transition: background .15s ease, color .15s ease;
         }
         .navbar-main .dropdown-item:hover { background: rgba(255,255,255,.08); color: #f1f5f9; }
+        .navbar-main .dropdown-item.active { background: rgba(99,102,241,.2); color: #a5b4fc; }
         .navbar-main .dropdown-item-text { font-size: .78rem; color: rgba(148, 163, 184, .7); padding: .4rem .75rem; }
         .navbar-main .dropdown-divider { border-color: rgba(148, 163, 184, .12); margin: .3rem 0; }
         .user-avatar {
@@ -198,8 +199,8 @@
 
                     {{-- Menu do usuário --}}
                     <li class="nav-item dropdown">
-                        <a class="nav-link d-flex align-items-center gap-2 pe-1" href="#"
-                           id="userDropdown" role="button"
+                        <a class="nav-link d-flex align-items-center gap-2 pe-1 {{ request()->routeIs('profile.*') ? 'active' : '' }}"
+                           href="#" id="userDropdown" role="button"
                            data-bs-toggle="dropdown" aria-expanded="false">
                             <div class="user-avatar">
                                 {{ strtoupper(substr(Auth::user()->name ?? 'U', 0, 1)) }}
@@ -220,14 +221,24 @@
                                 </div>
                             </li>
                             <li><hr class="dropdown-divider"></li>
+
+                            {{-- Editar Perfil --}}
+                            <li>
+                                <a class="dropdown-item {{ request()->routeIs('profile.*') ? 'active' : '' }}"
+                                   href="{{ route('profile.edit') }}">
+                                    <i class="bi bi-person-gear me-2"></i>Editar Perfil
+                                </a>
+                            </li>
+
                             @if(Auth::check() && Auth::user()->isAdmin())
                                 <li>
                                     <a class="dropdown-item" href="{{ route('users.index') }}">
                                         <i class="bi bi-people me-2"></i>Gerenciar Usuários
                                     </a>
                                 </li>
-                                <li><hr class="dropdown-divider"></li>
                             @endif
+
+                            <li><hr class="dropdown-divider"></li>
                             <li>
                                 <form action="{{ route('logout') }}" method="POST">
                                     @csrf
