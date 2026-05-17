@@ -11,7 +11,8 @@ class ProductController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Product::with('category');
+        $companyId = auth()->user()->company_id;
+        $query = Product::with('category')->where('company_id', $companyId);
 
         if ($request->filled('search')) {
             $query->where('name', 'like', '%' . $request->search . '%');
@@ -23,9 +24,9 @@ class ProductController extends Controller
 
         $totalProducts   = (clone $query)->count();
         $products        = $query->orderBy('name')->paginate(10);
-        $categories      = Category::orderBy('name')->get();
-        $categoriesCount = Category::count();
-        $lowStockCount   = Product::whereColumn('quantity', '<', 'min_quantity')->count();
+        $categories      = Category::where('company_id', $companyId)->orderBy('name')->get();
+        $categoriesCount = Category::where('company_id', $companyId)->count();
+        $lowStockCount   = Product::where('company_id', $companyId)->whereColumn('quantity', '<', 'min_quantity')->count();
 
         return view('products.index', compact(
             'products',
@@ -38,14 +39,15 @@ class ProductController extends Controller
 
     public function create()
     {
-        $company = auth()->user()->company;
+        $companyId  = auth()->user()->company_id;
+        $company    = auth()->user()->company;
 
         if ($company && ! $company->canAddProduct()) {
             return redirect()->route('products.index')
                 ->with('error', 'Limite de produtos do seu plano atingido. Faça upgrade para continuar.');
         }
 
-        $categories = Category::orderBy('name')->get();
+        $categories = Category::where('company_id', $companyId)->where('active', true)->orderBy('name')->get();
 
         return view('products.create', compact('categories'));
     }
@@ -78,7 +80,6 @@ class ProductController extends Controller
             'min_quantity' => ['required', 'integer', 'min:0'],
             'unit'         => ['nullable', 'string', 'max:10'],
             'category_id'  => ['nullable', 'exists:categories,id'],
-            'active'       => ['nullable', 'boolean'],
         ], [
             'name.required'     => 'O nome do produto é obrigatório.',
             'sku.required'      => 'O SKU é obrigatório.',
@@ -87,7 +88,8 @@ class ProductController extends Controller
             'quantity.required' => 'A quantidade é obrigatória.',
         ]);
 
-        $validated['active'] = $request->boolean('active');
+        $validated['active']     = $request->has('active');
+        $validated['company_id'] = $companyId;
 
         Product::create($validated);
 
@@ -98,14 +100,13 @@ class ProductController extends Controller
     public function show(Product $product)
     {
         $product->load('category');
-
         return view('products.show', compact('product'));
     }
 
     public function edit(Product $product)
     {
-        $categories = Category::orderBy('name')->get();
-
+        $companyId  = auth()->user()->company_id;
+        $categories = Category::where('company_id', $companyId)->where('active', true)->orderBy('name')->get();
         return view('products.edit', compact('product', 'categories'));
     }
 
@@ -130,7 +131,6 @@ class ProductController extends Controller
             'min_quantity' => ['required', 'integer', 'min:0'],
             'unit'         => ['nullable', 'string', 'max:10'],
             'category_id'  => ['nullable', 'exists:categories,id'],
-            'active'       => ['nullable', 'boolean'],
         ], [
             'name.required'     => 'O nome do produto é obrigatório.',
             'sku.required'      => 'O SKU é obrigatório.',
@@ -139,7 +139,7 @@ class ProductController extends Controller
             'quantity.required' => 'A quantidade é obrigatória.',
         ]);
 
-        $validated['active'] = $request->boolean('active');
+        $validated['active'] = $request->has('active');
 
         $product->update($validated);
 

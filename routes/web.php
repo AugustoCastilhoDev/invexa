@@ -14,7 +14,7 @@ use App\Http\Controllers\StockMovementController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
-// ── Autenticação (pública) ────────────────────────────────────────────
+// ── Autenticação (pública) ────────────────────────────────────────────────────
 Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
 Route::post('/login', [AuthenticatedSessionController::class, 'store'])->name('login.post');
 Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
@@ -22,7 +22,7 @@ Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name
 Route::get('/register', [RegisteredUserController::class, 'create'])->name('register');
 Route::post('/register', [RegisteredUserController::class, 'store'])->name('register.store');
 
-// ── Rotas protegidas ──────────────────────────────────────────────
+// ── Rotas protegidas ──────────────────────────────────────────────────────────
 Route::middleware(['auth', 'company'])->group(function () {
 
     // Dashboard
@@ -39,6 +39,7 @@ Route::middleware(['auth', 'company'])->group(function () {
     Route::get('/sales/create', [SaleController::class, 'create'])->name('sales.create');
     Route::post('/sales', [SaleController::class, 'store'])->name('sales.store');
     Route::get('/sales/{sale}', [SaleController::class, 'show'])->name('sales.show');
+    Route::get('/sales/{sale}/invoice', [SaleController::class, 'invoice'])->name('sales.invoice');
 
     // Vendas — edição e exclusão somente para admin e gerente
     Route::middleware('role:admin,gerente')->group(function () {
@@ -59,7 +60,7 @@ Route::middleware(['auth', 'company'])->group(function () {
     Route::get('/stock/create', [StockMovementController::class, 'create'])->name('stock.create');
     Route::post('/stock', [StockMovementController::class, 'store'])->name('stock.store');
 
-    // Clientes
+    // Clientes — search ANTES do resource para não conflitar com {customer}
     Route::get('/customers/search', [CustomerController::class, 'search'])->name('customers.search');
     Route::resource('customers', CustomerController::class);
 

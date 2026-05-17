@@ -55,11 +55,10 @@ class CustomerController extends Controller
             'city'     => ['nullable', 'string', 'max:100'],
             'state'    => ['nullable', 'string', 'size:2'],
             'notes'    => ['nullable', 'string', 'max:1000'],
-            'active'   => ['boolean'],
         ]);
 
         $validated['company_id'] = auth()->user()->company_id;
-        $validated['active']     = $request->boolean('active', true);
+        $validated['active']     = $request->has('active');
 
         Customer::create($validated);
 
@@ -75,7 +74,6 @@ class CustomerController extends Controller
         $to     = $request->input('to');
         $status = $request->input('status');
 
-        // ── Query base do histórico ────────────────────────────────────
         $salesQuery = $customer->sales()->latest('sale_date');
 
         if ($from) {
@@ -90,13 +88,11 @@ class CustomerController extends Controller
 
         $sales = $salesQuery->with('items.product')->paginate(15)->withQueryString();
 
-        // ── Métricas totais (sem filtro) ───────────────────────────────
         $totalSales  = $customer->sales()->count();
         $totalSpent  = (float) $customer->sales()->sum('total');
         $lastSale    = $customer->sales()->latest('sale_date')->first();
         $avgTicket   = $totalSales > 0 ? $totalSpent / $totalSales : 0;
 
-        // ── Devoluções do cliente ──────────────────────────────────────
         $returnsTotal = (float) SaleReturn::whereHas('sale', fn($q) =>
             $q->where('customer_id', $customer->id)
         )->sum('total');
@@ -134,10 +130,9 @@ class CustomerController extends Controller
             'city'     => ['nullable', 'string', 'max:100'],
             'state'    => ['nullable', 'string', 'size:2'],
             'notes'    => ['nullable', 'string', 'max:1000'],
-            'active'   => ['boolean'],
         ]);
 
-        $validated['active'] = $request->boolean('active', true);
+        $validated['active'] = $request->has('active');
 
         $customer->update($validated);
 
