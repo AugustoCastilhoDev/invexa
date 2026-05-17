@@ -34,6 +34,26 @@
     </div>
 </div>
 
+{{-- Banner de alerta de estoque baixo --}}
+@if(!empty($lowStockAlert) && $lowStockAlert > 0 && !request('low_stock'))
+<div class="alert d-flex align-items-center justify-content-between gap-3 mb-4 alert-dismissible fade show"
+     style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);color:#f87171;border-radius:.6rem;"
+     role="alert">
+    <div class="d-flex align-items-center gap-3">
+        <i class="bi bi-exclamation-triangle-fill fs-5" style="animation:pulse-red 2s infinite;"></i>
+        <div>
+            <strong>{{ $lowStockAlert }} produto{{ $lowStockAlert > 1 ? 's' : '' }}</strong>
+            com estoque abaixo do mínimo.
+            <a href="{{ route('products.index', ['low_stock' => 1]) }}"
+               class="ms-2 fw-semibold" style="color:#fca5a5;text-decoration:underline;">
+                Ver agora <i class="bi bi-arrow-right"></i>
+            </a>
+        </div>
+    </div>
+    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert"></button>
+</div>
+@endif
+
 <div class="card dashboard-card card-dark-bg shadow-sm border-0">
     <div class="card-header card-header-dark border-bottom">
         <div class="row g-3 mb-4">
@@ -56,17 +76,30 @@
                 </div>
             </div>
             <div class="col-12 col-md-4">
-                <div class="card dashboard-card text-white border-0 shadow-sm"
-                     style="background: linear-gradient(135deg, #dc2626, #ef4444);">
-                    <div class="card-body py-3">
-                        <div class="text-soft small text-uppercase fw-semibold mb-1">Estoque Baixo</div>
-                        <h3 class="mb-0">{{ $lowStockCount }}</h3>
+                <a href="{{ route('products.index', ['low_stock' => request('low_stock') ? null : 1]) }}"
+                   class="text-decoration-none d-block h-100">
+                    <div class="card dashboard-card text-white border-0 shadow-sm h-100"
+                         style="background: {{ request('low_stock') ? 'linear-gradient(135deg,#991b1b,#dc2626)' : 'linear-gradient(135deg, #dc2626, #ef4444)' }};
+                                cursor:pointer;transition:transform .15s ease;"
+                         onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
+                        <div class="card-body py-3">
+                            <div class="text-soft small text-uppercase fw-semibold mb-1">
+                                Estoque Baixo
+                                @if(request('low_stock'))
+                                    <span style="font-size:.65rem;opacity:.8;"> — filtro ativo</span>
+                                @endif
+                            </div>
+                            <h3 class="mb-0">{{ $lowStockCount }}</h3>
+                        </div>
                     </div>
-                </div>
+                </a>
             </div>
         </div>
 
         <form method="GET" action="{{ route('products.index') }}" class="row g-2">
+            @if(request('low_stock'))
+                <input type="hidden" name="low_stock" value="1">
+            @endif
             <div class="col-12 col-md-5">
                 <input type="text" name="search" class="form-control"
                        placeholder="Buscar por nome..." value="{{ request('search') }}">
@@ -86,6 +119,14 @@
                 <a href="{{ route('products.index') }}" class="btn btn-outline-light flex-grow-1">Limpar</a>
             </div>
         </form>
+
+        @if(request('low_stock'))
+        <div class="mt-3 d-flex align-items-center gap-2" style="font-size:.82rem;color:#fca5a5;">
+            <i class="bi bi-funnel-fill"></i>
+            Exibindo apenas produtos com <strong>estoque abaixo do mínimo</strong>.
+            <a href="{{ route('products.index') }}" class="ms-2" style="color:#fca5a5;">Remover filtro</a>
+        </div>
+        @endif
     </div>
 
     <div class="card-body p-0">
@@ -108,7 +149,14 @@
                     @forelse($products as $product)
                         <tr style="border-color:rgba(148,163,184,.07);">
                             <td class="ps-4 py-3">
-                                <div class="fw-semibold text-white">{{ $product->name }}</div>
+                                <div class="fw-semibold text-white">
+                                    {{ $product->name }}
+                                    @if($product->isLowStock())
+                                        <i class="bi bi-exclamation-triangle-fill ms-1"
+                                           style="color:#f87171;font-size:.75rem;"
+                                           title="Estoque abaixo do mínimo — clique para sugerir OC"></i>
+                                    @endif
+                                </div>
                                 @if($product->description)
                                     <div class="text-soft small"
                                          style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
@@ -177,6 +225,12 @@
                                        class="btn btn-sm btn-outline-primary" title="Editar">
                                         <i class="bi bi-pencil"></i>
                                     </a>
+                                    @if($product->isLowStock())
+                                    <a href="{{ route('purchase-orders.create', ['product_id' => $product->id, 'supplier_id' => $product->supplier_id]) }}"
+                                       class="btn btn-sm btn-outline-warning" title="Sugerir Ordem de Compra">
+                                        <i class="bi bi-cart-plus"></i>
+                                    </a>
+                                    @endif
                                     <form action="{{ route('products.destroy', $product) }}" method="POST"
                                           onsubmit="return confirm('Excluir o produto {{ addslashes($product->name) }}?')">
                                         @csrf
@@ -192,12 +246,19 @@
                         <tr>
                             <td colspan="7" class="text-center text-soft py-5">
                                 <i class="bi bi-box-seam fs-2 d-block mb-2 opacity-25"></i>
-                                Nenhum produto encontrado.
-                                <div class="mt-2">
-                                    <a href="{{ route('products.create') }}" class="btn btn-sm btn-primary">
-                                        Cadastrar primeiro produto
-                                    </a>
-                                </div>
+                                @if(request('low_stock'))
+                                    Nenhum produto com estoque abaixo do mínimo.
+                                    <div class="mt-2">
+                                        <a href="{{ route('products.index') }}" class="btn btn-sm btn-outline-light">Ver todos</a>
+                                    </div>
+                                @else
+                                    Nenhum produto encontrado.
+                                    <div class="mt-2">
+                                        <a href="{{ route('products.create') }}" class="btn btn-sm btn-primary">
+                                            Cadastrar primeiro produto
+                                        </a>
+                                    </div>
+                                @endif
                             </td>
                         </tr>
                     @endforelse

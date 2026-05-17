@@ -78,6 +78,21 @@
         .alert-success { --bs-alert-bg:rgba(34,197,94,.10); --bs-alert-border-color:rgba(34,197,94,.2); color:#4ade80; }
         .alert-danger  { --bs-alert-bg:rgba(239,68,68,.10); --bs-alert-border-color:rgba(239,68,68,.2); color:#f87171; }
         .footer-main { background:rgba(5,10,20,.7); border-top:1px solid rgba(148,163,184,.08); }
+        /* Badge de alerta de estoque no navbar */
+        .stock-alert-badge {
+            display:inline-flex; align-items:center; justify-content:center;
+            min-width:1.1rem; height:1.1rem;
+            background:#ef4444; color:#fff;
+            border-radius:999px; font-size:.6rem; font-weight:700;
+            padding:0 .28rem; line-height:1;
+            position:relative; top:-1px; margin-left:.25rem;
+            box-shadow:0 0 0 2px rgba(5,10,20,.92);
+            animation: pulse-red 2s infinite;
+        }
+        @keyframes pulse-red {
+            0%,100% { box-shadow:0 0 0 2px rgba(5,10,20,.92),0 0 0 0 rgba(239,68,68,.6); }
+            50%      { box-shadow:0 0 0 2px rgba(5,10,20,.92),0 0 0 4px rgba(239,68,68,.0); }
+        }
     </style>
     @stack('styles')
 </head>
@@ -111,6 +126,11 @@
                         <a class="nav-link {{ request()->routeIs('products.*') ? 'active' : '' }}"
                            href="{{ route('products.index') }}">
                             <i class="bi bi-box-seam me-1 opacity-75"></i>Produtos
+                            @if(!empty($lowStockAlert) && $lowStockAlert > 0)
+                                <span class="stock-alert-badge" title="{{ $lowStockAlert }} produto(s) com estoque abaixo do mínimo">
+                                    {{ $lowStockAlert > 99 ? '99+' : $lowStockAlert }}
+                                </span>
+                            @endif
                         </a>
                     </li>
 

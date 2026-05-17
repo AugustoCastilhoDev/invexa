@@ -5,16 +5,53 @@
 @section('content')
 <div class="d-flex justify-content-between align-items-start mb-4 gap-3 flex-column flex-md-row">
     <div>
-        <h1 class="h3 mb-1 text-white">{{ $product->name }}</h1>
+        <h1 class="h3 mb-1 text-white">
+            {{ $product->name }}
+            @if($product->isLowStock())
+                <span class="badge ms-2"
+                      style="font-size:.6rem;background:rgba(239,68,68,.15);color:#f87171;
+                             border:1px solid rgba(239,68,68,.3);vertical-align:middle;">
+                    <i class="bi bi-exclamation-triangle-fill me-1"></i>Estoque Baixo
+                </span>
+            @endif
+        </h1>
         <p class="text-soft mb-0">Detalhes do produto</p>
     </div>
     <div class="d-flex flex-wrap gap-2">
         <a href="{{ route('products.index') }}" class="btn btn-outline-light">Voltar</a>
+        @if($product->isLowStock())
+            <a href="{{ route('purchase-orders.create', ['product_id' => $product->id, 'supplier_id' => $product->supplier_id]) }}"
+               class="btn btn-warning text-dark fw-semibold">
+                <i class="bi bi-cart-plus me-1"></i>Sugerir OC
+            </a>
+        @endif
         <a href="{{ route('products.edit', $product) }}" class="btn btn-outline-primary">
             <i class="bi bi-pencil me-1"></i>Editar
         </a>
     </div>
 </div>
+
+{{-- Banner de alerta no topo do show --}}
+@if($product->isLowStock())
+<div class="alert d-flex align-items-center gap-3 mb-4"
+     style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);color:#f87171;border-radius:.6rem;">
+    <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+    <div>
+        <strong>Atenção:</strong> estoque atual
+        (<strong>{{ $product->quantity }} {{ $product->unit ?? 'un' }}</strong>)
+        está abaixo do mínimo definido
+        (<strong>{{ $product->min_quantity }} {{ $product->unit ?? 'un' }}</strong>).
+        @if($product->supplier)
+            Considere criar uma
+            <a href="{{ route('purchase-orders.create', ['product_id' => $product->id, 'supplier_id' => $product->supplier_id]) }}"
+               style="color:#fca5a5;font-weight:600;">Ordem de Compra</a>
+            com o fornecedor <strong>{{ $product->supplier->name }}</strong>.
+        @else
+            Vincule um fornecedor a este produto para facilitar reposição.
+        @endif
+    </div>
+</div>
+@endif
 
 <div class="row g-4">
 
@@ -81,10 +118,16 @@
 
     {{-- Estoque + status --}}
     <div class="col-12 col-lg-4">
-        <div class="card card-dark-bg shadow-sm mb-3">
-            <div class="card-header card-header-dark border-bottom">
-                <span class="text-soft text-uppercase fw-semibold" style="font-size:.72rem;letter-spacing:.08em;">
+        <div class="card card-dark-bg shadow-sm mb-3"
+             style="{{ $product->isLowStock() ? 'border-color:rgba(239,68,68,.35)!important;' : '' }}">
+            <div class="card-header card-header-dark border-bottom"
+                 style="{{ $product->isLowStock() ? 'border-color:rgba(239,68,68,.3)!important;' : '' }}">
+                <span class="text-uppercase fw-semibold" style="font-size:.72rem;letter-spacing:.08em;
+                      color:{{ $product->isLowStock() ? '#f87171' : 'rgba(226,232,240,.72)' }};">
                     <i class="bi bi-archive me-1"></i>Estoque
+                    @if($product->isLowStock())
+                        <i class="bi bi-exclamation-triangle-fill ms-1"></i>
+                    @endif
                 </span>
             </div>
             <div class="card-body text-center">
@@ -93,17 +136,31 @@
                     {{ $product->quantity }}
                 </div>
                 <div class="text-soft">{{ $product->unit ?? 'Und' }} em estoque</div>
-                <div class="mt-2 text-soft" style="font-size:.8rem;">
-                    Mínimo: <strong class="text-white">{{ $product->min_quantity }}</strong>
+                <div class="mt-2" style="font-size:.82rem;">
+                    <span class="text-soft">Mínimo: </span>
+                    <strong class="text-white">{{ $product->min_quantity }}</strong>
                 </div>
+                @if($product->min_quantity > 0)
+                <div class="mt-3">
+                    @php
+                        $pct = $product->min_quantity > 0
+                            ? min(100, round(($product->quantity / $product->min_quantity) * 100))
+                            : 100;
+                        $barColor = $product->isLowStock() ? '#ef4444' : '#22c55e';
+                    @endphp
+                    <div style="height:6px;background:rgba(148,163,184,.15);border-radius:999px;overflow:hidden;">
+                        <div style="width:{{ $pct }}%;height:100%;background:{{ $barColor }};border-radius:999px;
+                                    transition:width .4s ease;"></div>
+                    </div>
+                    <div class="text-soft mt-1" style="font-size:.7rem;">{{ $pct }}% do estoque mínimo</div>
+                </div>
+                @endif
                 @if($product->isLowStock())
                     <div class="mt-3">
-                        <span style="display:inline-flex;align-items:center;gap:.4rem;font-size:.78rem;
-                                     font-weight:600;padding:.4rem .9rem;border-radius:999px;
-                                     background:rgba(239,68,68,.12);color:#f87171;
-                                     border:1px solid rgba(239,68,68,.25);">
-                            <i class="bi bi-exclamation-triangle-fill"></i>Estoque Baixo
-                        </span>
+                        <a href="{{ route('purchase-orders.create', ['product_id' => $product->id, 'supplier_id' => $product->supplier_id]) }}"
+                           class="btn btn-sm btn-warning text-dark fw-semibold w-100">
+                            <i class="bi bi-cart-plus me-1"></i>Sugerir Ordem de Compra
+                        </a>
                     </div>
                 @endif
             </div>
