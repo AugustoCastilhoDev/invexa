@@ -36,7 +36,6 @@ class CategoryController extends Controller
                 Rule::unique('categories', 'name')->where('company_id', $companyId),
             ],
             'description' => ['nullable', 'string'],
-            'active'      => ['nullable', 'boolean'],
         ], [
             'name.required' => 'O nome da categoria é obrigatório.',
             'name.unique'   => 'Já existe uma categoria com este nome.',
@@ -72,7 +71,6 @@ class CategoryController extends Controller
                     ->ignore($category->id),
             ],
             'description' => ['nullable', 'string'],
-            'active'      => ['nullable', 'boolean'],
         ], [
             'name.required' => 'O nome da categoria é obrigatório.',
             'name.unique'   => 'Já existe uma categoria com este nome.',
