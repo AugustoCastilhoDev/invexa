@@ -121,10 +121,10 @@
             <tbody>
                 @forelse($receivables as $rec)
                 @php
-                    $isOverdue  = $rec->status === 'vencida';
-                    $rowBg      = $isOverdue ? 'background:rgba(239,68,68,.13);' : '';
-                    $textMain   = $isOverdue ? '#fca5a5' : '#f1f5f9';   {{-- vermelho claro vs branco --}}
-                    $textSub    = $isOverdue ? '#f87171' : '#94a3b8';   {{-- vermelho médio vs cinza --}}
+                    $isOverdue = $rec->status === 'vencida';
+                    $rowBg     = $isOverdue ? 'background:rgba(239,68,68,.13);' : '';
+                    $textMain  = $isOverdue ? '#fca5a5' : '#f1f5f9';
+                    $textSub   = $isOverdue ? '#f87171' : '#94a3b8';
                 @endphp
                 <tr style="border-color:rgba(148,163,184,.07); {{ $rowBg }}">
 
@@ -171,7 +171,7 @@
                         @if($rec->amount_received > 0)
                             <span class="text-success">R$ {{ number_format($rec->amount_received, 2, ',', '.') }}</span>
                         @else
-                            <span style="color:{{ $textSub }};">—</span>
+                            <span style="color:{{ $textSub }}">—</span>
                         @endif
                     </td>
 
