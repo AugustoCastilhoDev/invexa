@@ -120,44 +120,75 @@
             </thead>
             <tbody>
                 @forelse($receivables as $rec)
-                <tr style="border-color:rgba(148,163,184,.07);"
-                    class="{{ $rec->status === 'vencida' ? 'table-danger bg-opacity-10' : '' }}">
+                @php
+                    $isOverdue  = $rec->status === 'vencida';
+                    $rowBg      = $isOverdue ? 'background:rgba(239,68,68,.13);' : '';
+                    $textMain   = $isOverdue ? '#fca5a5' : '#f1f5f9';   {{-- vermelho claro vs branco --}}
+                    $textSub    = $isOverdue ? '#f87171' : '#94a3b8';   {{-- vermelho médio vs cinza --}}
+                @endphp
+                <tr style="border-color:rgba(148,163,184,.07); {{ $rowBg }}">
+
+                    {{-- Descrição --}}
                     <td class="ps-4 py-3">
-                        <span class="text-white fw-semibold">{{ $rec->description }}</span>
+                        <span style="color:{{ $textMain }};font-weight:600;">{{ $rec->description }}</span>
                         @if($rec->sale_id)
-                            <br><small class="text-soft" style="font-size:.72rem;">
+                            <br><small style="color:{{ $textSub }};font-size:.72rem;">
                                 <i class="bi bi-basket3 me-1"></i>Venda #{{ $rec->sale_id }}
                             </small>
                         @endif
                     </td>
+
+                    {{-- Categoria --}}
                     <td class="py-3">
-                        <span class="badge bg-secondary bg-opacity-50">{{ $rec->category_label }}</span>
+                        <span class="badge"
+                              style="background:{{ $isOverdue ? 'rgba(239,68,68,.25)' : 'rgba(100,116,139,.35)' }};
+                                     color:{{ $isOverdue ? '#fca5a5' : '#cbd5e1' }};">
+                            {{ $rec->category_label }}
+                        </span>
                     </td>
-                    <td class="py-3" style="color:#94a3b8;font-size:.85rem;">
+
+                    {{-- Cliente --}}
+                    <td class="py-3" style="color:{{ $textSub }};font-size:.85rem;">
                         {{ $rec->customer->name ?? '-' }}
                     </td>
+
+                    {{-- Vencimento --}}
                     <td class="py-3" style="font-size:.85rem;">
-                        @php $isOverdue = $rec->status === 'vencida'; @endphp
-                        <span class="{{ $isOverdue ? 'text-danger fw-bold' : 'text-soft' }}">
+                        <span style="color:{{ $isOverdue ? '#f87171' : '#94a3b8' }};
+                                     font-weight:{{ $isOverdue ? '700' : '400' }};">
                             {{ $rec->due_date->format('d/m/Y') }}
                             @if($isOverdue)<i class="bi bi-exclamation-triangle-fill ms-1"></i>@endif
                         </span>
                     </td>
-                    <td class="py-3 text-white fw-semibold">
+
+                    {{-- Valor --}}
+                    <td class="py-3" style="color:{{ $textMain }};font-weight:600;">
                         R$ {{ number_format($rec->amount, 2, ',', '.') }}
                     </td>
+
+                    {{-- Recebido --}}
                     <td class="py-3" style="font-size:.85rem;">
                         @if($rec->amount_received > 0)
                             <span class="text-success">R$ {{ number_format($rec->amount_received, 2, ',', '.') }}</span>
                         @else
-                            <span class="text-soft">—</span>
+                            <span style="color:{{ $textSub }};">—</span>
                         @endif
                     </td>
+
+                    {{-- Status --}}
                     <td class="py-3">
                         <span class="badge bg-{{ $rec->status_color }}">{{ $rec->status_label }}</span>
                     </td>
+
+                    {{-- Ações --}}
                     <td class="py-3 text-end pe-4">
-                        <a href="{{ route('receivables.show', $rec) }}" class="btn btn-outline-success btn-sm">Ver</a>
+                        <a href="{{ route('receivables.show', $rec) }}"
+                           class="btn btn-sm"
+                           style="{{ $isOverdue
+                               ? 'border:1px solid rgba(239,68,68,.5);color:#fca5a5;'
+                               : 'border:1px solid rgba(34,197,94,.4);color:#4ade80;' }}">
+                            Ver
+                        </a>
                     </td>
                 </tr>
                 @empty
