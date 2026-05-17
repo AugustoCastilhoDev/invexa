@@ -8,7 +8,7 @@
         <div>
             <h4 class="mb-1 text-white">
                 @if($showTrashed ?? false)
-                    <i class="bi bi-trash me-1 text-danger"></i>Lixeira — Vendas
+                    <i class="bi bi-trash me-1 text-danger"></i>Lixeira &mdash; Vendas
                 @else
                     Vendas
                 @endif
@@ -16,7 +16,7 @@
             <p class="text-soft mb-0">Acompanhe pedidos, status e receita com eficiência.</p>
         </div>
         <div class="d-flex flex-wrap gap-2">
-            @canRole(['admin','gerente'])
+            @if(auth()->user()->hasRole(['admin','gerente']))
                 @if($showTrashed ?? false)
                     <a href="{{ route('sales.index') }}" class="btn btn-outline-light">
                         <i class="bi bi-arrow-left me-1"></i>Voltar às Vendas
@@ -26,7 +26,7 @@
                         <i class="bi bi-trash me-1"></i>Lixeira
                     </a>
                 @endif
-            @endCanRole
+            @endif
             <a href="{{ route('dashboard') }}" class="btn btn-outline-light">Dashboard</a>
             @if(!($showTrashed ?? false))
                 <a href="{{ route('sales.create') }}" class="btn btn-primary">Nova Venda</a>
@@ -133,7 +133,7 @@
                 </thead>
                 <tbody>
                     @forelse ($sales as $sale)
-                        <tr style="border-color:rgba(148,163,184,.07); {{ $showTrashed ?? false ? 'opacity:.7;' : '' }}">
+                        <tr style="border-color:rgba(148,163,184,.07); {{ ($showTrashed ?? false) ? 'opacity:.7;' : '' }}">
                             <td class="ps-3 py-3">
                                 <div class="fw-semibold text-white">{{ $sale->customer_name ?? 'Sem nome' }}</div>
                                 <div class="text-soft small">
@@ -164,7 +164,7 @@
                                         {{ $item->product->name ?? 'Produto removido' }}
                                     </div>
                                 @empty
-                                    <span class="text-soft">—</span>
+                                    <span class="text-soft">&mdash;</span>
                                 @endforelse
                             </td>
                             <td class="py-3 fw-semibold text-white">
@@ -174,14 +174,13 @@
                                 <div class="d-flex justify-content-end gap-1 flex-wrap">
 
                                     @if($showTrashed ?? false)
-                                        {{-- Lixeira: restaurar ou excluir permanente --}}
                                         <form action="{{ route('sales.restore', $sale->id) }}" method="POST">
                                             @csrf @method('PATCH')
                                             <button type="submit" class="btn btn-sm btn-outline-success">
                                                 <i class="bi bi-arrow-counterclockwise"></i> Restaurar
                                             </button>
                                         </form>
-                                        @canRole(['admin'])
+                                        @if(auth()->user()->hasRole(['admin']))
                                         <form action="{{ route('sales.force-destroy', $sale->id) }}" method="POST"
                                               onsubmit="return confirm('Excluir permanentemente? Não há como desfazer.')">
                                             @csrf @method('DELETE')
@@ -189,30 +188,28 @@
                                                 <i class="bi bi-trash3-fill"></i> Excluir
                                             </button>
                                         </form>
-                                        @endCanRole
+                                        @endif
                                     @else
-                                        {{-- Lista normal --}}
                                         <a href="{{ route('sales.show', $sale) }}" class="btn btn-sm btn-outline-light">Ver</a>
 
-                                        @canRole(['admin','gerente'])
+                                        @if(auth()->user()->hasRole(['admin','gerente']))
                                             @if($sale->status !== 'cancelada')
                                                 <form action="{{ route('sales.cancel', $sale) }}" method="POST"
                                                       onsubmit="return confirm('Cancelar esta venda e estornar estoque?')">
                                                     @csrf @method('PATCH')
-                                                    <button type="submit" class="btn btn-sm btn-outline-warning">
+                                                    <button type="submit" class="btn btn-sm btn-outline-warning" title="Cancelar venda">
                                                         <i class="bi bi-x-circle"></i>
                                                     </button>
                                                 </form>
                                             @endif
-
                                             <form action="{{ route('sales.destroy', $sale) }}" method="POST"
                                                   onsubmit="return confirm('Mover esta venda para a lixeira?')">
                                                 @csrf @method('DELETE')
-                                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Mover para lixeira">
                                                     <i class="bi bi-trash"></i>
                                                 </button>
                                             </form>
-                                        @endCanRole
+                                        @endif
                                     @endif
 
                                 </div>

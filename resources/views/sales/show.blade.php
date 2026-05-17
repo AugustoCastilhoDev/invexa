@@ -18,7 +18,7 @@
                     </a>
                 @endif
 
-                @canRole(['admin','gerente'])
+                @if(auth()->user()->hasRole(['admin','gerente']))
                     @if($sale->status !== 'cancelada')
                         <a href="{{ route('sales.edit', $sale) }}" class="btn btn-outline-primary btn-sm">
                             <i class="bi bi-pencil me-1"></i>Editar
@@ -39,7 +39,7 @@
                             <i class="bi bi-trash me-1"></i>Lixeira
                         </button>
                     </form>
-                @endCanRole
+                @endif
 
                 <a href="{{ route('sales.index') }}" class="btn btn-outline-secondary btn-sm">Voltar</a>
             </div>
@@ -61,7 +61,6 @@
             </div>
         @endif
 
-        {{-- Banner de venda cancelada --}}
         @if($sale->status === 'cancelada')
             <div class="alert alert-danger d-flex align-items-center gap-2 mb-4" role="alert">
                 <i class="bi bi-exclamation-octagon-fill fs-5"></i>
@@ -72,7 +71,6 @@
             </div>
         @endif
 
-        {{-- Cards de resumo --}}
         <div class="row g-3 mb-4">
             <div class="col-12 col-md-3">
                 <div class="card card-dark-bg border border-secondary h-100">
@@ -118,7 +116,6 @@
             </div>
         </div>
 
-        {{-- Devoluções vinculadas --}}
         @php $saleReturns = $sale->saleReturns ?? collect(); @endphp
         @if($saleReturns->isNotEmpty())
         <div class="card card-dark-bg border border-warning mb-4">
@@ -173,7 +170,6 @@
         </div>
         @endif
 
-        {{-- Tabela de itens --}}
         <div class="card card-dark-bg border border-secondary mb-4">
             <div class="card-header card-header-dark">
                 <span class="text-white fw-semibold">Itens da Venda</span>
@@ -224,8 +220,7 @@
             </div>
         @endif
 
-        {{-- Ações do rodapé --}}
-        @canRole(['admin','gerente'])
+        @if(auth()->user()->hasRole(['admin','gerente']))
         <div class="d-flex gap-2 mt-4 flex-wrap">
             @if($sale->status !== 'cancelada')
                 <a href="{{ route('sales.edit', $sale) }}" class="btn btn-warning">
@@ -248,7 +243,7 @@
                 </button>
             </form>
 
-            @canRole(['admin'])
+            @if(auth()->user()->hasRole(['admin']))
                 <form action="{{ route('sales.force-destroy', $sale->id) }}" method="POST"
                       onsubmit="return confirm('ATENÇÃO: Excluir permanentemente esta venda? Esta ação não pode ser desfeita.')">
                     @csrf @method('DELETE')
@@ -256,9 +251,9 @@
                         <i class="bi bi-trash3-fill me-1"></i>Excluir Permanente
                     </button>
                 </form>
-            @endCanRole
+            @endif
         </div>
-        @endCanRole
+        @endif
 
     </div>
 </div>
