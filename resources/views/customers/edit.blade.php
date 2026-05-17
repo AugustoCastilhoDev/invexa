@@ -8,6 +8,12 @@ body { background: radial-gradient(circle at top left,rgba(96,165,250,.10),trans
 .card-header-dark { background:rgba(15,23,42,.92); border-color:rgba(148,163,184,.12); }
 .text-soft { color:rgba(226,232,240,.72) !important; }
 .form-label { font-size:.82rem; color:rgba(226,232,240,.75); }
+
+.status-btn-group .btn { font-size:.875rem; font-weight:600; padding:.5rem 1.4rem; transition:all .2s ease; }
+.status-btn-group .btn-active   { background:rgba(34,197,94,.15);  border:1px solid rgba(34,197,94,.35);  color:#86efac; }
+.status-btn-group .btn-inactive { background:rgba(239,68,68,.12);  border:1px solid rgba(239,68,68,.3);   color:#fca5a5; }
+.status-btn-group .btn-active.selected   { background:rgba(34,197,94,.3);  border-color:#22c55e; color:#4ade80; box-shadow:0 0 0 3px rgba(34,197,94,.2); }
+.status-btn-group .btn-inactive.selected { background:rgba(239,68,68,.28); border-color:#ef4444; color:#f87171; box-shadow:0 0 0 3px rgba(239,68,68,.2); }
 </style>
 @endpush
 
@@ -24,7 +30,7 @@ body { background: radial-gradient(circle at top left,rgba(96,165,250,.10),trans
 
 <div class="card card-dark-bg shadow-sm">
     <div class="card-body">
-        <form method="POST" action="{{ route('customers.update', $customer) }}">
+        <form method="POST" action="{{ route('customers.update', $customer) }}" id="editCustomerForm">
             @csrf @method('PUT')
             <div class="row g-3">
 
@@ -78,12 +84,34 @@ body { background: radial-gradient(circle at top left,rgba(96,165,250,.10),trans
                               class="form-control bg-dark text-white border-secondary">{{ old('notes', $customer->notes) }}</textarea>
                 </div>
 
+                {{-- Status: botões Ativo / Inativo --}}
                 <div class="col-12">
-                    <div class="form-check form-switch">
-                        <input class="form-check-input" type="checkbox" name="active" value="1"
-                               id="active" {{ old('active', $customer->active) ? 'checked' : '' }}>
-                        <label class="form-check-label text-soft" for="active">Cliente ativo</label>
+                    <label class="form-label d-block mb-2">Status do Cliente</label>
+
+                    {{-- hidden input que será submetido com o formulário --}}
+                    <input type="hidden" name="active" id="activeInput"
+                           value="{{ old('active', $customer->active) ? '1' : '0' }}">
+
+                    <div class="d-flex gap-2 status-btn-group">
+                        <button type="button" id="btnAtivo"
+                                class="btn btn-active {{ old('active', $customer->active) ? 'selected' : '' }}"
+                                onclick="setStatus(1)">
+                            <i class="bi bi-check-circle me-1"></i>Ativo
+                        </button>
+                        <button type="button" id="btnInativo"
+                                class="btn btn-inactive {{ !old('active', $customer->active) ? 'selected' : '' }}"
+                                onclick="setStatus(0)">
+                            <i class="bi bi-x-circle me-1"></i>Inativo
+                        </button>
                     </div>
+
+                    <small class="text-soft mt-2 d-block" id="statusHint">
+                        @if(old('active', $customer->active))
+                            Cliente visível e disponível para novas vendas.
+                        @else
+                            Cliente inativo não aparece no autocomplete de vendas.
+                        @endif
+                    </small>
                 </div>
 
             </div>
@@ -100,3 +128,25 @@ body { background: radial-gradient(circle at top left,rgba(96,165,250,.10),trans
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+function setStatus(val) {
+    document.getElementById('activeInput').value = val;
+
+    const btnAtivo   = document.getElementById('btnAtivo');
+    const btnInativo = document.getElementById('btnInativo');
+    const hint       = document.getElementById('statusHint');
+
+    if (val === 1) {
+        btnAtivo.classList.add('selected');
+        btnInativo.classList.remove('selected');
+        hint.textContent = 'Cliente visível e disponível para novas vendas.';
+    } else {
+        btnInativo.classList.add('selected');
+        btnAtivo.classList.remove('selected');
+        hint.textContent = 'Cliente inativo não aparece no autocomplete de vendas.';
+    }
+}
+</script>
+@endpush
