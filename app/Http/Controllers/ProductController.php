@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\Supplier;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -52,8 +53,9 @@ class ProductController extends Controller
         }
 
         $categories = Category::where('company_id', $companyId)->where('active', true)->orderBy('name')->get();
+        $suppliers  = Supplier::where('company_id', $companyId)->where('active', true)->orderBy('name')->get();
 
-        return view('products.create', compact('categories'));
+        return view('products.create', compact('categories', 'suppliers'));
     }
 
     public function store(Request $request)
@@ -82,8 +84,9 @@ class ProductController extends Controller
             'cost'         => ['nullable', 'numeric', 'min:0'],
             'quantity'     => ['required', 'integer', 'min:0'],
             'min_quantity' => ['required', 'integer', 'min:0'],
-            'unit'         => ['nullable', 'string', 'max:1'],
+            'unit'         => ['nullable', 'string', 'max:10'],
             'category_id'  => ['nullable', 'exists:categories,id'],
+            'supplier_id'  => ['nullable', 'exists:suppliers,id'],
         ], [
             'name.required'     => 'O nome do produto é obrigatório.',
             'sku.required'      => 'O SKU é obrigatório.',
@@ -103,7 +106,7 @@ class ProductController extends Controller
 
     public function show(Product $product)
     {
-        $product->load('category');
+        $product->load('category', 'supplier');
         return view('products.show', compact('product'));
     }
 
@@ -111,9 +114,10 @@ class ProductController extends Controller
     {
         $companyId     = auth()->user()->company_id;
         $categories    = Category::where('company_id', $companyId)->where('active', true)->orderBy('name')->get();
+        $suppliers     = Supplier::where('company_id', $companyId)->where('active', true)->orderBy('name')->get();
         $totalProducts = Product::where('company_id', $companyId)->count();
 
-        return view('products.edit', compact('product', 'categories', 'totalProducts'));
+        return view('products.edit', compact('product', 'categories', 'suppliers', 'totalProducts'));
     }
 
     public function update(Request $request, Product $product)
@@ -137,6 +141,7 @@ class ProductController extends Controller
             'min_quantity' => ['required', 'integer', 'min:0'],
             'unit'         => ['nullable', 'string', 'max:10'],
             'category_id'  => ['nullable', 'exists:categories,id'],
+            'supplier_id'  => ['nullable', 'exists:suppliers,id'],
         ], [
             'name.required'     => 'O nome do produto é obrigatório.',
             'sku.required'      => 'O SKU é obrigatório.',

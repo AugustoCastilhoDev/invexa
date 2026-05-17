@@ -1,121 +1,150 @@
 @extends('layouts.app')
 
-@section('title', 'Detalhes do Produto')
+@section('title', $product->name)
 
 @section('content')
-<div class="card dashboard-card card-dark-bg shadow-sm border-0">
-    <div class="card-header card-header-dark border-bottom">
-        <div class="d-flex justify-content-between align-items-center gap-3">
-            <div>
-                <h4 class="mb-1 text-white">Detalhes do Produto</h4>
-                <p class="text-soft mb-0">Informações completas do produto cadastrado.</p>
+<div class="d-flex justify-content-between align-items-start mb-4 gap-3 flex-column flex-md-row">
+    <div>
+        <h1 class="h3 mb-1 text-white">{{ $product->name }}</h1>
+        <p class="text-soft mb-0">Detalhes do produto</p>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+        <a href="{{ route('products.index') }}" class="btn btn-outline-light">Voltar</a>
+        <a href="{{ route('products.edit', $product) }}" class="btn btn-outline-primary">
+            <i class="bi bi-pencil me-1"></i>Editar
+        </a>
+    </div>
+</div>
+
+<div class="row g-4">
+
+    {{-- Informações principais --}}
+    <div class="col-12 col-lg-8">
+        <div class="card card-dark-bg shadow-sm">
+            <div class="card-header card-header-dark border-bottom">
+                <span class="text-soft text-uppercase fw-semibold" style="font-size:.72rem;letter-spacing:.08em;">
+                    <i class="bi bi-box-seam me-1"></i>Informações do Produto
+                </span>
             </div>
-            <div class="d-flex gap-2">
-                <a href="{{ route('products.edit', $product) }}" class="btn btn-warning btn-sm">Editar</a>
-                <a href="{{ route('products.index') }}" class="btn btn-outline-light btn-sm">Voltar</a>
+            <div class="card-body">
+                <dl class="row mb-0" style="font-size:.9rem;">
+                    <dt class="col-4 text-soft fw-normal py-2 border-bottom border-secondary">SKU</dt>
+                    <dd class="col-8 text-white py-2 border-bottom border-secondary" style="font-family:monospace;">{{ $product->sku }}</dd>
+
+                    @if($product->barcode)
+                    <dt class="col-4 text-soft fw-normal py-2 border-bottom border-secondary">Cód. Barras</dt>
+                    <dd class="col-8 text-white py-2 border-bottom border-secondary" style="font-family:monospace;">{{ $product->barcode }}</dd>
+                    @endif
+
+                    <dt class="col-4 text-soft fw-normal py-2 border-bottom border-secondary">Categoria</dt>
+                    <dd class="col-8 py-2 border-bottom border-secondary">
+                        @if($product->category)
+                            <span class="badge bg-secondary">{{ $product->category->name }}</span>
+                        @else
+                            <span class="text-soft">&mdash;</span>
+                        @endif
+                    </dd>
+
+                    <dt class="col-4 text-soft fw-normal py-2 border-bottom border-secondary">Fornecedor</dt>
+                    <dd class="col-8 py-2 border-bottom border-secondary">
+                        @if($product->supplier)
+                            <a href="{{ route('suppliers.show', $product->supplier) }}" class="text-info text-decoration-none">
+                                <i class="bi bi-truck me-1"></i>{{ $product->supplier->name }}
+                            </a>
+                        @else
+                            <span class="text-soft">&mdash;</span>
+                        @endif
+                    </dd>
+
+                    <dt class="col-4 text-soft fw-normal py-2 border-bottom border-secondary">Preço de Venda</dt>
+                    <dd class="col-8 text-white fw-semibold py-2 border-bottom border-secondary">R$ {{ number_format($product->price, 2, ',', '.') }}</dd>
+
+                    @if($product->cost > 0)
+                    <dt class="col-4 text-soft fw-normal py-2 border-bottom border-secondary">Custo</dt>
+                    <dd class="col-8 py-2 border-bottom border-secondary">
+                        <span class="text-white">R$ {{ number_format($product->cost, 2, ',', '.') }}</span>
+                        <span class="text-soft ms-2" style="font-size:.8rem;">Margem: {{ $product->margin }}%</span>
+                    </dd>
+                    @endif
+
+                    <dt class="col-4 text-soft fw-normal py-2 border-bottom border-secondary">Unidade</dt>
+                    <dd class="col-8 text-white py-2 border-bottom border-secondary">{{ $product->unit ?? 'Un' }}</dd>
+
+                    @if($product->description)
+                    <dt class="col-4 text-soft fw-normal py-2">Descrição</dt>
+                    <dd class="col-8 text-soft py-2">{{ $product->description }}</dd>
+                    @endif
+                </dl>
             </div>
         </div>
     </div>
 
-    <div class="card-body">
-
-        <div class="row g-4">
-
-            {{-- Coluna esquerda --}}
-            <div class="col-12 col-md-6">
-                <div class="card card-dark-bg border border-secondary h-100">
-                    <div class="card-body">
-                        <h6 class="text-soft fw-semibold mb-3 text-uppercase" style="font-size:.75rem; letter-spacing:.08em;">Identificação</h6>
-
-                        <div class="mb-3">
-                            <p class="text-soft mb-1" style="font-size:.8rem;">Nome</p>
-                            <p class="text-white fw-semibold mb-0">{{ $product->name }}</p>
-                        </div>
-
-                        <div class="mb-3">
-                            <p class="text-soft mb-1" style="font-size:.8rem;">Categoria</p>
-                            <p class="text-white fw-semibold mb-0">{{ $product->category->name ?? '—' }}</p>
-                        </div>
-
-                        <div class="mb-3">
-                            <p class="text-soft mb-1" style="font-size:.8rem;">SKU</p>
-                            <p class="text-white fw-semibold mb-0">{{ $product->sku ?? '—' }}</p>
-                        </div>
-
-                        <div class="mb-3">
-                            <p class="text-soft mb-1" style="font-size:.8rem;">Código de Barras</p>
-                            <p class="text-white fw-semibold mb-0">{{ $product->barcode ?? '—' }}</p>
-                        </div>
-
-                        <div class="mb-3">
-                            <p class="text-soft mb-1" style="font-size:.8rem;">Unidade</p>
-                            <p class="text-white fw-semibold mb-0">{{ $product->unit ?? '—' }}</p>
-                        </div>
-
-                        <div>
-                            <p class="text-soft mb-1" style="font-size:.8rem;">Status</p>
-                            @if($product->active)
-                                <span class="badge bg-success">Ativo</span>
-                            @else
-                                <span class="badge bg-danger">Inativo</span>
-                            @endif
-                        </div>
-                    </div>
-                </div>
+    {{-- Estoque + status --}}
+    <div class="col-12 col-lg-4">
+        <div class="card card-dark-bg shadow-sm mb-3">
+            <div class="card-header card-header-dark border-bottom">
+                <span class="text-soft text-uppercase fw-semibold" style="font-size:.72rem;letter-spacing:.08em;">
+                    <i class="bi bi-archive me-1"></i>Estoque
+                </span>
             </div>
-
-            {{-- Coluna direita --}}
-            <div class="col-12 col-md-6">
-                <div class="card card-dark-bg border border-secondary h-100">
-                    <div class="card-body">
-                        <h6 class="text-soft fw-semibold mb-3 text-uppercase" style="font-size:.75rem; letter-spacing:.08em;">Estoque & Preços</h6>
-
-                        <div class="mb-3">
-                            <p class="text-soft mb-1" style="font-size:.8rem;">Preço de Venda</p>
-                            <p class="text-white fw-semibold mb-0">R$ {{ number_format($product->price, 2, ',', '.') }}</p>
-                        </div>
-
-                        <div class="mb-3">
-                            <p class="text-soft mb-1" style="font-size:.8rem;">Custo</p>
-                            <p class="text-white fw-semibold mb-0">R$ {{ number_format($product->cost ?? 0, 2, ',', '.') }}</p>
-                        </div>
-
-                        <div class="mb-3">
-                            <p class="text-soft mb-1" style="font-size:.8rem;">Quantidade em Estoque</p>
-                            <p class="fw-semibold mb-0 {{ $product->quantity <= $product->min_quantity ? 'text-danger' : 'text-white' }}">
-                                {{ $product->quantity }} un.
-                                @if($product->quantity <= $product->min_quantity)
-                                    <span class="badge bg-danger ms-1">Estoque baixo</span>
-                                @endif
-                            </p>
-                        </div>
-
-                        <div class="mb-3">
-                            <p class="text-soft mb-1" style="font-size:.8rem;">Estoque Mínimo</p>
-                            <p class="text-white fw-semibold mb-0">{{ $product->min_quantity }} un.</p>
-                        </div>
-
-                        <div>
-                            <p class="text-soft mb-1" style="font-size:.8rem;">Descrição</p>
-                            <p class="text-white fw-semibold mb-0">{{ $product->description ?? 'Sem descrição' }}</p>
-                        </div>
-                    </div>
+            <div class="card-body text-center">
+                <div style="font-size:2.5rem;font-weight:700;
+                            color:{{ $product->isLowStock() ? '#f87171' : '#4ade80' }};">
+                    {{ $product->quantity }}
                 </div>
+                <div class="text-soft">{{ $product->unit ?? 'Und' }} em estoque</div>
+                <div class="mt-2 text-soft" style="font-size:.8rem;">
+                    Mínimo: <strong class="text-white">{{ $product->min_quantity }}</strong>
+                </div>
+                @if($product->isLowStock())
+                    <div class="mt-3">
+                        <span style="display:inline-flex;align-items:center;gap:.4rem;font-size:.78rem;
+                                     font-weight:600;padding:.4rem .9rem;border-radius:999px;
+                                     background:rgba(239,68,68,.12);color:#f87171;
+                                     border:1px solid rgba(239,68,68,.25);">
+                            <i class="bi bi-exclamation-triangle-fill"></i>Estoque Baixo
+                        </span>
+                    </div>
+                @endif
             </div>
         </div>
 
-        {{-- Ações --}}
-        <div class="d-flex gap-2 mt-4">
-            <a href="{{ route('products.edit', $product) }}" class="btn btn-warning">Editar Produto</a>
-
-            <form action="{{ route('products.destroy', $product) }}" method="POST"
-                  onsubmit="return confirm('Tem certeza que deseja excluir este produto?')">
-                @csrf
-                @method('DELETE')
-                <button type="submit" class="btn btn-danger">Excluir Produto</button>
-            </form>
+        <div class="card card-dark-bg shadow-sm">
+            <div class="card-header card-header-dark border-bottom">
+                <span class="text-soft text-uppercase fw-semibold" style="font-size:.72rem;letter-spacing:.08em;">
+                    <i class="bi bi-info-circle me-1"></i>Status
+                </span>
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="text-soft">Situação</span>
+                    @if($product->active)
+                        <span style="display:inline-flex;align-items:center;gap:.3rem;font-size:.75rem;
+                                     font-weight:600;padding:.28rem .7rem;border-radius:999px;
+                                     background:rgba(34,197,94,.12);color:#4ade80;
+                                     border:1px solid rgba(34,197,94,.25);">
+                            <span style="width:6px;height:6px;border-radius:50%;background:#4ade80;"></span>Ativo
+                        </span>
+                    @else
+                        <span style="display:inline-flex;align-items:center;gap:.3rem;font-size:.75rem;
+                                     font-weight:600;padding:.28rem .7rem;border-radius:999px;
+                                     background:rgba(148,163,184,.1);color:#94a3b8;
+                                     border:1px solid rgba(148,163,184,.2);">
+                            <span style="width:6px;height:6px;border-radius:50%;background:#94a3b8;"></span>Inativo
+                        </span>
+                    @endif
+                </div>
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                    <span class="text-soft" style="font-size:.8rem;">Cadastrado</span>
+                    <span class="text-white" style="font-size:.8rem;">{{ $product->created_at->format('d/m/Y') }}</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mt-1">
+                    <span class="text-soft" style="font-size:.8rem;">Atualizado</span>
+                    <span class="text-white" style="font-size:.8rem;">{{ $product->updated_at->format('d/m/Y') }}</span>
+                </div>
+            </div>
         </div>
-
     </div>
+
 </div>
 @endsection

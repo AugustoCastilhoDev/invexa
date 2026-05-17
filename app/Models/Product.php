@@ -21,6 +21,7 @@ class Product extends Model
         'min_quantity',
         'unit',
         'category_id',
+        'supplier_id',
         'active',
         'company_id',
     ];
@@ -40,12 +41,17 @@ class Product extends Model
         return $this->belongsTo(Category::class);
     }
 
+    public function supplier()
+    {
+        return $this->belongsTo(Supplier::class);
+    }
+
     public function saleItems()
     {
         return $this->hasMany(SaleItem::class);
     }
 
-    // ── Helpers ──────────────────────────────────────────────
+    // ── Helpers ───────────────────────────────────────────
 
     /** Verifica se o estoque está abaixo do mínimo */
     public function isLowStock(): bool
