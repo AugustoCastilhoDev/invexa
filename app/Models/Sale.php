@@ -5,10 +5,11 @@ namespace App\Models;
 use App\Traits\BelongsToCompany;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Sale extends Model
 {
-    use HasFactory, BelongsToCompany;
+    use HasFactory, BelongsToCompany, SoftDeletes;
 
     protected $fillable = [
         'company_id',
@@ -21,8 +22,9 @@ class Sale extends Model
     ];
 
     protected $casts = [
-        'sale_date' => 'datetime',
-        'total'     => 'decimal:2',
+        'sale_date'  => 'datetime',
+        'total'      => 'decimal:2',
+        'deleted_at' => 'datetime',
     ];
 
     public function items()

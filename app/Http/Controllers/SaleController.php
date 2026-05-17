@@ -40,6 +40,12 @@ class SaleController extends Controller
             $query->whereDate('sale_date', '<=', Carbon::parse($request->to)->endOfDay());
         }
 
+        // Exibe lixeira se solicitado (somente admin/gerente)
+        $showTrashed = $request->boolean('trashed') && auth()->user()->hasRole(['admin', 'gerente']);
+        if ($showTrashed) {
+            $query->onlyTrashed();
+        }
+
         $salesCount     = (clone $query)->count();
         $salesRevenue   = (clone $query)->sum('total');
         $completedSales = (clone $query)->where('status', 'concluida')->count();
@@ -47,7 +53,10 @@ class SaleController extends Controller
 
         $sales = $query->orderByDesc('sale_date')->orderByDesc('id')->paginate(10);
 
-        return view('sales.index', compact('sales', 'salesCount', 'salesRevenue', 'completedSales', 'pendingSales'));
+        return view('sales.index', compact(
+            'sales', 'salesCount', 'salesRevenue',
+            'completedSales', 'pendingSales', 'showTrashed'
+        ));
     }
 
     public function create()
@@ -275,52 +284,144 @@ class SaleController extends Controller
         }
     }
 
+    /**
+     * Cancela a venda (sem excluir) e estorna o estoque dos itens não devolvidos.
+     */
+    public function cancel(Sale $sale)
+    {
+        if ($sale->status === 'cancelada') {
+            return back()->with('error', 'Esta venda já está cancelada.');
+        }
+
+        $companyId = auth()->user()->company_id;
+
+        try {
+            DB::transaction(function () use ($sale, $companyId) {
+                $sale->load('items.product');
+
+                // Quantidade já devolvida por produto
+                $alreadyReturned = SaleReturnItem::whereHas('saleReturn', fn($q) => $q->where('sale_id', $sale->id))
+                    ->selectRaw('product_id, SUM(quantity) as total_returned')
+                    ->groupBy('product_id')
+                    ->pluck('total_returned', 'product_id')
+                    ->map(fn($v) => (int) $v);
+
+                foreach ($sale->items as $item) {
+                    $product = Product::lockForUpdate()->find($item->product_id);
+                    if (!$product) continue;
+
+                    $returnedQty = $alreadyReturned->get($item->product_id, 0);
+                    $netQty      = max(0, $item->quantity - $returnedQty);
+                    if ($netQty === 0) continue;
+
+                    $before = $product->fresh()->quantity;
+                    $after  = $before + $netQty;
+                    $product->update(['quantity' => $after]);
+
+                    StockMovement::create([
+                        'product_id'      => $product->id,
+                        'company_id'      => $companyId,
+                        'user_id'         => auth()->id(),
+                        'type'            => 'entrada',
+                        'quantity'        => $netQty,
+                        'quantity_before' => $before,
+                        'quantity_after'  => $after,
+                        'reason'          => 'cancelamento',
+                        'notes'           => "Estorno por cancelamento da Venda #{$sale->id}",
+                        'source_type'     => Sale::class,
+                        'source_id'       => $sale->id,
+                    ]);
+                }
+
+                $sale->update(['status' => 'cancelada']);
+            });
+
+            return back()->with('success', 'Venda cancelada e estoque estornado com sucesso.');
+
+        } catch (\Exception $e) {
+            return back()->with('error', $e->getMessage());
+        }
+    }
+
+    /**
+     * Soft-delete a venda (move para lixeira).
+     * O estorno de estoque já ocorre no cancelamento; aqui apenas arquiva o registro.
+     */
     public function destroy(Sale $sale)
     {
         $companyId = auth()->user()->company_id;
 
-        DB::transaction(function () use ($sale, $companyId) {
-            $sale->load('items.product');
+        // Só estorna estoque se a venda ainda não estiver cancelada
+        if ($sale->status !== 'cancelada') {
+            DB::transaction(function () use ($sale, $companyId) {
+                $sale->load('items.product');
 
-            $alreadyReturned = SaleReturnItem::whereHas('saleReturn', fn($q) => $q->where('sale_id', $sale->id))
-                ->selectRaw('product_id, SUM(quantity) as total_returned')
-                ->groupBy('product_id')
-                ->pluck('total_returned', 'product_id')
-                ->map(fn($v) => (int) $v);
+                $alreadyReturned = SaleReturnItem::whereHas('saleReturn', fn($q) => $q->where('sale_id', $sale->id))
+                    ->selectRaw('product_id, SUM(quantity) as total_returned')
+                    ->groupBy('product_id')
+                    ->pluck('total_returned', 'product_id')
+                    ->map(fn($v) => (int) $v);
 
-            foreach ($sale->items as $item) {
-                $product = Product::find($item->product_id);
-                if (!$product) continue;
+                foreach ($sale->items as $item) {
+                    $product = Product::find($item->product_id);
+                    if (!$product) continue;
 
-                $returnedQty = $alreadyReturned->get($item->product_id, 0);
-                $netQty      = max(0, $item->quantity - $returnedQty);
-                if ($netQty === 0) continue;
+                    $returnedQty = $alreadyReturned->get($item->product_id, 0);
+                    $netQty      = max(0, $item->quantity - $returnedQty);
+                    if ($netQty === 0) continue;
 
-                $before = $product->fresh()->quantity;
-                $after  = $before + $netQty;
-                $product->update(['quantity' => $after]);
+                    $before = $product->fresh()->quantity;
+                    $after  = $before + $netQty;
+                    $product->update(['quantity' => $after]);
 
-                StockMovement::create([
-                    'product_id'      => $product->id,
-                    'company_id'      => $companyId,
-                    'user_id'         => auth()->id(),
-                    'type'            => 'entrada',
-                    'quantity'        => $netQty,
-                    'quantity_before' => $before,
-                    'quantity_after'  => $after,
-                    'reason'          => 'devolucao',
-                    'notes'           => "Estorno por exclusão da Venda #{$sale->id}",
-                    'source_type'     => Sale::class,
-                    'source_id'       => $sale->id,
-                ]);
-            }
+                    StockMovement::create([
+                        'product_id'      => $product->id,
+                        'company_id'      => $companyId,
+                        'user_id'         => auth()->id(),
+                        'type'            => 'entrada',
+                        'quantity'        => $netQty,
+                        'quantity_before' => $before,
+                        'quantity_after'  => $after,
+                        'reason'          => 'devolucao',
+                        'notes'           => "Estorno por exclusão da Venda #{$sale->id}",
+                        'source_type'     => Sale::class,
+                        'source_id'       => $sale->id,
+                    ]);
+                }
+            });
+        }
 
-            $sale->items()->delete();
-            $sale->delete();
-        });
+        // Soft-delete: mantém o registro no banco com deleted_at preenchido
+        $sale->delete();
 
         return redirect()->route('sales.index')
-            ->with('success', 'Venda excluída com sucesso.');
+            ->with('success', 'Venda movida para a lixeira com sucesso.');
+    }
+
+    /**
+     * Restaura uma venda da lixeira.
+     */
+    public function restore(int $id)
+    {
+        $companyId = auth()->user()->company_id;
+        $sale = Sale::onlyTrashed()->where('company_id', $companyId)->findOrFail($id);
+        $sale->restore();
+
+        return redirect()->route('sales.index', ['trashed' => 1])
+            ->with('success', 'Venda restaurada com sucesso.');
+    }
+
+    /**
+     * Exclusão permanente (force delete) — somente admin.
+     */
+    public function forceDestroy(int $id)
+    {
+        $companyId = auth()->user()->company_id;
+        $sale = Sale::onlyTrashed()->where('company_id', $companyId)->findOrFail($id);
+        $sale->forceDelete();
+
+        return redirect()->route('sales.index', ['trashed' => 1])
+            ->with('success', 'Venda excluída permanentemente.');
     }
 
     public function invoice(Sale $sale)

@@ -14,7 +14,7 @@ use App\Http\Controllers\StockMovementController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
-// ── Autenticação (pública) ────────────────────────────────────────────────────
+// ── Autenticação (pública) ────────────────────────────────────────────
 Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
 Route::post('/login', [AuthenticatedSessionController::class, 'store'])->name('login.post');
 Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
@@ -22,7 +22,7 @@ Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name
 Route::get('/register', [RegisteredUserController::class, 'create'])->name('register');
 Route::post('/register', [RegisteredUserController::class, 'store'])->name('register.store');
 
-// ── Rotas protegidas ──────────────────────────────────────────────────────────
+// ── Rotas protegidas ────────────────────────────────────────────────
 Route::middleware(['auth', 'company'])->group(function () {
 
     // Dashboard
@@ -35,37 +35,44 @@ Route::middleware(['auth', 'company'])->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
 
     // Vendas — listagem e criação para todos os perfis
-    Route::get('/sales', [SaleController::class, 'index'])->name('sales.index');
+    Route::get('/sales',        [SaleController::class, 'index'])->name('sales.index');
     Route::get('/sales/create', [SaleController::class, 'create'])->name('sales.create');
-    Route::post('/sales', [SaleController::class, 'store'])->name('sales.store');
+    Route::post('/sales',       [SaleController::class, 'store'])->name('sales.store');
     Route::get('/sales/{sale}', [SaleController::class, 'show'])->name('sales.show');
     Route::get('/sales/{sale}/invoice', [SaleController::class, 'invoice'])->name('sales.invoice');
 
-    // Vendas — edição e exclusão somente para admin e gerente
+    // Vendas — edição, cancelamento e lixeira somente para admin e gerente
     Route::middleware('role:admin,gerente')->group(function () {
-        Route::get('/sales/{sale}/edit', [SaleController::class, 'edit'])->name('sales.edit');
-        Route::put('/sales/{sale}', [SaleController::class, 'update'])->name('sales.update');
-        Route::delete('/sales/{sale}', [SaleController::class, 'destroy'])->name('sales.destroy');
+        Route::get('/sales/{sale}/edit',    [SaleController::class, 'edit'])->name('sales.edit');
+        Route::put('/sales/{sale}',         [SaleController::class, 'update'])->name('sales.update');
+        Route::patch('/sales/{sale}/cancel',[SaleController::class, 'cancel'])->name('sales.cancel');
+        Route::delete('/sales/{sale}',      [SaleController::class, 'destroy'])->name('sales.destroy');
+        Route::patch('/sales/{id}/restore', [SaleController::class, 'restore'])->name('sales.restore');
+    });
+
+    // Exclusão permanente — somente admin
+    Route::middleware('role:admin')->group(function () {
+        Route::delete('/sales/{id}/force', [SaleController::class, 'forceDestroy'])->name('sales.force-destroy');
     });
 
     // Devoluções
-    Route::get('/returns', [SaleReturnController::class, 'index'])->name('returns.index');
-    Route::get('/returns/create', [SaleReturnController::class, 'create'])->name('returns.create');
-    Route::post('/returns', [SaleReturnController::class, 'store'])->name('returns.store');
+    Route::get('/returns',              [SaleReturnController::class, 'index'])->name('returns.index');
+    Route::get('/returns/create',       [SaleReturnController::class, 'create'])->name('returns.create');
+    Route::post('/returns',             [SaleReturnController::class, 'store'])->name('returns.store');
     Route::get('/returns/{saleReturn}', [SaleReturnController::class, 'show'])->name('returns.show');
     Route::get('/returns/{sale}/items', [SaleReturnController::class, 'getSaleItems'])->name('returns.items');
 
     // Estoque
-    Route::get('/stock', [StockMovementController::class, 'index'])->name('stock.index');
+    Route::get('/stock',        [StockMovementController::class, 'index'])->name('stock.index');
     Route::get('/stock/create', [StockMovementController::class, 'create'])->name('stock.create');
-    Route::post('/stock', [StockMovementController::class, 'store'])->name('stock.store');
+    Route::post('/stock',       [StockMovementController::class, 'store'])->name('stock.store');
 
     // Clientes — search ANTES do resource para não conflitar com {customer}
     Route::get('/customers/search', [CustomerController::class, 'search'])->name('customers.search');
     Route::resource('customers', CustomerController::class);
 
     // Relatórios
-    Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
+    Route::get('/reports',            [ReportController::class, 'index'])->name('reports.index');
     Route::get('/reports/export/csv', [ReportController::class, 'export'])->name('reports.export.csv');
     Route::get('/reports/export/pdf', [ReportController::class, 'topProductsPdf'])->name('reports.export.pdf');
 
