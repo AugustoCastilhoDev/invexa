@@ -10,20 +10,67 @@
                 <h4 class="mb-1 text-white">Detalhes da Venda #{{ $sale->id }}</h4>
                 <p class="text-soft mb-0">Informações completas sobre esta transação.</p>
             </div>
-            <div class="d-flex gap-2">
+            <div class="d-flex gap-2 flex-wrap">
                 @if($sale->status === 'concluida')
                     <a href="{{ route('returns.create', ['sale_id' => $sale->id]) }}"
                        class="btn btn-warning btn-sm">
                         <i class="bi bi-arrow-return-left me-1"></i>Registrar Devolução
                     </a>
                 @endif
-                <a href="{{ route('sales.edit', $sale) }}" class="btn btn-outline-light btn-sm">Editar</a>
+
+                @canRole(['admin','gerente'])
+                    @if($sale->status !== 'cancelada')
+                        <a href="{{ route('sales.edit', $sale) }}" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-pencil me-1"></i>Editar
+                        </a>
+                        <form action="{{ route('sales.cancel', $sale) }}" method="POST"
+                              onsubmit="return confirm('Cancelar esta venda e estornar o estoque?')">
+                            @csrf @method('PATCH')
+                            <button type="submit" class="btn btn-warning btn-sm">
+                                <i class="bi bi-x-circle me-1"></i>Cancelar Venda
+                            </button>
+                        </form>
+                    @endif
+
+                    <form action="{{ route('sales.destroy', $sale) }}" method="POST"
+                          onsubmit="return confirm('Mover esta venda para a lixeira?')">
+                        @csrf @method('DELETE')
+                        <button type="submit" class="btn btn-outline-danger btn-sm">
+                            <i class="bi bi-trash me-1"></i>Lixeira
+                        </button>
+                    </form>
+                @endCanRole
+
                 <a href="{{ route('sales.index') }}" class="btn btn-outline-secondary btn-sm">Voltar</a>
             </div>
         </div>
     </div>
 
     <div class="card-body">
+
+        @if(session('success'))
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                {{ session('success') }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        @endif
+        @if(session('error'))
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                {{ session('error') }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        @endif
+
+        {{-- Banner de venda cancelada --}}
+        @if($sale->status === 'cancelada')
+            <div class="alert alert-danger d-flex align-items-center gap-2 mb-4" role="alert">
+                <i class="bi bi-exclamation-octagon-fill fs-5"></i>
+                <div>
+                    <strong>Venda cancelada.</strong>
+                    O estoque dos produtos foi estornado automaticamente no momento do cancelamento.
+                </div>
+            </div>
+        @endif
 
         {{-- Cards de resumo --}}
         <div class="row g-3 mb-4">
@@ -177,15 +224,41 @@
             </div>
         @endif
 
-        <div class="d-flex gap-2 mt-4">
-            <a href="{{ route('sales.edit', $sale) }}" class="btn btn-warning">Editar Venda</a>
+        {{-- Ações do rodapé --}}
+        @canRole(['admin','gerente'])
+        <div class="d-flex gap-2 mt-4 flex-wrap">
+            @if($sale->status !== 'cancelada')
+                <a href="{{ route('sales.edit', $sale) }}" class="btn btn-warning">
+                    <i class="bi bi-pencil me-1"></i>Editar Venda
+                </a>
+                <form action="{{ route('sales.cancel', $sale) }}" method="POST"
+                      onsubmit="return confirm('Cancelar esta venda e estornar o estoque?')">
+                    @csrf @method('PATCH')
+                    <button type="submit" class="btn btn-outline-warning">
+                        <i class="bi bi-x-circle me-1"></i>Cancelar Venda
+                    </button>
+                </form>
+            @endif
+
             <form action="{{ route('sales.destroy', $sale) }}" method="POST"
-                  onsubmit="return confirm('Tem certeza que deseja excluir esta venda?')">
-                @csrf
-                @method('DELETE')
-                <button type="submit" class="btn btn-danger">Excluir Venda</button>
+                  onsubmit="return confirm('Mover esta venda para a lixeira?')">
+                @csrf @method('DELETE')
+                <button type="submit" class="btn btn-outline-danger">
+                    <i class="bi bi-trash me-1"></i>Mover para Lixeira
+                </button>
             </form>
+
+            @canRole(['admin'])
+                <form action="{{ route('sales.force-destroy', $sale->id) }}" method="POST"
+                      onsubmit="return confirm('ATENÇÃO: Excluir permanentemente esta venda? Esta ação não pode ser desfeita.')">
+                    @csrf @method('DELETE')
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash3-fill me-1"></i>Excluir Permanente
+                    </button>
+                </form>
+            @endCanRole
         </div>
+        @endCanRole
 
     </div>
 </div>

@@ -6,15 +6,48 @@
 <div class="card dashboard-card card-dark-bg shadow-sm border-0">
     <div class="card-header card-header-dark border-bottom d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
         <div>
-            <h4 class="mb-1 text-white">Vendas</h4>
+            <h4 class="mb-1 text-white">
+                @if($showTrashed ?? false)
+                    <i class="bi bi-trash me-1 text-danger"></i>Lixeira — Vendas
+                @else
+                    Vendas
+                @endif
+            </h4>
             <p class="text-soft mb-0">Acompanhe pedidos, status e receita com eficiência.</p>
         </div>
         <div class="d-flex flex-wrap gap-2">
-            <a href="{{ route('dashboard') }}" class="btn btn-outline-light">Voltar ao Dashboard</a>
-            <a href="{{ route('sales.create') }}" class="btn btn-primary">Nova Venda</a>
+            @canRole(['admin','gerente'])
+                @if($showTrashed ?? false)
+                    <a href="{{ route('sales.index') }}" class="btn btn-outline-light">
+                        <i class="bi bi-arrow-left me-1"></i>Voltar às Vendas
+                    </a>
+                @else
+                    <a href="{{ route('sales.index', ['trashed' => 1]) }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-trash me-1"></i>Lixeira
+                    </a>
+                @endif
+            @endCanRole
+            <a href="{{ route('dashboard') }}" class="btn btn-outline-light">Dashboard</a>
+            @if(!($showTrashed ?? false))
+                <a href="{{ route('sales.create') }}" class="btn btn-primary">Nova Venda</a>
+            @endif
         </div>
     </div>
     <div class="card-body">
+
+        @if(session('success'))
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                {{ session('success') }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        @endif
+        @if(session('error'))
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                {{ session('error') }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        @endif
+
         <div class="row g-3 mb-4">
             <div class="col-12 col-md-3">
                 <div class="card dashboard-card text-white border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #1d4ed8, #2563eb);">
@@ -54,6 +87,7 @@
             </div>
         </div>
 
+        @if(!($showTrashed ?? false))
         <form method="GET" action="{{ route('sales.index') }}" class="row g-3 mb-4">
             <div class="col-12 col-md-4">
                 <label for="search" class="form-label text-white">Buscar cliente</label>
@@ -82,6 +116,7 @@
                 <a href="{{ route('sales.index') }}" class="btn btn-outline-light flex-grow-1">Limpar</a>
             </div>
         </form>
+        @endif
 
         <div class="table-responsive shadow-sm rounded">
             <table class="table table-dark table-hover mb-0 align-middle">
@@ -98,10 +133,15 @@
                 </thead>
                 <tbody>
                     @forelse ($sales as $sale)
-                        <tr style="border-color:rgba(148,163,184,.07);">
+                        <tr style="border-color:rgba(148,163,184,.07); {{ $showTrashed ?? false ? 'opacity:.7;' : '' }}">
                             <td class="ps-3 py-3">
                                 <div class="fw-semibold text-white">{{ $sale->customer_name ?? 'Sem nome' }}</div>
-                                <div class="text-soft small">Venda #{{ $sale->id }}</div>
+                                <div class="text-soft small">
+                                    Venda #{{ $sale->id }}
+                                    @if($showTrashed ?? false)
+                                        <span class="badge bg-danger ms-1">Lixeira</span>
+                                    @endif
+                                </div>
                             </td>
                             <td class="py-3" style="color:#94a3b8;font-size:.875rem;">
                                 {{ $sale->sale_date ? $sale->sale_date->timezone(config('app.timezone'))->format('d/m/Y H:i') : '-' }}
@@ -131,21 +171,62 @@
                                 R$ {{ number_format($sale->total, 2, ',', '.') }}
                             </td>
                             <td class="py-3 text-end pe-3">
-                                <div class="d-flex justify-content-end gap-2 flex-wrap">
-                                    <a href="{{ route('sales.show', $sale) }}" class="btn btn-sm btn-outline-light">Ver</a>
-                                    <a href="{{ route('sales.edit', $sale) }}" class="btn btn-sm btn-outline-primary">Editar</a>
-                                    <form action="{{ route('sales.destroy', $sale) }}" method="POST"
-                                          onsubmit="return confirm('Excluir esta venda?')">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="btn btn-sm btn-outline-danger">Excluir</button>
-                                    </form>
+                                <div class="d-flex justify-content-end gap-1 flex-wrap">
+
+                                    @if($showTrashed ?? false)
+                                        {{-- Lixeira: restaurar ou excluir permanente --}}
+                                        <form action="{{ route('sales.restore', $sale->id) }}" method="POST">
+                                            @csrf @method('PATCH')
+                                            <button type="submit" class="btn btn-sm btn-outline-success">
+                                                <i class="bi bi-arrow-counterclockwise"></i> Restaurar
+                                            </button>
+                                        </form>
+                                        @canRole(['admin'])
+                                        <form action="{{ route('sales.force-destroy', $sale->id) }}" method="POST"
+                                              onsubmit="return confirm('Excluir permanentemente? Não há como desfazer.')">
+                                            @csrf @method('DELETE')
+                                            <button type="submit" class="btn btn-sm btn-danger">
+                                                <i class="bi bi-trash3-fill"></i> Excluir
+                                            </button>
+                                        </form>
+                                        @endCanRole
+                                    @else
+                                        {{-- Lista normal --}}
+                                        <a href="{{ route('sales.show', $sale) }}" class="btn btn-sm btn-outline-light">Ver</a>
+
+                                        @canRole(['admin','gerente'])
+                                            @if($sale->status !== 'cancelada')
+                                                <form action="{{ route('sales.cancel', $sale) }}" method="POST"
+                                                      onsubmit="return confirm('Cancelar esta venda e estornar estoque?')">
+                                                    @csrf @method('PATCH')
+                                                    <button type="submit" class="btn btn-sm btn-outline-warning">
+                                                        <i class="bi bi-x-circle"></i>
+                                                    </button>
+                                                </form>
+                                            @endif
+
+                                            <form action="{{ route('sales.destroy', $sale) }}" method="POST"
+                                                  onsubmit="return confirm('Mover esta venda para a lixeira?')">
+                                                @csrf @method('DELETE')
+                                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
+                                        @endCanRole
+                                    @endif
+
                                 </div>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="text-center py-4 text-soft">Nenhuma venda encontrada.</td>
+                            <td colspan="6" class="text-center py-4 text-soft">
+                                @if($showTrashed ?? false)
+                                    Nenhuma venda na lixeira.
+                                @else
+                                    Nenhuma venda encontrada.
+                                @endif
+                            </td>
                         </tr>
                     @endforelse
                 </tbody>
