@@ -79,9 +79,9 @@ Route::middleware(['auth', 'company'])->group(function () {
     Route::get('/reports/export/csv', [ReportController::class, 'export'])->name('reports.export.csv');
     Route::get('/reports/export/pdf', [ReportController::class, 'topProductsPdf'])->name('reports.export.pdf');
 
-    // Fornecedores — todos leem, admin/gerente criam/editam/excluem
-    Route::get('/suppliers', [SupplierController::class, 'index'])->name('suppliers.index');
-    Route::get('/suppliers/{supplier}', [SupplierController::class, 'show'])->name('suppliers.show');
+    // Fornecedores
+    // IMPORTANTE: rotas estáticas (index, create, store) ANTES do wildcard {supplier}
+    Route::get('/suppliers',        [SupplierController::class, 'index'])->name('suppliers.index');
     Route::middleware('role:admin,gerente')->group(function () {
         Route::get('/suppliers/create',          [SupplierController::class, 'create'])->name('suppliers.create');
         Route::post('/suppliers',                [SupplierController::class, 'store'])->name('suppliers.store');
@@ -89,6 +89,8 @@ Route::middleware(['auth', 'company'])->group(function () {
         Route::put('/suppliers/{supplier}',      [SupplierController::class, 'update'])->name('suppliers.update');
         Route::delete('/suppliers/{supplier}',   [SupplierController::class, 'destroy'])->name('suppliers.destroy');
     });
+    // show com wildcard DEPOIS das rotas estáticas
+    Route::get('/suppliers/{supplier}', [SupplierController::class, 'show'])->name('suppliers.show');
 
     // Produtos e Categorias — somente admin e gerente
     Route::middleware('role:admin,gerente')->group(function () {
