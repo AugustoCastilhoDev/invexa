@@ -60,6 +60,7 @@ Route::middleware(['auth', 'company'])->group(function () {
     Route::post('/stock', [StockMovementController::class, 'store'])->name('stock.store');
 
     // Clientes
+    Route::get('/customers/search', [CustomerController::class, 'search'])->name('customers.search');
     Route::resource('customers', CustomerController::class);
 
     // Relatórios
