@@ -26,7 +26,11 @@ class ProductController extends Controller
         $products        = $query->orderBy('name')->paginate(10);
         $categories      = Category::where('company_id', $companyId)->orderBy('name')->get();
         $categoriesCount = Category::where('company_id', $companyId)->count();
-        $lowStockCount   = Product::where('company_id', $companyId)->whereColumn('quantity', '<', 'min_quantity')->count();
+
+        // Alinhado com Product::isLowStock() que usa `<=`
+        $lowStockCount = Product::where('company_id', $companyId)
+            ->whereColumn('quantity', '<=', 'min_quantity')
+            ->count();
 
         return view('products.index', compact(
             'products',
@@ -78,7 +82,7 @@ class ProductController extends Controller
             'cost'         => ['nullable', 'numeric', 'min:0'],
             'quantity'     => ['required', 'integer', 'min:0'],
             'min_quantity' => ['required', 'integer', 'min:0'],
-            'unit'         => ['nullable', 'string', 'max:10'],
+            'unit'         => ['nullable', 'string', 'max:1'],
             'category_id'  => ['nullable', 'exists:categories,id'],
         ], [
             'name.required'     => 'O nome do produto é obrigatório.',
