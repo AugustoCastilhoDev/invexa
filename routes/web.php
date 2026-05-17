@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\BillController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
@@ -16,7 +17,7 @@ use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
-// ── Autenticação (pública) ──────────────────────────────────────────────────────
+// ── Autenticação (pública) ──────────────────────────────────────────
 Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
 Route::post('/login', [AuthenticatedSessionController::class, 'store'])->name('login.post');
 Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
@@ -24,7 +25,7 @@ Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name
 Route::get('/register', [RegisteredUserController::class, 'create'])->name('register');
 Route::post('/register', [RegisteredUserController::class, 'store'])->name('register.store');
 
-// ── Rotas protegidas ──────────────────────────────────────────
+// ── Rotas protegidas ────────────────────────────────────
 Route::middleware(['auth', 'company'])->group(function () {
 
     // Dashboard
@@ -104,6 +105,17 @@ Route::middleware(['auth', 'company'])->group(function () {
         Route::patch('/purchase-orders/{purchaseOrder}/send',   [PurchaseOrderController::class, 'send'])->name('purchase-orders.send');
         Route::patch('/purchase-orders/{purchaseOrder}/cancel', [PurchaseOrderController::class, 'cancel'])->name('purchase-orders.cancel');
     });
+
+    // Contas a Pagar
+    Route::get('/bills',              [BillController::class, 'index'])->name('bills.index');
+    Route::get('/bills/create',       [BillController::class, 'create'])->name('bills.create');
+    Route::post('/bills',             [BillController::class, 'store'])->name('bills.store');
+    Route::get('/bills/{bill}',       [BillController::class, 'show'])->name('bills.show');
+    Route::get('/bills/{bill}/edit',  [BillController::class, 'edit'])->name('bills.edit');
+    Route::put('/bills/{bill}',       [BillController::class, 'update'])->name('bills.update');
+    Route::post('/bills/{bill}/pay',  [BillController::class, 'pay'])->name('bills.pay');
+    Route::patch('/bills/{bill}/cancel', [BillController::class, 'cancel'])->name('bills.cancel');
+    Route::delete('/bills/{bill}',    [BillController::class, 'destroy'])->name('bills.destroy');
 
     // Produtos e Categorias
     Route::middleware('role:admin,gerente')->group(function () {

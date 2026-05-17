@@ -78,7 +78,6 @@
         .alert-success { --bs-alert-bg:rgba(34,197,94,.10); --bs-alert-border-color:rgba(34,197,94,.2); color:#4ade80; }
         .alert-danger  { --bs-alert-bg:rgba(239,68,68,.10); --bs-alert-border-color:rgba(239,68,68,.2); color:#f87171; }
         .footer-main { background:rgba(5,10,20,.7); border-top:1px solid rgba(148,163,184,.08); }
-        /* Badge de alerta de estoque no navbar */
         .stock-alert-badge {
             display:inline-flex; align-items:center; justify-content:center;
             min-width:1.1rem; height:1.1rem;
@@ -165,6 +164,22 @@
                                 <a class="dropdown-item {{ request()->routeIs('purchase-orders.*') ? 'active' : '' }}"
                                    href="{{ route('purchase-orders.index') }}">
                                     <i class="bi bi-cart-check me-2"></i>Ordens de Compra
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+
+                    {{-- Dropdown: Financeiro --}}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle {{ request()->routeIs('bills.*') ? 'active' : '' }}"
+                           href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-wallet2 me-1 opacity-75"></i>Financeiro
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <a class="dropdown-item {{ request()->routeIs('bills.*') ? 'active' : '' }}"
+                                   href="{{ route('bills.index') }}">
+                                    <i class="bi bi-credit-card-2-front me-2"></i>Contas a Pagar
                                 </a>
                             </li>
                         </ul>
