@@ -33,12 +33,10 @@
         <form action="{{ route('sales.store') }}" method="POST" id="sale-form">
             @csrf
 
-            {{-- ID do cliente selecionado (obrigatório) --}}
             <input type="hidden" name="customer_id" id="customer_id" value="{{ old('customer_id') }}">
 
             <div class="row g-3 mb-4">
 
-                {{-- Autocomplete de cliente (obrigatório) --}}
                 <div class="col-12 col-md-4">
                     <label for="customer_search" class="form-label text-soft fw-semibold">
                         Cliente <span class="text-danger">*</span>
@@ -115,7 +113,9 @@
                                         <select name="items[{{ $index }}][product_id]" class="form-select product-select">
                                             <option value="">Selecione</option>
                                             @foreach ($products as $product)
-                                                <option value="{{ $product->id }}" data-price="{{ $product->price }}"
+                                                <option value="{{ $product->id }}"
+                                                    data-price="{{ $product->price }}"
+                                                    data-stock="{{ $product->quantity }}"
                                                     @selected((string)($item['product_id']??'') === (string)$product->id)>
                                                     {{ $product->name }} (Estoque: {{ $product->quantity }})
                                                 </option>
@@ -125,7 +125,11 @@
                                     <div class="col-6 col-md-2">
                                         <label class="form-label text-soft fw-semibold">Quantidade</label>
                                         <input type="number" min="1" name="items[{{ $index }}][quantity]"
-                                               class="form-control" value="{{ $item['quantity']??1 }}">
+                                               class="form-control qty-input" value="{{ $item['quantity']??1 }}">
+                                        <div class="stock-warning text-warning mt-1" style="font-size:.78rem; display:none;">
+                                            <i class="bi bi-exclamation-triangle-fill"></i>
+                                            <span class="stock-warning-msg"></span>
+                                        </div>
                                     </div>
                                     <div class="col-6 col-md-2">
                                         <label class="form-label text-soft fw-semibold">Preço Unit.</label>
@@ -149,7 +153,7 @@
 
             <div class="d-flex justify-content-end gap-2">
                 <a href="{{ route('sales.index') }}" class="btn btn-outline-light">Cancelar</a>
-                <button type="submit" class="btn btn-primary">Salvar venda</button>
+                <button type="submit" class="btn btn-primary" id="submit-btn">Salvar venda</button>
             </div>
         </form>
     </div>
@@ -163,7 +167,9 @@
                 <select name="items[__INDEX__][product_id]" class="form-select product-select">
                     <option value="">Selecione</option>
                     @foreach ($products as $product)
-                        <option value="{{ $product->id }}" data-price="{{ $product->price }}">
+                        <option value="{{ $product->id }}"
+                            data-price="{{ $product->price }}"
+                            data-stock="{{ $product->quantity }}">
                             {{ $product->name }} (Estoque: {{ $product->quantity }})
                         </option>
                     @endforeach
@@ -171,7 +177,11 @@
             </div>
             <div class="col-6 col-md-2">
                 <label class="form-label text-soft fw-semibold">Quantidade</label>
-                <input type="number" min="1" name="items[__INDEX__][quantity]" class="form-control" value="1">
+                <input type="number" min="1" name="items[__INDEX__][quantity]" class="form-control qty-input" value="1">
+                <div class="stock-warning text-warning mt-1" style="font-size:.78rem; display:none;">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <span class="stock-warning-msg"></span>
+                </div>
             </div>
             <div class="col-6 col-md-2">
                 <label class="form-label text-soft fw-semibold">Preço Unit.</label>
@@ -193,7 +203,7 @@
 <script>
 document.addEventListener('DOMContentLoaded', function () {
 
-    // ── Autocomplete de cliente ──────────────────────────────────────
+    // ── Autocomplete de cliente ──────────────────────────────────────────
     const searchUrl   = '{{ route('customers.search') }}';
     const searchInput = document.getElementById('customer_search');
     const hiddenId    = document.getElementById('customer_id');
@@ -218,17 +228,14 @@ document.addEventListener('DOMContentLoaded', function () {
         clearTimeout(debounce);
         hiddenId.value = '';
         hint.style.display = 'none';
-
         const q = this.value.trim();
         if (q.length < 2) { suggestions.style.display = 'none'; suggestions.innerHTML = ''; return; }
-
         debounce = setTimeout(() => {
             fetch(`${searchUrl}?q=${encodeURIComponent(q)}`)
                 .then(r => r.json())
                 .then(data => {
                     suggestions.innerHTML = '';
                     if (!data.length) { suggestions.style.display = 'none'; return; }
-
                     data.forEach(c => {
                         const item = document.createElement('div');
                         item.style.cssText = 'padding:.55rem .85rem; cursor:pointer; font-size:.875rem; color:#cbd5e1; border-bottom:1px solid rgba(148,163,184,.10);';
@@ -245,52 +252,78 @@ document.addEventListener('DOMContentLoaded', function () {
 
     searchInput.addEventListener('blur', () => setTimeout(() => {
         suggestions.style.display = 'none';
-        // Se o usuário saiu do campo sem selecionar ninguém, limpa o texto
-        if (!hiddenId.value) {
-            searchInput.value = '';
-        }
+        if (!hiddenId.value) searchInput.value = '';
     }, 150));
 
-    clearBtn.addEventListener('click', function (e) {
+    clearBtn.addEventListener('click', e => {
         e.preventDefault();
-        hiddenId.value     = '';
-        searchInput.value  = '';
+        hiddenId.value = '';
+        searchInput.value = '';
         hint.style.display = 'none';
     });
 
-    // Bloqueia submit se não houver cliente selecionado
-    document.getElementById('sale-form').addEventListener('submit', function (e) {
-        if (!hiddenId.value) {
-            e.preventDefault();
-            searchInput.classList.add('is-invalid');
-            requiredMsg.style.display = 'block';
-            searchInput.focus();
-        }
-    });
+    // ── Validação de estoque em tempo real ──────────────────────────────
+    function checkStock(row) {
+        const sel      = row.querySelector('.product-select');
+        const qtyInput = row.querySelector('.qty-input');
+        const warning  = row.querySelector('.stock-warning');
+        const warnMsg  = row.querySelector('.stock-warning-msg');
+        if (!sel || !qtyInput || !warning) return true;
 
-    // ── Itens da venda ───────────────────────────────────────────────
+        const opt   = sel.options[sel.selectedIndex];
+        const stock = opt ? parseInt(opt.dataset.stock ?? '-1') : -1;
+        const qty   = parseInt(qtyInput.value) || 0;
+
+        if (stock < 0 || !opt?.value) {
+            warning.style.display = 'none';
+            qtyInput.classList.remove('is-invalid');
+            return true;
+        }
+
+        if (qty > stock) {
+            warnMsg.textContent   = `Disponível: ${stock} un. Você está solicitando ${qty}.`;
+            warning.style.display = 'block';
+            qtyInput.classList.add('is-invalid');
+            return false;
+        }
+
+        warning.style.display = 'none';
+        qtyInput.classList.remove('is-invalid');
+        return true;
+    }
+
+    function checkAllStock() {
+        let valid = true;
+        document.querySelectorAll('.item-row').forEach(row => {
+            if (!checkStock(row)) valid = false;
+        });
+        return valid;
+    }
+
+    // ── Itens da venda ──────────────────────────────────────────────────
     const container = document.getElementById('items-container');
     const template  = document.getElementById('item-template').innerHTML;
     const addButton = document.getElementById('add-item');
 
-    function bindProductSelect(row) {
+    function bindRow(row) {
         const sel   = row.querySelector('.product-select');
         const price = row.querySelector('.price-input');
-        if (!sel || !price) return;
-        sel.addEventListener('change', function () {
-            const p = this.options[this.selectedIndex]?.dataset.price;
-            price.value = p ? parseFloat(p).toFixed(2) : '';
-        });
-    }
+        const qty   = row.querySelector('.qty-input');
 
-    function bindRemoveButtons() {
-        container.querySelectorAll('.remove-item').forEach(btn => {
-            btn.onclick = function () {
-                if (container.querySelectorAll('.item-row').length > 1) {
-                    this.closest('.item-row').remove();
-                    refreshIndexes();
-                }
-            };
+        if (sel) {
+            sel.addEventListener('change', function () {
+                const opt = this.options[this.selectedIndex];
+                if (opt?.dataset.price) price.value = parseFloat(opt.dataset.price).toFixed(2);
+                checkStock(row);
+            });
+        }
+        if (qty) qty.addEventListener('input', () => checkStock(row));
+
+        row.querySelector('.remove-item')?.addEventListener('click', function () {
+            if (container.querySelectorAll('.item-row').length > 1) {
+                this.closest('.item-row').remove();
+                refreshIndexes();
+            }
         });
     }
 
@@ -300,18 +333,39 @@ document.addEventListener('DOMContentLoaded', function () {
                 f.name = f.name.replace(/items\[\d+\]/, `items[${i}]`);
             });
         });
-        bindRemoveButtons();
     }
 
     addButton.addEventListener('click', function () {
         const i = container.querySelectorAll('.item-row').length;
         container.insertAdjacentHTML('beforeend', template.replaceAll('__INDEX__', i));
-        bindProductSelect(container.querySelectorAll('.item-row')[i]);
+        bindRow(container.querySelectorAll('.item-row')[i]);
         refreshIndexes();
     });
 
-    container.querySelectorAll('.item-row').forEach(row => bindProductSelect(row));
-    bindRemoveButtons();
+    container.querySelectorAll('.item-row').forEach(row => bindRow(row));
+
+    // ── Bloquear submit ─────────────────────────────────────────────────
+    document.getElementById('sale-form').addEventListener('submit', function (e) {
+        let valid = true;
+
+        if (!hiddenId.value) {
+            e.preventDefault();
+            searchInput.classList.add('is-invalid');
+            requiredMsg.style.display = 'block';
+            searchInput.focus();
+            valid = false;
+        }
+
+        if (!checkAllStock()) {
+            e.preventDefault();
+            valid = false;
+        }
+
+        if (!valid) {
+            const firstErr = document.querySelector('.is-invalid');
+            if (firstErr) firstErr.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    });
 });
 </script>
 @endpush
