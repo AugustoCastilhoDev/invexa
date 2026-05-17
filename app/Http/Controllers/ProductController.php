@@ -23,13 +23,19 @@ class ProductController extends Controller
             $query->where('category_id', $request->category);
         }
 
+        // Filtro de estoque baixo
+        if ($request->boolean('low_stock')) {
+            $query->where('min_quantity', '>', 0)
+                  ->whereColumn('quantity', '<=', 'min_quantity');
+        }
+
         $totalProducts   = (clone $query)->count();
         $products        = $query->orderBy('name')->paginate(10);
         $categories      = Category::where('company_id', $companyId)->orderBy('name')->get();
         $categoriesCount = Category::where('company_id', $companyId)->count();
 
-        // Alinhado com Product::isLowStock() que usa `<=`
         $lowStockCount = Product::where('company_id', $companyId)
+            ->where('min_quantity', '>', 0)
             ->whereColumn('quantity', '<=', 'min_quantity')
             ->count();
 
