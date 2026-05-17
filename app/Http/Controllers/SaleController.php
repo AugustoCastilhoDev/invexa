@@ -8,6 +8,7 @@ use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\SaleReturnItem;
 use App\Models\StockMovement;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -40,7 +41,6 @@ class SaleController extends Controller
             $query->whereDate('sale_date', '<=', Carbon::parse($request->to)->endOfDay());
         }
 
-        // Exibe lixeira se solicitado (somente admin/gerente)
         $showTrashed = $request->boolean('trashed') && auth()->user()->hasRole(['admin', 'gerente']);
         if ($showTrashed) {
             $query->onlyTrashed();
@@ -72,6 +72,13 @@ class SaleController extends Controller
 
     public function store(Request $request)
     {
+        $company = auth()->user()->company;
+
+        if ($company && ! $company->canAddProduct()) {
+            return redirect()->route('products.index')
+                ->with('error', 'Limite de produtos do seu plano atingido. Faça upgrade para continuar.');
+        }
+
         $companyId = auth()->user()->company_id;
 
         $validated = $request->validate([
@@ -284,9 +291,6 @@ class SaleController extends Controller
         }
     }
 
-    /**
-     * Cancela a venda (sem excluir) e estorna o estoque dos itens não devolvidos.
-     */
     public function cancel(Sale $sale)
     {
         if ($sale->status === 'cancelada') {
@@ -299,7 +303,6 @@ class SaleController extends Controller
             DB::transaction(function () use ($sale, $companyId) {
                 $sale->load('items.product');
 
-                // Quantidade já devolvida por produto
                 $alreadyReturned = SaleReturnItem::whereHas('saleReturn', fn($q) => $q->where('sale_id', $sale->id))
                     ->selectRaw('product_id, SUM(quantity) as total_returned')
                     ->groupBy('product_id')
@@ -343,15 +346,10 @@ class SaleController extends Controller
         }
     }
 
-    /**
-     * Soft-delete a venda (move para lixeira).
-     * O estorno de estoque já ocorre no cancelamento; aqui apenas arquiva o registro.
-     */
     public function destroy(Sale $sale)
     {
         $companyId = auth()->user()->company_id;
 
-        // Só estorna estoque se a venda ainda não estiver cancelada
         if ($sale->status !== 'cancelada') {
             DB::transaction(function () use ($sale, $companyId) {
                 $sale->load('items.product');
@@ -391,16 +389,12 @@ class SaleController extends Controller
             });
         }
 
-        // Soft-delete: mantém o registro no banco com deleted_at preenchido
         $sale->delete();
 
         return redirect()->route('sales.index')
             ->with('success', 'Venda movida para a lixeira com sucesso.');
     }
 
-    /**
-     * Restaura uma venda da lixeira.
-     */
     public function restore(int $id)
     {
         $companyId = auth()->user()->company_id;
@@ -411,9 +405,6 @@ class SaleController extends Controller
             ->with('success', 'Venda restaurada com sucesso.');
     }
 
-    /**
-     * Exclusão permanente (force delete) — somente admin.
-     */
     public function forceDestroy(int $id)
     {
         $companyId = auth()->user()->company_id;
@@ -428,5 +419,27 @@ class SaleController extends Controller
     {
         $sale->load(['items.product', 'customer']);
         return view('sales.invoice', compact('sale'));
+    }
+
+    /**
+     * Gera e faz download do PDF da Nota Fiscal simplificada da venda.
+     */
+    public function pdf(Sale $sale)
+    {
+        $sale->load(['items.product', 'customer']);
+        $company = auth()->user()->company;
+
+        $pdf = Pdf::loadView('sales.pdf', compact('sale', 'company'))
+            ->setPaper('a4', 'portrait')
+            ->setOptions([
+                'defaultFont'  => 'DejaVu Sans',
+                'isHtml5ParserEnabled' => true,
+                'isRemoteEnabled'      => false,
+                'dpi'          => 150,
+            ]);
+
+        $filename = 'nf-venda-' . $sale->id . '-' . now()->format('Ymd') . '.pdf';
+
+        return $pdf->download($filename);
     }
 }

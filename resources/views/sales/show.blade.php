@@ -11,6 +11,12 @@
                 <p class="text-soft mb-0">Informações completas sobre esta transação.</p>
             </div>
             <div class="d-flex gap-2 flex-wrap">
+                {{-- Botão NF PDF --}}
+                <a href="{{ route('sales.pdf', $sale) }}"
+                   class="btn btn-success btn-sm" target="_blank">
+                    <i class="bi bi-file-earmark-pdf me-1"></i>Baixar NF (PDF)
+                </a>
+
                 @if($sale->status === 'concluida')
                     <a href="{{ route('returns.create', ['sale_id' => $sale->id]) }}"
                        class="btn btn-warning btn-sm">

@@ -16,7 +16,7 @@ use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
-// ── Autenticação (pública) ──────────────────────────────────────────
+// ── Autenticação (pública) ──────────────────────────────────────────────────────
 Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
 Route::post('/login', [AuthenticatedSessionController::class, 'store'])->name('login.post');
 Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
@@ -24,7 +24,7 @@ Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name
 Route::get('/register', [RegisteredUserController::class, 'create'])->name('register');
 Route::post('/register', [RegisteredUserController::class, 'store'])->name('register.store');
 
-// ── Rotas protegidas ────────────────────────────────────
+// ── Rotas protegidas ──────────────────────────────────────────
 Route::middleware(['auth', 'company'])->group(function () {
 
     // Dashboard
@@ -42,6 +42,7 @@ Route::middleware(['auth', 'company'])->group(function () {
     Route::post('/sales',       [SaleController::class, 'store'])->name('sales.store');
     Route::get('/sales/{sale}', [SaleController::class, 'show'])->name('sales.show');
     Route::get('/sales/{sale}/invoice', [SaleController::class, 'invoice'])->name('sales.invoice');
+    Route::get('/sales/{sale}/pdf',     [SaleController::class, 'pdf'])->name('sales.pdf');
     Route::middleware('role:admin,gerente')->group(function () {
         Route::get('/sales/{sale}/edit',    [SaleController::class, 'edit'])->name('sales.edit');
         Route::put('/sales/{sale}',         [SaleController::class, 'update'])->name('sales.update');
