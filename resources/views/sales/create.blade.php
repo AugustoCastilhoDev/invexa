@@ -33,22 +33,21 @@
         <form action="{{ route('sales.store') }}" method="POST" id="sale-form">
             @csrf
 
-            {{-- hidden que guarda o ID do cliente selecionado --}}
+            {{-- ID do cliente selecionado (obrigatório) --}}
             <input type="hidden" name="customer_id" id="customer_id" value="{{ old('customer_id') }}">
 
             <div class="row g-3 mb-4">
 
-                {{-- Campo cliente com autocomplete --}}
+                {{-- Autocomplete de cliente (obrigatório) --}}
                 <div class="col-12 col-md-4">
                     <label for="customer_search" class="form-label text-soft fw-semibold">
-                        Cliente
-                        <small class="text-soft fw-normal ms-1">(cadastrado ou texto livre)</small>
+                        Cliente <span class="text-danger">*</span>
                     </label>
                     <div class="position-relative">
                         <input type="text" id="customer_search" name="customer_name"
-                            class="form-control @error('customer_name') is-invalid @enderror"
+                            class="form-control @error('customer_id') is-invalid @enderror"
                             value="{{ old('customer_name') }}"
-                            placeholder="Digite para buscar ou escreva um nome..."
+                            placeholder="Digite para buscar um cliente..."
                             autocomplete="off">
                         <div id="customer-suggestions"
                              class="position-absolute w-100 z-3"
@@ -56,13 +55,18 @@
                                     border:1px solid rgba(148,163,184,.18); border-radius:.5rem;
                                     box-shadow:0 12px 28px rgba(0,0,0,.45); max-height:220px; overflow-y:auto;">
                         </div>
+                        @error('customer_id')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
                     </div>
                     <small class="text-soft" id="customer-selected-hint" style="display:none;">
                         <i class="bi bi-check-circle-fill text-success me-1"></i>
                         <span id="customer-selected-name"></span>
                         <a href="#" id="customer-clear" class="ms-2" style="color:#f87171;font-size:.8rem;">remover</a>
                     </small>
-                    @error('customer_name')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    <div id="customer-required-msg" class="text-danger mt-1" style="font-size:.85rem; display:none;">
+                        <i class="bi bi-exclamation-circle me-1"></i>Selecione um cliente da lista.
+                    </div>
                 </div>
 
                 <div class="col-12 col-md-4">
@@ -197,11 +201,22 @@ document.addEventListener('DOMContentLoaded', function () {
     const hint        = document.getElementById('customer-selected-hint');
     const hintName    = document.getElementById('customer-selected-name');
     const clearBtn    = document.getElementById('customer-clear');
+    const requiredMsg = document.getElementById('customer-required-msg');
     let   debounce;
+
+    function selectCustomer(c) {
+        searchInput.value    = c.name;
+        hiddenId.value       = c.id;
+        hintName.textContent = c.name;
+        hint.style.display   = 'inline';
+        requiredMsg.style.display = 'none';
+        searchInput.classList.remove('is-invalid');
+        suggestions.style.display = 'none';
+    }
 
     searchInput.addEventListener('input', function () {
         clearTimeout(debounce);
-        hiddenId.value = '';        // limpa seleção anterior ao digitar
+        hiddenId.value = '';
         hint.style.display = 'none';
 
         const q = this.value.trim();
@@ -220,15 +235,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         item.innerHTML = `<span class="fw-semibold text-white">${c.name}</span>`
                             + (c.document ? ` <small class="text-soft ms-2">${c.document}</small>` : '')
                             + (c.phone    ? ` <small class="text-soft ms-2"><i class="bi bi-telephone"></i> ${c.phone}</small>` : '');
-
-                        item.addEventListener('mousedown', function (e) {
-                            e.preventDefault();
-                            searchInput.value  = c.name;
-                            hiddenId.value     = c.id;
-                            hintName.textContent = c.name;
-                            hint.style.display = 'inline';
-                            suggestions.style.display = 'none';
-                        });
+                        item.addEventListener('mousedown', e => { e.preventDefault(); selectCustomer(c); });
                         suggestions.appendChild(item);
                     });
                     suggestions.style.display = 'block';
@@ -236,13 +243,29 @@ document.addEventListener('DOMContentLoaded', function () {
         }, 280);
     });
 
-    searchInput.addEventListener('blur', () => setTimeout(() => { suggestions.style.display = 'none'; }, 150));
+    searchInput.addEventListener('blur', () => setTimeout(() => {
+        suggestions.style.display = 'none';
+        // Se o usuário saiu do campo sem selecionar ninguém, limpa o texto
+        if (!hiddenId.value) {
+            searchInput.value = '';
+        }
+    }, 150));
 
     clearBtn.addEventListener('click', function (e) {
         e.preventDefault();
         hiddenId.value     = '';
         searchInput.value  = '';
         hint.style.display = 'none';
+    });
+
+    // Bloqueia submit se não houver cliente selecionado
+    document.getElementById('sale-form').addEventListener('submit', function (e) {
+        if (!hiddenId.value) {
+            e.preventDefault();
+            searchInput.classList.add('is-invalid');
+            requiredMsg.style.display = 'block';
+            searchInput.focus();
+        }
     });
 
     // ── Itens da venda ───────────────────────────────────────────────
