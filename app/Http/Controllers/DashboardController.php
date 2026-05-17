@@ -14,7 +14,27 @@ use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
-    private string $tz = 'America/Sao_Paulo';
+    private string $tz     = 'America/Sao_Paulo';
+    private string $tzOffset = '-03:00';
+
+    /**
+     * Aplica filtro de data em SaleReturn usando CONVERT_TZ,
+     * evitando que registros em UTC vazem para o dia errado em BRT.
+     */
+    private function applyReturnDateFilter($query, ?string $from, ?string $to)
+    {
+        if ($from && $to) {
+            $start = Carbon::parse($from, $this->tz)->startOfDay()->utc()->toDateTimeString();
+            $end   = Carbon::parse($to,   $this->tz)->endOfDay()->utc()->toDateTimeString();
+            $query->whereRaw(
+                "CONVERT_TZ(created_at, '+00:00', ?) BETWEEN ? AND ?",
+                [$this->tzOffset,
+                 Carbon::parse($from, $this->tz)->startOfDay()->toDateTimeString(),
+                 Carbon::parse($to,   $this->tz)->endOfDay()->toDateTimeString()]
+            );
+        }
+        return $query;
+    }
 
     public function index(Request $request)
     {
@@ -54,14 +74,9 @@ class DashboardController extends Controller
         $periodSalesCount   += $stockSalesCount;
         $periodAverageTicket = $periodSalesCount > 0 ? $periodRevenue / $periodSalesCount : 0;
 
-        // ── Devoluções via módulo SaleReturn ────────────────────────
+        // ── Devoluções via módulo SaleReturn (filtro com CONVERT_TZ) ──
         $saleReturnsQuery = SaleReturn::where('company_id', $companyId);
-        if ($from && $to) {
-            $saleReturnsQuery->whereBetween('created_at', [
-                Carbon::parse($from, $this->tz)->startOfDay(),
-                Carbon::parse($to, $this->tz)->endOfDay(),
-            ]);
-        }
+        $this->applyReturnDateFilter($saleReturnsQuery, $from, $to);
         $returnsFromModule  = (float)(clone $saleReturnsQuery)->sum('total');
         $returnsCountModule = (clone $saleReturnsQuery)->count();
 
@@ -106,20 +121,23 @@ class DashboardController extends Controller
         $totalRevenue    = $periodRevenue;
         $averageTicket   = $periodAverageTicket;
 
-        // Vendas de hoje
-        $todayStart = now($this->tz)->startOfDay();
-        $todayEnd   = now($this->tz)->endOfDay();
+        // ── Vendas e devoluções de hoje (sempre BRT) ──────────────────
+        $todayStr = now($this->tz)->toDateString();
 
         $salesToday = (float) Sale::where('company_id', $companyId)
-            ->whereBetween('sale_date', [$todayStart, $todayEnd])
+            ->whereBetween('sale_date', [
+                Carbon::parse($todayStr, $this->tz)->startOfDay(),
+                Carbon::parse($todayStr, $this->tz)->endOfDay(),
+            ])
             ->sum('total');
-        $salesToday += $this->stockManualQuery($companyId, 'venda', now($this->tz)->toDateString(), now($this->tz)->toDateString())
+        $salesToday += $this->stockManualQuery($companyId, 'venda', $todayStr, $todayStr)
             ->get()->sum(fn($m) => abs($m->quantity) * (float) optional($m->product)->price);
 
-        $returnsTodayModule = (float) SaleReturn::where('company_id', $companyId)
-            ->whereBetween('created_at', [$todayStart, $todayEnd])
-            ->sum('total');
-        $returnsTodayStock  = $this->stockManualQuery($companyId, 'devolucao', now($this->tz)->toDateString(), now($this->tz)->toDateString())
+        $returnsTodayQuery = SaleReturn::where('company_id', $companyId);
+        $this->applyReturnDateFilter($returnsTodayQuery, $todayStr, $todayStr);
+        $returnsTodayModule = (float)(clone $returnsTodayQuery)->sum('total');
+
+        $returnsTodayStock = $this->stockManualQuery($companyId, 'devolucao', $todayStr, $todayStr)
             ->get()->sum(fn($m) => abs($m->quantity) * (float) optional($m->product)->price);
 
         $salesTodayNet = $salesToday - $returnsTodayModule - $returnsTodayStock;
@@ -187,15 +205,10 @@ class DashboardController extends Controller
             fn($d) => [$d => round((float)($salesByDayModule[$d] ?? 0) + (float)($salesByDayStock[$d] ?? 0), 2)]
         );
 
-        // 4) Devoluções por dia — módulo SaleReturn
-        $returnsChartBase = SaleReturn::where('company_id', $companyId);
-        if ($chartFrom && $chartTo) {
-            $returnsChartBase->whereBetween('created_at', [
-                Carbon::parse($chartFrom, $this->tz)->startOfDay(),
-                Carbon::parse($chartTo, $this->tz)->endOfDay(),
-            ]);
-        }
-        $convertTzExpr      = "DATE(CONVERT_TZ(created_at, '+00:00', '-03:00'))";
+        // 4) Devoluções por dia — módulo SaleReturn (CONVERT_TZ no GROUP BY)
+        $convertTzExpr      = "DATE(CONVERT_TZ(created_at, '+00:00', '{$this->tzOffset}'))";
+        $returnsChartBase   = SaleReturn::where('company_id', $companyId);
+        $this->applyReturnDateFilter($returnsChartBase, $chartFrom, $chartTo);
         $returnsByDayModule = $returnsChartBase
             ->selectRaw($convertTzExpr . ' as day, SUM(total) as total')
             ->groupBy(DB::raw($convertTzExpr))
@@ -216,10 +229,7 @@ class DashboardController extends Controller
             fn($d) => [$d => round((float)($returnsByDayModule[$d] ?? 0) + (float)($returnsByDayStock[$d] ?? 0), 2)]
         );
 
-        // 7) Dados finais:
-        //    chartData        = bruto por dia (barra azul)
-        //    chartReturnsData = devoluções por dia (barra vermelha)
-        //    chartNetData     = líquido por dia (exibido apenas no tooltip)
+        // 7) Dados finais do gráfico
         $allDays          = $salesByDay->keys()->merge($returnsByDay->keys())->unique()->sort()->values();
         $chartLabels      = $allDays->map(fn($d) => date('d/m', strtotime($d)));
         $chartData        = $allDays->map(fn($d) => (float)($salesByDay[$d] ?? 0));
@@ -254,7 +264,7 @@ class DashboardController extends Controller
         if ($from && $to) {
             $q->whereBetween('created_at', [
                 Carbon::parse($from, $this->tz)->startOfDay(),
-                Carbon::parse($to, $this->tz)->endOfDay(),
+                Carbon::parse($to,   $this->tz)->endOfDay(),
             ]);
         }
 
