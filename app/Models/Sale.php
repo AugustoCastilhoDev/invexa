@@ -34,4 +34,21 @@ class Sale extends Model
     {
         return $this->belongsTo(Customer::class);
     }
+
+    public function saleReturns()
+    {
+        return $this->hasMany(SaleReturn::class);
+    }
+
+    // Valor total já devolvido nesta venda
+    public function getTotalReturnedAttribute(): float
+    {
+        return (float) $this->saleReturns()->sum('total');
+    }
+
+    // Valor líquido (total - devoluções)
+    public function getNetTotalAttribute(): float
+    {
+        return max(0, (float) $this->total - $this->total_returned);
+    }
 }
