@@ -67,9 +67,9 @@
                                             <input type="checkbox" id="selectAll" class="form-check-input">
                                         </th>
                                         <th class="py-3">Produto</th>
-                                        <th class="py-3">Qtd. Vendida</th>
-                                        <th class="py-3" style="width:10rem;">Qtd. a Devolver</th>
-                                        <th class="py-3">Prço Unit.</th>
+                                        <th class="py-3">Qtd. Comprada</th>
+                                        <th class="py-3" style="width:11rem;">Qtd. a Devolver</th>
+                                        <th class="py-3">Preço Unit.</th>
                                         <th class="py-3">Subtotal</th>
                                     </tr>
                                 </thead>
@@ -92,13 +92,16 @@
                               class="form-control">{{ old('notes') }}</textarea>
                 </div>
 
-            </div>
+                {{-- Botão salvar — visibilidade controlada só pelo JS --}}
+                <div class="col-12" id="submitSection" style="display:none;">
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-arrow-return-left me-1"></i>Registrar Devolução
+                        </button>
+                        <a href="{{ route('returns.index') }}" class="btn btn-outline-secondary">Cancelar</a>
+                    </div>
+                </div>
 
-            <div class="d-flex gap-2 mt-4" id="submitSection" style="display:none !important;">
-                <button type="submit" class="btn btn-danger">
-                    <i class="bi bi-arrow-return-left me-1"></i>Registrar Devolução
-                </button>
-                <a href="{{ route('returns.index') }}" class="btn btn-outline-secondary">Cancelar</a>
             </div>
         </form>
     </div>
@@ -127,15 +130,22 @@
         document.getElementById('returnTotal').textContent = formatBRL(total);
     }
 
-    function loadSaleItems(saleId) {
-        if (!saleId) {
-            document.getElementById('itemsSection').style.display   = 'none';
-            document.getElementById('notesSection').style.display   = 'none';
-            document.getElementById('submitSection').style.display  = 'none';
-            return;
-        }
+    function showSections() {
+        document.getElementById('itemsSection').style.display  = '';
+        document.getElementById('notesSection').style.display  = '';
+        document.getElementById('submitSection').style.display = '';
+    }
 
-        fetch(`/returns/sale-items/${saleId}`)
+    function hideSections() {
+        document.getElementById('itemsSection').style.display  = 'none';
+        document.getElementById('notesSection').style.display  = 'none';
+        document.getElementById('submitSection').style.display = 'none';
+    }
+
+    function loadSaleItems(saleId) {
+        if (!saleId) { hideSections(); return; }
+
+        fetch(`/returns/${saleId}/items`)
             .then(r => r.json())
             .then(items => {
                 const tbody = document.getElementById('itemsBody');
@@ -162,18 +172,18 @@
                                    value="${item.quantity}" min="1" max="${item.quantity}"
                                    data-price="${item.price}"
                                    oninput="recalcTotal()" style="width:6rem;">
+                            <small class="text-soft" style="font-size:.7rem;">máx. ${item.quantity}</small>
                         </td>
                         <td class="py-3" style="color:#94a3b8;">${formatBRL(item.price)}</td>
-                        <td class="py-3 fw-bold text-danger item-subtotal">${formatBRL(item.subtotal)}</td>
+                        <td class="py-3 fw-bold text-danger item-subtotal">${formatBRL(item.price * item.quantity)}</td>
                     `;
                     tbody.appendChild(row);
                 });
 
-                document.getElementById('itemsSection').style.display  = '';
-                document.getElementById('notesSection').style.display  = '';
-                document.getElementById('submitSection').style.display = '';
+                showSections();
                 recalcTotal();
-            });
+            })
+            .catch(() => hideSections());
     }
 
     // Select all
@@ -184,7 +194,7 @@
 
     saleSelect.addEventListener('change', () => loadSaleItems(saleSelect.value));
 
-    // Auto-carrega se vier com ?sale_id=
+    // Auto-carrega se vier com sale_id pré-selecionado
     if (saleSelect.value) loadSaleItems(saleSelect.value);
 </script>
 @endpush
