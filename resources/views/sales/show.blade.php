@@ -17,7 +17,9 @@
                         <i class="bi bi-arrow-return-left me-1"></i>Registrar Devolução
                     </a>
                 @endif
+                @can('update', $sale)
                 <a href="{{ route('sales.edit', $sale) }}" class="btn btn-outline-light btn-sm">Editar</a>
+                @endcan
                 <a href="{{ route('sales.index') }}" class="btn btn-outline-secondary btn-sm">Voltar</a>
             </div>
         </div>
@@ -72,7 +74,8 @@
         </div>
 
         {{-- Devoluções vinculadas --}}
-        @if($sale->returns->isNotEmpty())
+        @php $returns = $sale->returns ?? collect(); @endphp
+        @if($returns->isNotEmpty())
         <div class="card card-dark-bg border border-warning mb-4">
             <div class="card-header card-header-dark" style="border-bottom:1px solid rgba(234,179,8,.25);">
                 <span class="text-warning fw-semibold">
@@ -93,11 +96,11 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach($sale->returns as $ret)
+                        @foreach($returns as $ret)
                         <tr style="border-color:rgba(148,163,184,.07);">
                             <td class="ps-4 py-3" style="color:#94a3b8;">#{{ $ret->id }}</td>
                             <td class="py-3" style="color:#94a3b8;">{{ $ret->reason_label }}</td>
-                            <td class="py-3" style="color:#94a3b8;">{{ $ret->items->count() }} item(ns)</td>
+                            <td class="py-3" style="color:#94a3b8;">{{ ($ret->items ?? collect())->count() }} item(ns)</td>
                             <td class="py-3 text-danger fw-bold">- R$ {{ number_format($ret->total, 2, ',', '.') }}</td>
                             <td class="py-3" style="color:#94a3b8;font-size:.82rem;">
                                 {{ $ret->created_at->timezone(config('app.timezone'))->format('d/m/Y H:i') }}
@@ -142,7 +145,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach ($sale->items as $item)
+                        @forelse($sale->items ?? collect() as $item)
                             <tr style="border-color:rgba(148,163,184,.07);">
                                 <td class="ps-4 py-3 text-white fw-semibold">
                                     {{ $item->product->name ?? 'Produto removido' }}
@@ -151,7 +154,11 @@
                                 <td class="py-3" style="color:#94a3b8;">R$ {{ number_format($item->price, 2, ',', '.') }}</td>
                                 <td class="py-3 text-white fw-semibold">R$ {{ number_format($item->subtotal, 2, ',', '.') }}</td>
                             </tr>
-                        @endforeach
+                        @empty
+                            <tr>
+                                <td colspan="4" class="text-center py-4 text-soft">Nenhum item encontrado nesta venda.</td>
+                            </tr>
+                        @endforelse
                     </tbody>
                     <tfoot>
                         <tr style="border-top:1px solid rgba(148,163,184,.2);">
@@ -172,6 +179,7 @@
             </div>
         @endif
 
+        @can('update', $sale)
         <div class="d-flex gap-2 mt-4">
             <a href="{{ route('sales.edit', $sale) }}" class="btn btn-warning">Editar Venda</a>
             <form action="{{ route('sales.destroy', $sale) }}" method="POST"
@@ -181,6 +189,7 @@
                 <button type="submit" class="btn btn-danger">Excluir Venda</button>
             </form>
         </div>
+        @endcan
 
     </div>
 </div>

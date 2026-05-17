@@ -144,7 +144,7 @@ class SaleController extends Controller
 
     public function show(Sale $sale)
     {
-        $sale->load(['items.product', 'customer']);
+        $sale->load(['items.product', 'customer', 'returns.items']);
         return view('sales.show', compact('sale'));
     }
 
@@ -186,8 +186,6 @@ class SaleController extends Controller
             DB::transaction(function () use ($sale, $validated, $companyId, $customerName) {
                 $sale->load('items.product');
 
-                // Calcula por produto quantas unidades já foram devolvidas nesta venda
-                // para não estornar o que já voltou ao estoque via SaleReturn
                 $alreadyReturned = SaleReturnItem::whereHas('saleReturn', fn($q) => $q->where('sale_id', $sale->id))
                     ->selectRaw('product_id, SUM(quantity) as total_returned')
                     ->groupBy('product_id')
@@ -198,11 +196,10 @@ class SaleController extends Controller
                     $oldProduct = Product::lockForUpdate()->find($oldItem->product_id);
                     if (!$oldProduct) continue;
 
-                    // Quantidade líquida que ainda está "no cliente" (vendida - já devolvida)
                     $returnedQty = $alreadyReturned->get($oldItem->product_id, 0);
                     $netQty      = max(0, $oldItem->quantity - $returnedQty);
 
-                    if ($netQty === 0) continue; // tudo já foi devolvido, nada a estornar
+                    if ($netQty === 0) continue;
 
                     $before = $oldProduct->fresh()->quantity;
                     $after  = $before + $netQty;
@@ -288,7 +285,6 @@ class SaleController extends Controller
         DB::transaction(function () use ($sale, $companyId) {
             $sale->load('items.product');
 
-            // Calcula por produto quantas unidades já foram devolvidas
             $alreadyReturned = SaleReturnItem::whereHas('saleReturn', fn($q) => $q->where('sale_id', $sale->id))
                 ->selectRaw('product_id, SUM(quantity) as total_returned')
                 ->groupBy('product_id')
@@ -328,7 +324,7 @@ class SaleController extends Controller
         });
 
         return redirect()->route('sales.index')
-            ->with('success', 'Venda excluída e estoque restaurado com sucesso.');
+            ->with('success', 'Venda excluída com sucesso.');
     }
 
     public function invoice(Sale $sale)
