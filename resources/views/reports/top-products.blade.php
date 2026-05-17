@@ -15,11 +15,11 @@
                 </p>
             </div>
             <div class="d-flex gap-2 flex-wrap">
-                <a href="{{ route('reports.top-products.csv', request()->query()) }}"
+                <a href="{{ route('reports.export.csv', request()->query()) }}"
                    class="btn btn-success btn-sm">
                     <i class="bi bi-filetype-csv me-1"></i>Exportar CSV
                 </a>
-                <a href="{{ route('reports.top-products.pdf', request()->query()) }}"
+                <a href="{{ route('reports.export.pdf', request()->query()) }}"
                    class="btn btn-danger btn-sm">
                     <i class="bi bi-filetype-pdf me-1"></i>Exportar PDF
                 </a>
@@ -31,7 +31,7 @@
     <div class="card-body">
 
         {{-- Filtros --}}
-        <form method="GET" action="{{ route('reports.top-products') }}" class="mb-4">
+        <form method="GET" action="{{ route('reports.index') }}" class="mb-4">
             <div class="row g-2 align-items-end">
                 <div class="col-12 col-md-auto">
                     <label class="form-label text-soft" style="font-size:.78rem;">Período</label>
@@ -144,6 +144,7 @@
                                     <span class="badge" style="background:#cd7f32;color:#fff;">🥉 3</span>
                                 @else
                                     <span class="text-soft">{{ $i + 1 }}</span>
+
                                 @endif
                             </td>
                             <td class="py-3 text-white fw-semibold">{{ $product->product_name }}</td>
