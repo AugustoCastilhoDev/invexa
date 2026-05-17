@@ -13,6 +13,10 @@ class ProductController extends Controller
     public function index(Request $request)
     {
         $companyId = auth()->user()->company_id;
+
+        // Total real da empresa — sempre sem filtros
+        $totalProducts = Product::where('company_id', $companyId)->count();
+
         $query = Product::with('category')->where('company_id', $companyId);
 
         if ($request->filled('search')) {
@@ -23,13 +27,11 @@ class ProductController extends Controller
             $query->where('category_id', $request->category);
         }
 
-        // Filtro de estoque baixo
         if ($request->boolean('low_stock')) {
             $query->where('min_quantity', '>', 0)
                   ->whereColumn('quantity', '<=', 'min_quantity');
         }
 
-        $totalProducts   = (clone $query)->count();
         $products        = $query->orderBy('name')->paginate(10);
         $categories      = Category::where('company_id', $companyId)->orderBy('name')->get();
         $categoriesCount = Category::where('company_id', $companyId)->count();
