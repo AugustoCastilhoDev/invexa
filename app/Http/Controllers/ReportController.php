@@ -23,7 +23,7 @@ class ReportController extends Controller
         return $this->topProductsCsv($request);
     }
 
-    // ── Helpers compartilhados ──────────────────────────────
+    // ── Helpers compartilhados ────────────────────────
 
     private function resolvePeriod(Request $request): array
     {
@@ -113,10 +113,11 @@ class ReportController extends Controller
         );
     }
 
-    // ── Produtos mais vendidos ──────────────────────────────
+    // ── Produtos mais vendidos ────────────────────────
 
     private function getProductsQuery(string $companyId, Carbon $from, Carbon $to)
     {
+        // Subquery de devoluções: soma por produto, filtrada pela company e período
         $returnedSub = DB::table('sale_return_items')
             ->join('sale_returns', 'sale_return_items.sale_return_id', '=', 'sale_returns.id')
             ->join('sales as s2', 'sale_returns.sale_id', '=', 's2.id')
@@ -141,8 +142,9 @@ class ReportController extends Controller
                 'products.id',
                 'products.name as product_name',
                 'categories.name as category_name',
-                DB::raw('SUM(sale_items.quantity) - COALESCE(MAX(ret.returned_qty), 0) as total_qty'),
-                DB::raw('SUM(sale_items.subtotal) - COALESCE(MAX(ret.returned_revenue), 0) as total_revenue'),
+                // COALESCE com SUM correto (não MAX) para não duplicar o desconto
+                DB::raw('GREATEST(0, SUM(sale_items.quantity) - COALESCE(SUM(ret.returned_qty), 0)) as total_qty'),
+                DB::raw('GREATEST(0, SUM(sale_items.subtotal) - COALESCE(SUM(ret.returned_revenue), 0)) as total_revenue'),
                 DB::raw('COUNT(DISTINCT sale_items.sale_id) as total_sales')
             )
             ->groupBy('products.id', 'products.name', 'categories.name')
@@ -215,7 +217,7 @@ class ReportController extends Controller
         return $pdf->download('produtos_mais_vendidos_' . now()->format('Ymd_His') . '.pdf');
     }
 
-    // ── Relatório de Compras ────────────────────────────────
+    // ── Relatório de Compras ────────────────────────
 
     public function purchases(Request $request)
     {

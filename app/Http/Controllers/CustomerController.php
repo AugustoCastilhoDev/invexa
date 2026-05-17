@@ -15,7 +15,8 @@ class CustomerController extends Controller
     {
         $companyId = auth()->user()->company_id;
 
-        $query = Customer::forCompany($companyId)->orderBy('name');
+        // Ordena por ID decrescente = ordem de cadastro (mais recente primeiro)
+        $query = Customer::forCompany($companyId)->orderByDesc('id');
 
         if ($request->filled('search')) {
             $s = '%' . $request->search . '%';
@@ -151,7 +152,7 @@ class CustomerController extends Controller
             ->with('success', 'Cliente excluído com sucesso.');
     }
 
-    // ── API rápida para selects (usada no formulário de venda) ────────
+    // ── API rápida para selects (usada no formulário de venda) ──
     public function search(Request $request)
     {
         $companyId = auth()->user()->company_id;
