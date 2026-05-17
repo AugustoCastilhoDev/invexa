@@ -77,6 +77,7 @@ Route::middleware(['auth', 'company'])->group(function () {
     Route::get('/reports/export/pdf',     [ReportController::class, 'topProductsPdf'])->name('reports.export.pdf');
     Route::get('/reports/purchases',      [ReportController::class, 'purchases'])->name('reports.purchases');
     Route::get('/reports/purchases/csv',  [ReportController::class, 'purchasesCsv'])->name('reports.purchases.csv');
+    Route::get('/reports/purchases/pdf',  [ReportController::class, 'purchasesPdf'])->name('reports.purchases.pdf');
 
     // Fornecedores
     Route::get('/suppliers',        [SupplierController::class, 'index'])->name('suppliers.index');

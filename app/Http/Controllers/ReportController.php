@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\PurchaseOrder;
 use App\Models\SaleItem;
+use App\Models\Supplier;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -11,7 +12,7 @@ use Illuminate\Support\Facades\DB;
 
 class ReportController extends Controller
 {
-    // ── index = página principal (produtos mais vendidos) ───────────────
+    // ── index = página principal (produtos mais vendidos) ──
     public function index(Request $request)
     {
         return $this->topProducts($request);
@@ -22,7 +23,7 @@ class ReportController extends Controller
         return $this->topProductsCsv($request);
     }
 
-    // ── Helpers compartilhados ────────────────────────────────────
+    // ── Helpers compartilhados ──────────────────────────────
 
     private function resolvePeriod(Request $request): array
     {
@@ -44,7 +45,75 @@ class ReportController extends Controller
         return [$period, $from, $to];
     }
 
-    // ── Produtos mais vendidos ──────────────────────────────────
+    private function getPurchasesData(Request $request, int $companyId): array
+    {
+        [$period, $from, $to] = $this->resolvePeriod($request);
+        $supplierId = $request->get('supplier_id');
+        $status     = $request->get('status');
+
+        $query = PurchaseOrder::with('supplier')
+            ->where('company_id', $companyId)
+            ->whereBetween('created_at', [$from, $to]);
+
+        if ($supplierId) $query->where('supplier_id', $supplierId);
+        if ($status)     $query->where('status', $status);
+
+        $orders = $query->orderByDesc('created_at')->get();
+
+        $totalOrders   = $orders->count();
+        $totalValue    = $orders->whereIn('status', ['enviada', 'recebida_parcial', 'recebida'])->sum('total');
+        $receivedValue = $orders->where('status', 'recebida')->sum('total');
+        $pendingValue  = $orders->whereIn('status', ['enviada', 'recebida_parcial'])->sum('total');
+
+        $bySupplier = $orders
+            ->whereIn('status', ['enviada', 'recebida_parcial', 'recebida'])
+            ->groupBy('supplier_id')
+            ->map(fn($group) => [
+                'name'  => optional($group->first()->supplier)->name ?? 'Desconhecido',
+                'total' => $group->sum('total'),
+                'count' => $group->count(),
+            ])
+            ->sortByDesc('total')
+            ->values();
+
+        $topItemsQuery = DB::table('purchase_order_items')
+            ->join('purchase_orders', 'purchase_order_items.purchase_order_id', '=', 'purchase_orders.id')
+            ->join('products', 'purchase_order_items.product_id', '=', 'products.id')
+            ->leftJoin('categories', 'products.category_id', '=', 'categories.id')
+            ->where('purchase_orders.company_id', $companyId)
+            ->whereIn('purchase_orders.status', ['enviada', 'recebida_parcial', 'recebida'])
+            ->whereBetween('purchase_orders.created_at', [$from, $to]);
+
+        if ($supplierId) $topItemsQuery->where('purchase_orders.supplier_id', $supplierId);
+
+        $topItems = $topItemsQuery
+            ->select(
+                'products.name as product_name',
+                'categories.name as category_name',
+                DB::raw('SUM(purchase_order_items.quantity) as total_qty'),
+                DB::raw('SUM(purchase_order_items.subtotal) as total_cost'),
+                DB::raw('COUNT(DISTINCT purchase_orders.id) as total_orders')
+            )
+            ->groupBy('products.id', 'products.name', 'categories.name')
+            ->orderByDesc('total_cost')
+            ->limit(15)
+            ->get();
+
+        $suppliers = Supplier::where('company_id', $companyId)->orderBy('name')->get();
+
+        $supplierName = $supplierId
+            ? optional(Supplier::find($supplierId))->name
+            : null;
+
+        return compact(
+            'orders', 'period', 'from', 'to',
+            'supplierId', 'status', 'supplierName',
+            'totalOrders', 'totalValue', 'receivedValue', 'pendingValue',
+            'bySupplier', 'topItems', 'suppliers'
+        );
+    }
+
+    // ── Produtos mais vendidos ──────────────────────────────
 
     private function getProductsQuery(string $companyId, Carbon $from, Carbon $to)
     {
@@ -107,8 +176,7 @@ class ReportController extends Controller
         $products = $this->getProductsQuery($companyId, $from, $to);
 
         $filename = 'produtos_mais_vendidos_' . now()->format('Ymd_His') . '.csv';
-
-        $headers = [
+        $headers  = [
             'Content-Type'        => 'text/csv; charset=UTF-8',
             'Content-Disposition' => "attachment; filename=\"$filename\"",
         ];
@@ -147,103 +215,20 @@ class ReportController extends Controller
         return $pdf->download('produtos_mais_vendidos_' . now()->format('Ymd_His') . '.pdf');
     }
 
-    // ── Relatório de Compras ────────────────────────────────────
+    // ── Relatório de Compras ────────────────────────────────
 
     public function purchases(Request $request)
     {
         $companyId = auth()->user()->company_id;
-        [$period, $from, $to] = $this->resolvePeriod($request);
-
-        // Filtros opcionais
-        $supplierId = $request->get('supplier_id');
-        $status     = $request->get('status');
-
-        // ─ Query base ────────────────────────────────────────────────────────
-        $query = PurchaseOrder::with('supplier')
-            ->where('company_id', $companyId)
-            ->whereBetween('created_at', [$from, $to]);
-
-        if ($supplierId) {
-            $query->where('supplier_id', $supplierId);
-        }
-        if ($status) {
-            $query->where('status', $status);
-        }
-
-        $orders = $query->orderByDesc('created_at')->get();
-
-        // ─ KPIs ────────────────────────────────────────────────────────────
-        $totalOrders    = $orders->count();
-        $totalValue     = $orders->whereIn('status', ['enviada', 'recebida_parcial', 'recebida'])->sum('total');
-        $receivedValue  = $orders->where('status', 'recebida')->sum('total');
-        $pendingValue   = $orders->whereIn('status', ['enviada', 'recebida_parcial'])->sum('total');
-
-        // ─ Agrupamento por fornecedor ─────────────────────────────────
-        $bySupplier = $orders
-            ->whereIn('status', ['enviada', 'recebida_parcial', 'recebida'])
-            ->groupBy('supplier_id')
-            ->map(fn($group) => [
-                'name'   => optional($group->first()->supplier)->name ?? 'Desconhecido',
-                'total'  => $group->sum('total'),
-                'count'  => $group->count(),
-            ])
-            ->sortByDesc('total')
-            ->values();
-
-        // ─ Itens mais comprados no período ────────────────────────────
-        $topItemsQuery = DB::table('purchase_order_items')
-            ->join('purchase_orders', 'purchase_order_items.purchase_order_id', '=', 'purchase_orders.id')
-            ->join('products', 'purchase_order_items.product_id', '=', 'products.id')
-            ->leftJoin('categories', 'products.category_id', '=', 'categories.id')
-            ->where('purchase_orders.company_id', $companyId)
-            ->whereIn('purchase_orders.status', ['enviada', 'recebida_parcial', 'recebida'])
-            ->whereBetween('purchase_orders.created_at', [$from, $to]);
-
-        if ($supplierId) {
-            $topItemsQuery->where('purchase_orders.supplier_id', $supplierId);
-        }
-
-        $topItems = $topItemsQuery
-            ->select(
-                'products.name as product_name',
-                'categories.name as category_name',
-                DB::raw('SUM(purchase_order_items.quantity) as total_qty'),
-                DB::raw('SUM(purchase_order_items.subtotal) as total_cost'),
-                DB::raw('COUNT(DISTINCT purchase_orders.id) as total_orders')
-            )
-            ->groupBy('products.id', 'products.name', 'categories.name')
-            ->orderByDesc('total_cost')
-            ->limit(15)
-            ->get();
-
-        // ─ Lista de fornecedores para filtro ───────────────────────────
-        $suppliers = \App\Models\Supplier::where('company_id', $companyId)
-            ->orderBy('name')->get();
-
-        return view('reports.purchases', compact(
-            'orders', 'period', 'from', 'to',
-            'supplierId', 'status',
-            'totalOrders', 'totalValue', 'receivedValue', 'pendingValue',
-            'bySupplier', 'topItems', 'suppliers'
-        ));
+        $data = $this->getPurchasesData($request, $companyId);
+        return view('reports.purchases', $data);
     }
 
     public function purchasesCsv(Request $request)
     {
         $companyId = auth()->user()->company_id;
-        [$period, $from, $to] = $this->resolvePeriod($request);
-
-        $supplierId = $request->get('supplier_id');
-        $status     = $request->get('status');
-
-        $query = PurchaseOrder::with('supplier', 'items.product')
-            ->where('company_id', $companyId)
-            ->whereBetween('created_at', [$from, $to]);
-
-        if ($supplierId) $query->where('supplier_id', $supplierId);
-        if ($status)     $query->where('status', $status);
-
-        $orders = $query->orderByDesc('created_at')->get();
+        $data = $this->getPurchasesData($request, $companyId);
+        extract($data);
 
         $filename = 'relatorio_compras_' . now()->format('Ymd_His') . '.csv';
         $headers  = [
@@ -263,7 +248,7 @@ class ReportController extends Controller
                 fputcsv($file, [
                     $order->number,
                     optional($order->supplier)->name ?? '',
-                    $order->status_label,
+                    PurchaseOrder::STATUS_LABELS[$order->status] ?? $order->status,
                     $order->created_at->format('d/m/Y'),
                     $order->expected_date?->format('d/m/Y') ?? '',
                     $order->received_at?->format('d/m/Y') ?? '',
@@ -276,5 +261,16 @@ class ReportController extends Controller
         };
 
         return response()->stream($callback, 200, $headers);
+    }
+
+    public function purchasesPdf(Request $request)
+    {
+        $companyId = auth()->user()->company_id;
+        $data = $this->getPurchasesData($request, $companyId);
+
+        $pdf = Pdf::loadView('exports.purchases-pdf', $data)
+            ->setPaper('a4', 'portrait');
+
+        return $pdf->download('relatorio_compras_' . now()->format('Ymd_His') . '.pdf');
     }
 }

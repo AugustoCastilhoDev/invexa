@@ -19,7 +19,10 @@
             <p class="text-soft mb-0">Análise de ordens de compra por período, fornecedor e status.</p>
         </div>
         <div class="d-flex flex-wrap gap-2">
-            {{-- Export CSV mantendo filtros atuais --}}
+            <a href="{{ route('reports.purchases.pdf', request()->query()) }}"
+               class="btn btn-outline-danger btn-sm">
+                <i class="bi bi-filetype-pdf me-1"></i>Exportar PDF
+            </a>
             <a href="{{ route('reports.purchases.csv', request()->query()) }}"
                class="btn btn-outline-success btn-sm">
                 <i class="bi bi-filetype-csv me-1"></i>Exportar CSV
@@ -38,7 +41,6 @@
 
         {{-- Filtros --}}
         <form method="GET" action="{{ route('reports.purchases') }}" class="row g-3 mb-4">
-            {{-- Período --}}
             <div class="col-12 col-md-3">
                 <label class="form-label text-soft" style="font-size:.78rem;">Período</label>
                 <select name="period" id="periodSelect" class="form-select bg-dark text-white border-secondary">
@@ -47,7 +49,6 @@
                     @endforeach
                 </select>
             </div>
-            {{-- Datas customizadas --}}
             <div class="col-6 col-md-2" id="customFrom" style="{{ $period === 'custom' ? '' : 'display:none;' }}">
                 <label class="form-label text-soft" style="font-size:.78rem;">De</label>
                 <input type="date" name="from" class="form-control" value="{{ request('from', $from->format('Y-m-d')) }}">
@@ -56,7 +57,6 @@
                 <label class="form-label text-soft" style="font-size:.78rem;">Até</label>
                 <input type="date" name="to" class="form-control" value="{{ request('to', $to->format('Y-m-d')) }}">
             </div>
-            {{-- Fornecedor --}}
             <div class="col-12 col-md-3">
                 <label class="form-label text-soft" style="font-size:.78rem;">Fornecedor</label>
                 <select name="supplier_id" class="form-select bg-dark text-white border-secondary">
@@ -66,7 +66,6 @@
                     @endforeach
                 </select>
             </div>
-            {{-- Status --}}
             <div class="col-12 col-md-2">
                 <label class="form-label text-soft" style="font-size:.78rem;">Status</label>
                 <select name="status" class="form-select bg-dark text-white border-secondary">
@@ -82,7 +81,6 @@
             </div>
         </form>
 
-        {{-- Cabeçalho do período --}}
         <p class="text-soft mb-4" style="font-size:.82rem;">
             <i class="bi bi-calendar-range me-1"></i>
             Exibindo: <strong class="text-white">{{ $from->format('d/m/Y') }}</strong>
@@ -132,7 +130,6 @@
         @else
 
         <div class="row g-4 mb-4">
-            {{-- Compras por fornecedor --}}
             <div class="col-12 col-lg-5">
                 <div class="card card-dark-bg shadow-sm h-100">
                     <div class="card-header card-header-dark border-bottom">
@@ -166,7 +163,6 @@
                 </div>
             </div>
 
-            {{-- Produtos mais comprados --}}
             <div class="col-12 col-lg-7">
                 <div class="card card-dark-bg shadow-sm h-100">
                     <div class="card-header card-header-dark border-bottom">
@@ -205,7 +201,6 @@
             </div>
         </div>
 
-        {{-- Tabela completa de OCs --}}
         <div class="card card-dark-bg shadow-sm">
             <div class="card-header card-header-dark border-bottom">
                 <span class="text-soft text-uppercase fw-semibold" style="font-size:.72rem;letter-spacing:.08em;">
