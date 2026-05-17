@@ -27,7 +27,7 @@ class SaleReturnController extends Controller
             $query->whereDate('created_at', '<=', $request->to);
         }
 
-        $returns      = $query->orderByDesc('created_at')->paginate(15)->withQueryString();
+        $returns       = $query->orderByDesc('created_at')->paginate(15)->withQueryString();
         $totalReturned = (clone $query)->sum('total');
         $countReturns  = (clone $query)->count();
 
@@ -100,10 +100,13 @@ class SaleReturnController extends Controller
                         'subtotal'       => $item['quantity'] * $item['price'],
                     ]);
 
-                    // Repor estoque
+                    // Recarrega o produto com fresh() para garantir quantity_before correto
                     $product = Product::lockForUpdate()->findOrFail($item['product_id']);
-                    $before  = $product->quantity;
-                    $after   = $before + $item['quantity'];
+                    $product = $product->fresh();
+
+                    $before = $product->quantity;
+                    $after  = $before + (int) $item['quantity'];
+
                     $product->update(['quantity' => $after]);
 
                     StockMovement::create([
@@ -111,7 +114,7 @@ class SaleReturnController extends Controller
                         'company_id'      => $companyId,
                         'user_id'         => auth()->id(),
                         'type'            => 'entrada',
-                        'quantity'        => +$item['quantity'],
+                        'quantity'        => (int) $item['quantity'],
                         'quantity_before' => $before,
                         'quantity_after'  => $after,
                         'reason'          => 'devolucao',
@@ -138,12 +141,12 @@ class SaleReturnController extends Controller
         return view('returns.show', compact('return'));
     }
 
-    /** Busca os itens de uma venda via AJAX **/
-    public function saleItems(Sale $sale)
+    /** Busca os itens de uma venda via AJAX (rota: returns.items) **/
+    public function getItems(Sale $saleReturn)
     {
-        abort_if($sale->company_id !== auth()->user()->company_id, 403);
-        $sale->load('items.product');
-        return response()->json($sale->items->map(fn($i) => [
+        abort_if($saleReturn->company_id !== auth()->user()->company_id, 403);
+        $saleReturn->load('items.product');
+        return response()->json($saleReturn->items->map(fn($i) => [
             'product_id'   => $i->product_id,
             'product_name' => $i->product->name ?? 'Produto removido',
             'quantity'     => $i->quantity,
