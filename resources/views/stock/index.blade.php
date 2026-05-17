@@ -26,9 +26,16 @@
             </div>
         @endif
 
+        @if(session('error'))
+            <div class="alert alert-danger alert-dismissible fade show mb-3" role="alert">
+                {{ session('error') }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        @endif
+
         @if($errors->any())
             <div class="alert alert-danger alert-dismissible fade show mb-3" role="alert">
-                {{ $errors->first('error') }}
+                {{ $errors->first() }}
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
         @endif
@@ -104,10 +111,14 @@
                             {{ $mov->created_at->timezone(config('app.timezone'))->format('d/m/Y H:i') }}
                         </td>
                         <td class="py-3">
-                            <a href="{{ route('stock.product', $mov->product_id) }}"
-                               class="text-white fw-semibold text-decoration-none">
-                                {{ $mov->product->name ?? '-' }}
-                            </a>
+                            @if($mov->product)
+                                <a href="{{ route('products.show', $mov->product_id) }}"
+                                   class="text-white fw-semibold text-decoration-none">
+                                    {{ $mov->product->name }}
+                                </a>
+                            @else
+                                <span class="text-soft">Produto removido</span>
+                            @endif
                         </td>
                         <td class="py-3">
                             <span class="badge bg-{{ $mov->type_badge }}">
