@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Bill;
 use App\Models\Category;
-use App\Models\Payable;
 use App\Models\Product;
 use App\Models\Receivable;
 use App\Models\Sale;
@@ -161,7 +161,7 @@ class DashboardController extends Controller
             ->limit(5)
             ->get();
 
-        // ── Gráfico de vendas ─────────────────────────────────────────
+        // ── Gráfico de vendas ──
         $chartFrom = $from;
         $chartTo   = $to;
         if (!$chartFrom && !$chartTo && !$interval) {
@@ -218,9 +218,9 @@ class DashboardController extends Controller
             fn($d) => round((float)($salesByDay[$d] ?? 0) - (float)($returnsByDay[$d] ?? 0), 2)
         );
 
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // MÓDULO 3.5 — Painel Financeiro
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // MÓDULO 3.5 — Painel Financeiro (Bill = contas a pagar)
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         $today   = now($this->tz)->startOfDay();
         $in7days = now($this->tz)->addDays(7)->endOfDay();
 
@@ -232,11 +232,11 @@ class DashboardController extends Controller
             ->where('status', 'vencida')
             ->sum('amount');
 
-        // KPIs Contas a Pagar
-        $finPayablePending = (float) Payable::where('company_id', $companyId)
+        // KPIs Contas a Pagar (Bill)
+        $finPayablePending = (float) Bill::where('company_id', $companyId)
             ->whereIn('status', ['pendente', 'vencida'])
             ->sum('amount');
-        $finPayableOverdue = (float) Payable::where('company_id', $companyId)
+        $finPayableOverdue = (float) Bill::where('company_id', $companyId)
             ->where('status', 'vencida')
             ->sum('amount');
 
@@ -244,7 +244,7 @@ class DashboardController extends Controller
         $finCashBalance = $finReceivablePending - $finPayablePending;
 
         // Vencimentos próximos 7 dias
-        $upcomingPayables = Payable::where('company_id', $companyId)
+        $upcomingPayables = Bill::where('company_id', $companyId)
             ->whereIn('status', ['pendente', 'vencida'])
             ->whereBetween('due_date', [$today, $in7days])
             ->orderBy('due_date')
@@ -258,7 +258,7 @@ class DashboardController extends Controller
             ->limit(6)
             ->get();
 
-        // Gráfico de fluxo de caixa (30 dias — recebíveis vs pagáveis por vencimento)
+        // Gráfico de fluxo de caixa (mês atual por vencimento)
         $cfStart = now($this->tz)->startOfMonth()->toDateString();
         $cfEnd   = now($this->tz)->endOfMonth()->toDateString();
 
@@ -270,7 +270,7 @@ class DashboardController extends Controller
             ->pluck('total', 'day')
             ->map(fn($v) => (float) $v);
 
-        $cfPayables = Payable::where('company_id', $companyId)
+        $cfPayables = Bill::where('company_id', $companyId)
             ->whereIn('status', ['pendente', 'vencida', 'paga'])
             ->whereBetween('due_date', [$cfStart, $cfEnd])
             ->selectRaw('DATE(due_date) as day, SUM(amount) as total')
@@ -278,10 +278,10 @@ class DashboardController extends Controller
             ->pluck('total', 'day')
             ->map(fn($v) => (float) $v);
 
-        $cfAllDays   = collect($cfReceivables->keys())->merge($cfPayables->keys())->unique()->sort()->values();
-        $cfLabels    = $cfAllDays->map(fn($d) => date('d/m', strtotime($d)));
-        $cfDataRec   = $cfAllDays->map(fn($d) => (float)($cfReceivables[$d] ?? 0));
-        $cfDataPay   = $cfAllDays->map(fn($d) => (float)($cfPayables[$d] ?? 0));
+        $cfAllDays = collect($cfReceivables->keys())->merge($cfPayables->keys())->unique()->sort()->values();
+        $cfLabels  = $cfAllDays->map(fn($d) => date('d/m', strtotime($d)));
+        $cfDataRec = $cfAllDays->map(fn($d) => (float)($cfReceivables[$d] ?? 0));
+        $cfDataPay = $cfAllDays->map(fn($d) => (float)($cfPayables[$d] ?? 0));
 
         return view('dashboard', compact(
             'totalProducts', 'totalCategories', 'totalSales', 'totalRevenue',
