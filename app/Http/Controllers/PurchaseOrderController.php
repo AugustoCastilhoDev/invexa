@@ -29,10 +29,10 @@ class PurchaseOrderController extends Controller
         $orders    = $query->orderByDesc('id')->paginate(15)->withQueryString();
         $suppliers = Supplier::where('company_id', $companyId)->where('active', true)->orderBy('name')->get();
 
-        $totalOrders    = PurchaseOrder::where('company_id', $companyId)->count();
-        $pendingOrders  = PurchaseOrder::where('company_id', $companyId)
+        $totalOrders   = PurchaseOrder::where('company_id', $companyId)->count();
+        $pendingOrders = PurchaseOrder::where('company_id', $companyId)
                             ->whereIn('status', ['enviada', 'recebida_parcial'])->count();
-        $totalValue     = PurchaseOrder::where('company_id', $companyId)
+        $totalValue    = PurchaseOrder::where('company_id', $companyId)
                             ->whereIn('status', ['enviada', 'recebida_parcial', 'recebida'])
                             ->sum('total');
 
@@ -125,8 +125,8 @@ class PurchaseOrderController extends Controller
         abort_if(! $purchaseOrder->canReceive(), 422);
 
         $request->validate([
-            'items'                      => ['required', 'array'],
-            'items.*.quantity_received'  => ['required', 'integer', 'min:0'],
+            'items'                     => ['required', 'array'],
+            'items.*.quantity_received' => ['required', 'integer', 'min:0'],
         ]);
 
         DB::transaction(function () use ($request, $purchaseOrder) {
@@ -134,26 +134,37 @@ class PurchaseOrderController extends Controller
 
             foreach ($purchaseOrder->items as $item) {
                 $received = (int) ($request->items[$item->id]['quantity_received'] ?? 0);
+
                 if ($received <= 0) {
-                    $allReceived = false;
+                    // Se nenhuma quantidade recebida neste item, ainda pode estar pendente
+                    if ($item->quantity_received < $item->quantity) {
+                        $allReceived = false;
+                    }
                     continue;
                 }
 
+                // Captura estoque ANTES de alterar
+                $quantityBefore = (int) $item->product->quantity;
+                $quantityAfter  = $quantityBefore + $received;
+
+                // Atualiza quantidade recebida no item da OC
                 $newTotal = $item->quantity_received + $received;
                 $item->update(['quantity_received' => $newTotal]);
 
-                // Atualiza estoque do produto
+                // Incrementa estoque do produto
                 $item->product->increment('quantity', $received);
 
-                // Registra movimentação de estoque
+                // Registra movimentação de estoque com snapshot completo
                 StockMovement::create([
-                    'company_id'  => $purchaseOrder->company_id,
-                    'product_id'  => $item->product_id,
-                    'user_id'     => auth()->id(),
-                    'type'        => 'entrada',
-                    'quantity'    => $received,
-                    'reason'      => 'Recebimento OC ' . $purchaseOrder->number,
-                    'notes'       => 'Ordem de Compra #' . $purchaseOrder->number,
+                    'company_id'      => $purchaseOrder->company_id,
+                    'product_id'      => $item->product_id,
+                    'user_id'         => auth()->id(),
+                    'type'            => 'entrada',
+                    'quantity'        => $received,
+                    'quantity_before' => $quantityBefore,
+                    'quantity_after'  => $quantityAfter,
+                    'reason'          => 'Recebimento OC ' . $purchaseOrder->number,
+                    'notes'           => 'Ordem de Compra #' . $purchaseOrder->number,
                 ]);
 
                 if ($newTotal < $item->quantity) {
