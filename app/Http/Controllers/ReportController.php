@@ -24,10 +24,24 @@ class ReportController extends Controller
 
     private function getProductsQuery(string $companyId, Carbon $from, Carbon $to)
     {
-        return SaleItem::query()
+        // Subquery: total devolvido por produto nas vendas do período
+        $returnedSub = DB::table('sale_return_items')
+            ->join('sale_returns', 'sale_return_items.sale_return_id', '=', 'sale_returns.id')
+            ->join('sales as s2', 'sale_returns.sale_id', '=', 's2.id')
+            ->where('s2.company_id', $companyId)
+            ->whereBetween('s2.sale_date', [$from, $to])
+            ->select(
+                'sale_return_items.product_id',
+                DB::raw('SUM(sale_return_items.quantity) as returned_qty'),
+                DB::raw('SUM(sale_return_items.subtotal) as returned_revenue')
+            )
+            ->groupBy('sale_return_items.product_id');
+
+        return DB::table('sale_items')
             ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
             ->join('products', 'sale_items.product_id', '=', 'products.id')
             ->leftJoin('categories', 'products.category_id', '=', 'categories.id')
+            ->leftJoinSub($returnedSub, 'ret', 'ret.product_id', '=', 'sale_items.product_id')
             ->where('sales.company_id', $companyId)
             ->where('sales.status', 'concluida')
             ->whereBetween('sales.sale_date', [$from, $to])
@@ -35,8 +49,8 @@ class ReportController extends Controller
                 'products.id',
                 'products.name as product_name',
                 'categories.name as category_name',
-                DB::raw('SUM(sale_items.quantity) as total_qty'),
-                DB::raw('SUM(sale_items.subtotal) as total_revenue'),
+                DB::raw('SUM(sale_items.quantity) - COALESCE(MAX(ret.returned_qty), 0) as total_qty'),
+                DB::raw('SUM(sale_items.subtotal) - COALESCE(MAX(ret.returned_revenue), 0) as total_revenue'),
                 DB::raw('COUNT(DISTINCT sale_items.sale_id) as total_sales')
             )
             ->groupBy('products.id', 'products.name', 'categories.name')
@@ -99,7 +113,7 @@ class ReportController extends Controller
         $callback = function () use ($products) {
             $file = fopen('php://output', 'w');
             fputs($file, "\xEF\xBB\xBF");
-            fputcsv($file, ['Produto', 'Categoria', 'Qtd. Vendida', 'Receita (R$)', 'Nº de Vendas'], ';');
+            fputcsv($file, ['Produto', 'Categoria', 'Qtd. Líquida Vendida', 'Receita Líquida (R$)', 'Nº de Vendas'], ';');
 
             foreach ($products as $row) {
                 fputcsv($file, [
