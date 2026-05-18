@@ -108,8 +108,25 @@
 
         /* ─── FOOTER ─────────────────────────────────────────────────── */
         .footer-main {
-            background:rgba(8,13,26,.8);
-            border-top:1px solid rgba(14,165,233,.09);
+            background: rgba(8,13,26,.8);
+            border-top: 1px solid rgba(14,165,233,.09);
+        }
+        .footer-dev-link {
+            display: inline-flex;
+            align-items: center;
+            gap: .35rem;
+            color: #38BDF8;
+            text-decoration: none;
+            font-weight: 600;
+            transition: color .2s ease, opacity .2s ease;
+        }
+        .footer-dev-link:hover {
+            color: #7DD3FC;
+            opacity: .9;
+        }
+        .footer-dev-link .bi-instagram {
+            font-size: .85rem;
+            opacity: .85;
         }
 
         /* ─── STOCK ALERT BADGE ──────────────────────────────────────── */
@@ -380,22 +397,36 @@
 
 {{-- ════════════════════ FOOTER ════════════════════ --}}
 <footer class="footer-main py-4">
-    <div class="container text-center" style="color:rgba(148,163,184,.55);font-size:.8rem;">
-        <div class="d-flex align-items-center justify-content-center gap-2 mb-1">
-            {{-- Ícone da marca no rodapé --}}
-            <svg width="18" height="18" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <div class="container" style="color:rgba(148,163,184,.5); font-size:.78rem;">
+
+        {{-- Linha superior: logo + nome + copyright --}}
+        <div class="d-flex align-items-center justify-content-center gap-2 mb-2">
+            <svg width="16" height="16" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                 <rect width="32" height="32" rx="7" fill="#0D1929"/>
                 <path d="M7 10h5.5L16 16l3.5-6H25L18 22h-4L7 10Z" fill="#0EA5E9"/>
                 <circle cx="24" cy="10" r="2.2" fill="#38BDF8"/>
             </svg>
-            <span class="fw-semibold" style="color:rgba(226,232,240,.65);">INVEXA</span>
+            <span class="fw-semibold" style="color:rgba(226,232,240,.55); letter-spacing:.04em;">INVEXA</span>
+            <span style="color:rgba(148,163,184,.25);">·</span>
+            <span>Gestão de Estoque e Vendas</span>
+            <span style="color:rgba(148,163,184,.25);">·</span>
             <span>&copy; {{ date('Y') }}</span>
         </div>
-        <div>
-            Sistema profissional para gestão de estoque e vendas &middot; Desenvolvido por
-            <a href="https://www.instagram.com/castilho_digital/" target="_blank" rel="noopener noreferrer"
-               style="color:#38BDF8;text-decoration:none;font-weight:600;">Castilho Soluções Digitais</a>
+
+        {{-- Divisor sutil --}}
+        <div style="height:1px; background:rgba(14,165,233,.07); margin-bottom:.75rem;"></div>
+
+        {{-- Linha inferior: crédito do desenvolvedor --}}
+        <div class="text-center">
+            Desenvolvido por
+            <a href="https://www.instagram.com/castilho_digital/"
+               target="_blank" rel="noopener noreferrer"
+               class="footer-dev-link ms-1">
+                <i class="bi bi-instagram"></i>
+                Castilho Soluções Digitais
+            </a>
         </div>
+
     </div>
 </footer>
 
