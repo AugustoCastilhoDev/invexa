@@ -29,10 +29,10 @@
                     <a href="{{ route('reports.financial') }}" class="btn btn-sm btn-outline-light flex-grow-1">
                         <i class="bi bi-eye me-1"></i>Ver Relatório
                     </a>
-                    <a href="{{ route('reports.financial') }}?export=pdf" class="btn btn-sm btn-outline-danger">
+                    <a href="{{ route('reports.financial.pdf') }}" class="btn btn-sm btn-outline-danger" target="_blank">
                         <i class="bi bi-filetype-pdf me-1"></i>PDF
                     </a>
-                    <a href="{{ route('reports.financial') }}?export=csv" class="btn btn-sm btn-outline-success">
+                    <a href="{{ route('reports.financial.csv') }}" class="btn btn-sm btn-outline-success">
                         <i class="bi bi-filetype-csv me-1"></i>CSV
                     </a>
                 </div>
@@ -57,7 +57,7 @@
                     <a href="{{ route('reports.purchases') }}" class="btn btn-sm btn-outline-light flex-grow-1">
                         <i class="bi bi-eye me-1"></i>Ver Relatório
                     </a>
-                    <a href="{{ route('reports.purchases.pdf') }}" class="btn btn-sm btn-outline-danger">
+                    <a href="{{ route('reports.purchases.pdf') }}" class="btn btn-sm btn-outline-danger" target="_blank">
                         <i class="bi bi-filetype-pdf me-1"></i>PDF
                     </a>
                     <a href="{{ route('reports.purchases.csv') }}" class="btn btn-sm btn-outline-success">
@@ -78,12 +78,18 @@
                     </div>
                     <div>
                         <h6 class="text-white mb-1">Vendas</h6>
-                        <p class="text-soft mb-0" style="font-size:.8rem;">Histórico e totais de vendas</p>
+                        <p class="text-soft mb-0" style="font-size:.8rem;">Histórico e totais de vendas por período</p>
                     </div>
                 </div>
                 <div class="d-flex flex-wrap gap-2">
-                    <a href="{{ route('sales.index') }}" class="btn btn-sm btn-outline-light flex-grow-1">
-                        <i class="bi bi-eye me-1"></i>Ver
+                    <a href="{{ route('reports.sales') }}" class="btn btn-sm btn-outline-light flex-grow-1">
+                        <i class="bi bi-eye me-1"></i>Ver Relatório
+                    </a>
+                    <a href="{{ route('reports.sales.pdf') }}" class="btn btn-sm btn-outline-danger" target="_blank">
+                        <i class="bi bi-filetype-pdf me-1"></i>PDF
+                    </a>
+                    <a href="{{ route('reports.sales.csv') }}" class="btn btn-sm btn-outline-success">
+                        <i class="bi bi-filetype-csv me-1"></i>CSV
                     </a>
                 </div>
             </div>
@@ -100,12 +106,18 @@
                     </div>
                     <div>
                         <h6 class="text-white mb-1">Contas a Pagar</h6>
-                        <p class="text-soft mb-0" style="font-size:.8rem;">Vencidas, pendentes e pagas</p>
+                        <p class="text-soft mb-0" style="font-size:.8rem;">Vencidas, pendentes e pagas por período</p>
                     </div>
                 </div>
                 <div class="d-flex flex-wrap gap-2">
-                    <a href="{{ route('bills.index') }}" class="btn btn-sm btn-outline-light flex-grow-1">
-                        <i class="bi bi-eye me-1"></i>Ver
+                    <a href="{{ route('reports.bills') }}" class="btn btn-sm btn-outline-light flex-grow-1">
+                        <i class="bi bi-eye me-1"></i>Ver Relatório
+                    </a>
+                    <a href="{{ route('reports.bills.pdf') }}" class="btn btn-sm btn-outline-danger" target="_blank">
+                        <i class="bi bi-filetype-pdf me-1"></i>PDF
+                    </a>
+                    <a href="{{ route('reports.bills.csv') }}" class="btn btn-sm btn-outline-success">
+                        <i class="bi bi-filetype-csv me-1"></i>CSV
                     </a>
                 </div>
             </div>
@@ -122,12 +134,18 @@
                     </div>
                     <div>
                         <h6 class="text-white mb-1">Estoque</h6>
-                        <p class="text-soft mb-0" style="font-size:.8rem;">Produtos, saldos e alertas</p>
+                        <p class="text-soft mb-0" style="font-size:.8rem;">Produtos, saldos e alertas de estoque baixo</p>
                     </div>
                 </div>
                 <div class="d-flex flex-wrap gap-2">
-                    <a href="{{ route('products.index') }}" class="btn btn-sm btn-outline-light flex-grow-1">
-                        <i class="bi bi-eye me-1"></i>Ver
+                    <a href="{{ route('reports.stock') }}" class="btn btn-sm btn-outline-light flex-grow-1">
+                        <i class="bi bi-eye me-1"></i>Ver Relatório
+                    </a>
+                    <a href="{{ route('reports.stock.pdf') }}" class="btn btn-sm btn-outline-danger" target="_blank">
+                        <i class="bi bi-filetype-pdf me-1"></i>PDF
+                    </a>
+                    <a href="{{ route('reports.stock.csv') }}" class="btn btn-sm btn-outline-success">
+                        <i class="bi bi-filetype-csv me-1"></i>CSV
                     </a>
                 </div>
             </div>
@@ -148,8 +166,14 @@
                     </div>
                 </div>
                 <div class="d-flex flex-wrap gap-2">
-                    <a href="{{ route('suppliers.index') }}" class="btn btn-sm btn-outline-light flex-grow-1">
-                        <i class="bi bi-eye me-1"></i>Ver
+                    <a href="{{ route('reports.suppliers') }}" class="btn btn-sm btn-outline-light flex-grow-1">
+                        <i class="bi bi-eye me-1"></i>Ver Relatório
+                    </a>
+                    <a href="{{ route('reports.suppliers.pdf') }}" class="btn btn-sm btn-outline-danger" target="_blank">
+                        <i class="bi bi-filetype-pdf me-1"></i>PDF
+                    </a>
+                    <a href="{{ route('reports.suppliers.csv') }}" class="btn btn-sm btn-outline-success">
+                        <i class="bi bi-filetype-csv me-1"></i>CSV
                     </a>
                 </div>
             </div>

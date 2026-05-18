@@ -20,34 +20,34 @@ use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
 // ── Autenticação (pública) ────────────────────────────────────────
-Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
+Route::get('/login',  [AuthenticatedSessionController::class, 'create'])->name('login');
 Route::post('/login', [AuthenticatedSessionController::class, 'store'])->name('login.post');
-Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
+Route::post('/logout',[AuthenticatedSessionController::class, 'destroy'])->name('logout');
 
-Route::get('/register', [RegisteredUserController::class, 'create'])->name('register');
+Route::get('/register',  [RegisteredUserController::class, 'create'])->name('register');
 Route::post('/register', [RegisteredUserController::class, 'store'])->name('register.store');
 
 // ── Rotas protegidas ────────────────────────────────────────────
 Route::middleware(['auth', 'company'])->group(function () {
 
-    // ── Home (página inicial pós-login) ──
-    Route::get('/', [HomeController::class, 'index'])->name('home');
-    Route::get('/home', [HomeController::class, 'index'])->name('home.alias');
+    // Home
+    Route::get('/',      [HomeController::class, 'index'])->name('home');
+    Route::get('/home',  [HomeController::class, 'index'])->name('home.alias');
 
     // Dashboard
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard',            [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/dashboard/export/csv', [DashboardController::class, 'exportCsv'])->name('dashboard.export.csv');
     Route::get('/dashboard/export/pdf', [DashboardController::class, 'exportPdf'])->name('dashboard.export.pdf');
 
     // Perfil
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::get('/profile',   [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
 
     // Vendas
     Route::get('/sales',        [SaleController::class, 'index'])->name('sales.index');
     Route::get('/sales/create', [SaleController::class, 'create'])->name('sales.create');
     Route::post('/sales',       [SaleController::class, 'store'])->name('sales.store');
-    Route::get('/sales/{sale}', [SaleController::class, 'show'])->name('sales.show');
+    Route::get('/sales/{sale}',         [SaleController::class, 'show'])->name('sales.show');
     Route::get('/sales/{sale}/invoice', [SaleController::class, 'invoice'])->name('sales.invoice');
     Route::get('/sales/{sale}/pdf',     [SaleController::class, 'pdf'])->name('sales.pdf');
     Route::middleware('role:admin,gerente')->group(function () {
@@ -92,24 +92,51 @@ Route::middleware(['auth', 'company'])->group(function () {
 
     // Contas a Pagar
     Route::resource('bills', BillController::class);
-    Route::patch('/bills/{bill}/pay',            [BillController::class, 'pay'])->name('bills.pay');
-    Route::post('/bills/bulk-pay',               [BillController::class, 'bulkPay'])->name('bills.bulk-pay');
-    Route::patch('/bills/{bill}/cancel',         [BillController::class, 'cancel'])->name('bills.cancel');
+    Route::patch('/bills/{bill}/pay',    [BillController::class, 'pay'])->name('bills.pay');
+    Route::post('/bills/bulk-pay',       [BillController::class, 'bulkPay'])->name('bills.bulk-pay');
+    Route::patch('/bills/{bill}/cancel', [BillController::class, 'cancel'])->name('bills.cancel');
 
     // Contas a Receber
     Route::resource('receivables', ReceivableController::class);
-    Route::patch('/receivables/{receivable}/receive',   [ReceivableController::class, 'receive'])->name('receivables.receive');
-    Route::post('/receivables/bulk-receive',            [ReceivableController::class, 'bulkReceive'])->name('receivables.bulk-receive');
-    Route::patch('/receivables/{receivable}/cancel',    [ReceivableController::class, 'cancel'])->name('receivables.cancel');
+    Route::patch('/receivables/{receivable}/receive', [ReceivableController::class, 'receive'])->name('receivables.receive');
+    Route::post('/receivables/bulk-receive',          [ReceivableController::class, 'bulkReceive'])->name('receivables.bulk-receive');
+    Route::patch('/receivables/{receivable}/cancel',  [ReceivableController::class, 'cancel'])->name('receivables.cancel');
 
-    // Relatórios
-    Route::get('/reports',                [ReportController::class, 'index'])->name('reports.index');
-    Route::get('/reports/financial',      [ReportController::class, 'financial'])->name('reports.financial');
-    Route::get('/reports/purchases',      [ReportController::class, 'purchases'])->name('reports.purchases');
-    Route::get('/reports/purchases/pdf',  [ReportController::class, 'purchasesPdf'])->name('reports.purchases.pdf');
-    Route::get('/reports/purchases/csv',  [ReportController::class, 'purchasesCsv'])->name('reports.purchases.csv');
+    // ── Relatórios ────────────────────────────────────────────────
+    Route::prefix('reports')->name('reports.')->group(function () {
+        Route::get('/',                  [ReportController::class, 'index'])->name('index');
+
+        // Financeiro
+        Route::get('/financial',         [ReportController::class, 'financial'])->name('financial');
+        Route::get('/financial/pdf',     [ReportController::class, 'financialPdf'])->name('financial.pdf');
+        Route::get('/financial/csv',     [ReportController::class, 'financialCsv'])->name('financial.csv');
+
+        // Compras
+        Route::get('/purchases',         [ReportController::class, 'purchases'])->name('purchases');
+        Route::get('/purchases/pdf',     [ReportController::class, 'purchasesPdf'])->name('purchases.pdf');
+        Route::get('/purchases/csv',     [ReportController::class, 'purchasesCsv'])->name('purchases.csv');
+
+        // Vendas
+        Route::get('/sales',             [ReportController::class, 'sales'])->name('sales');
+        Route::get('/sales/pdf',         [ReportController::class, 'salesPdf'])->name('sales.pdf');
+        Route::get('/sales/csv',         [ReportController::class, 'salesCsv'])->name('sales.csv');
+
+        // Contas a Pagar
+        Route::get('/bills',             [ReportController::class, 'bills'])->name('bills');
+        Route::get('/bills/pdf',         [ReportController::class, 'billsPdf'])->name('bills.pdf');
+        Route::get('/bills/csv',         [ReportController::class, 'billsCsv'])->name('bills.csv');
+
+        // Estoque
+        Route::get('/stock',             [ReportController::class, 'stock'])->name('stock');
+        Route::get('/stock/pdf',         [ReportController::class, 'stockPdf'])->name('stock.pdf');
+        Route::get('/stock/csv',         [ReportController::class, 'stockCsv'])->name('stock.csv');
+
+        // Fornecedores
+        Route::get('/suppliers',         [ReportController::class, 'suppliers'])->name('suppliers');
+        Route::get('/suppliers/pdf',     [ReportController::class, 'suppliersPdf'])->name('suppliers.pdf');
+        Route::get('/suppliers/csv',     [ReportController::class, 'suppliersCsv'])->name('suppliers.csv');
+    });
 
     // Usuários
     Route::resource('users', UserController::class);
-
 });
