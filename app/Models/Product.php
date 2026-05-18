@@ -20,16 +20,55 @@ class Product extends Model
         'description',
         'sku',
         'price',
+        'cost',
+        'unit',
         'quantity',
-        'min_stock',
+        'min_quantity',
         'active',
     ];
 
     protected $casts = [
-        'price'    => 'decimal:2',
-        'quantity' => 'integer',
-        'active'   => 'boolean',
+        'price'        => 'decimal:2',
+        'cost'         => 'decimal:2',
+        'quantity'     => 'integer',
+        'min_quantity' => 'integer',
+        'active'       => 'boolean',
     ];
+
+    // ------------------------------------
+    // Accessors
+    // ------------------------------------
+
+    /** Margem de lucro em % sobre o preço de venda. */
+    public function getMarginAttribute(): ?float
+    {
+        if (!$this->cost || !$this->price || $this->price == 0) {
+            return null;
+        }
+        return round((($this->price - $this->cost) / $this->price) * 100, 1);
+    }
+
+    // ------------------------------------
+    // Status helpers
+    // ------------------------------------
+
+    /**
+     * Retorna true somente quando a quantidade em estoque for
+     * estritamente menor que o mínimo definido.
+     * Se min_quantity for null ou 0, não dispara alerta.
+     */
+    public function isLowStock(): bool
+    {
+        if (empty($this->min_quantity)) {
+            return false;
+        }
+
+        return $this->quantity < $this->min_quantity;
+    }
+
+    // ------------------------------------
+    // Relationships
+    // ------------------------------------
 
     public function company(): BelongsTo
     {
@@ -54,10 +93,5 @@ class Product extends Model
     public function stockMovements(): HasMany
     {
         return $this->hasMany(StockMovement::class);
-    }
-
-    public function isLowStock(): bool
-    {
-        return $this->quantity <= ($this->min_stock ?? 5);
     }
 }
