@@ -214,17 +214,14 @@ body {
         <div class="card dashboard-card card-dark-bg shadow-sm h-100">
             <div class="card-header card-header-dark border-bottom d-flex justify-content-between align-items-start gap-2">
                 <div>
-                    {{-- MELHORIA 1: título reflete o período ativo --}}
                     <h5 class="mb-1 text-white"><i class="bi bi-graph-up me-2 text-info"></i>Fluxo de Caixa &mdash; {{ $cfPeriodLabel }}</h5>
                     <p class="text-soft mb-0" style="font-size:.8rem;">
-                        {{-- MELHORIA 2: legenda explica as 3 séries --}}
                         <span style="color:#4ade80;">&#9632;</span> A receber &nbsp;
                         <span style="color:#6ee7b7;">&#9632;</span> Já recebido &nbsp;
                         <span style="color:#f87171;">&#9632;</span> A pagar &nbsp;
-                        <span style="color:#fbbf24;">&#9135;</span> Saldo acumulado
+                        <span style="color:#fbbf24;">&#9632;</span> Saldo acumulado
                     </p>
                 </div>
-                {{-- Mesmos botões do gráfico de faturamento --}}
                 <div class="d-flex gap-1 flex-shrink-0">
                     <a href="{{ route('dashboard', array_merge(request()->all(), ['interval' => 'today'])) }}" class="btn btn-sm {{ $interval === 'today' ? 'btn-info' : 'btn-outline-secondary' }}" style="font-size:.72rem;">Hoje</a>
                     <a href="{{ route('dashboard', array_merge(request()->all(), ['interval' => '7d'])) }}" class="btn btn-sm {{ $interval === '7d' ? 'btn-info' : 'btn-outline-secondary' }}" style="font-size:.72rem;">7d</a>
@@ -461,112 +458,109 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // ── Gráfico de Fluxo de Caixa (3 melhorias) ─────────────────────
+    // ── Gráfico de Fluxo de Caixa ────────────────────────────────────
     const cfCtx = document.getElementById('cashFlowChart');
     if (cfCtx) {
         const cfLabels      = {!! json_encode($cfLabels->values()) !!};
-        const cfRecPend     = {!! json_encode($cfDataRecPend->values()) !!};   // MELHORIA 2: pendente
-        const cfRecReceb    = {!! json_encode($cfDataRecReceb->values()) !!};  // MELHORIA 2: já recebido
+        const cfRecPend     = {!! json_encode($cfDataRecPend->values()) !!};
+        const cfRecReceb    = {!! json_encode($cfDataRecReceb->values()) !!};
         const cfPay         = {!! json_encode($cfDataPay->values()) !!};
-        const cfBalance     = {!! json_encode($cfDataBalance->values()) !!};   // MELHORIA 3: saldo acumulado
+        const cfBalance     = {!! json_encode($cfDataBalance->values()) !!};
 
-        // MELHORIA 3: cor do ponto da linha = verde se positivo, vermelho se negativo
-        const balancePointColors = cfBalance.map(v => v >= 0 ? '#fbbf24' : '#f87171');
+        // Cor dinâmica das barras de saldo: amarelo = positivo, vermelho = negativo
+        const balanceColors = cfBalance.map(v => v >= 0
+            ? 'rgba(251,191,36,0.75)'
+            : 'rgba(248,113,113,0.75)'
+        );
+        const balanceBorder = cfBalance.map(v => v >= 0 ? '#fbbf24' : '#f87171');
 
         new Chart(cfCtx, {
-            type:'bar',
-            data:{ labels:cfLabels, datasets:[
-                // MELHORIA 2: série pendente (verde-escuro)
+            type: 'bar',
+            data: { labels: cfLabels, datasets: [
                 {
-                    label:'A Receber (pendente)',
-                    data:cfRecPend,
-                    backgroundColor:'rgba(74,222,128,0.70)',
-                    borderRadius:4, borderSkipped:false,
-                    barPercentage:0.55, categoryPercentage:0.75,
-                    order:2
+                    label: 'A Receber (pendente)',
+                    data: cfRecPend,
+                    backgroundColor: 'rgba(74,222,128,0.70)',
+                    borderRadius: 4, borderSkipped: false,
+                    barPercentage: 0.55, categoryPercentage: 0.75,
+                    stack: 'entries'
                 },
-                // MELHORIA 2: série recebida (verde-claro / cinza)
                 {
-                    label:'Já Recebido',
-                    data:cfRecReceb,
-                    backgroundColor:'rgba(110,231,183,0.45)',
-                    borderRadius:4, borderSkipped:false,
-                    barPercentage:0.55, categoryPercentage:0.75,
-                    order:2
+                    label: 'Já Recebido',
+                    data: cfRecReceb,
+                    backgroundColor: 'rgba(110,231,183,0.45)',
+                    borderRadius: 4, borderSkipped: false,
+                    barPercentage: 0.55, categoryPercentage: 0.75,
+                    stack: 'entries'
                 },
-                // Série saídas
                 {
-                    label:'A Pagar',
-                    data:cfPay,
-                    backgroundColor:'rgba(248,113,113,0.70)',
-                    borderRadius:4, borderSkipped:false,
-                    barPercentage:0.55, categoryPercentage:0.75,
-                    order:2
+                    label: 'A Pagar',
+                    data: cfPay,
+                    backgroundColor: 'rgba(248,113,113,0.70)',
+                    borderRadius: 4, borderSkipped: false,
+                    barPercentage: 0.55, categoryPercentage: 0.75,
+                    stack: 'exits'
                 },
-                // MELHORIA 3: linha de saldo acumulado
                 {
-                    label:'Saldo Acumulado',
-                    data:cfBalance,
-                    type:'line',
-                    borderColor:'#fbbf24',
-                    backgroundColor:'transparent',
-                    borderWidth:2,
-                    borderDash:[],
-                    pointBackgroundColor: balancePointColors,
-                    pointBorderColor:'transparent',
-                    pointRadius:4,
-                    pointHoverRadius:6,
-                    tension:0.35,
-                    yAxisID:'yBalance',
-                    order:1
+                    label: 'Saldo Acumulado',
+                    data: cfBalance,
+                    backgroundColor: balanceColors,
+                    borderColor: balanceBorder,
+                    borderWidth: 1,
+                    borderRadius: 5, borderSkipped: false,
+                    barPercentage: 0.40, categoryPercentage: 0.75,
+                    stack: 'balance',
+                    yAxisID: 'yBalance'
                 }
             ]},
-            options:{
-                responsive:true, maintainAspectRatio:false, animation:{duration:500,easing:'easeOutQuart'},
-                scales:{
-                    x:{
-                        grid:{display:false},
-                        ticks:{color:'#94a3b8',font:{size:10}},
-                        border:{display:false}
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                animation: { duration: 500, easing: 'easeOutQuart' },
+                scales: {
+                    x: {
+                        stacked: true,
+                        grid: { display: false },
+                        ticks: { color: '#94a3b8', font: { size: 10 } },
+                        border: { display: false }
                     },
-                    y:{
-                        beginAtZero:true,
-                        grid:{color:'rgba(148,163,184,0.08)'},
-                        ticks:{color:'#94a3b8',font:{size:10},callback:v=>'R$ '+(v>=1000?(v/1000).toFixed(0)+'k':v)},
-                        border:{display:false},
-                        title:{display:true,text:'Entradas / Saídas',color:'rgba(148,163,184,0.5)',font:{size:9}}
+                    y: {
+                        stacked: true,
+                        beginAtZero: true,
+                        grid: { color: 'rgba(148,163,184,0.08)' },
+                        ticks: { color: '#94a3b8', font: { size: 10 }, callback: v => 'R$ '+(v>=1000?(v/1000).toFixed(0)+'k':v) },
+                        border: { display: false },
+                        title: { display: true, text: 'Entradas / Saídas', color: 'rgba(148,163,184,0.5)', font: { size: 9 } }
                     },
-                    // MELHORIA 3: eixo direito para a linha de saldo
-                    yBalance:{
-                        position:'right',
-                        grid:{display:false},
-                        ticks:{color:'rgba(251,191,36,0.6)',font:{size:10},callback:v=>'R$ '+(v>=1000?(v/1000).toFixed(0)+'k':v)},
-                        border:{display:false},
-                        title:{display:true,text:'Saldo Acumulado',color:'rgba(251,191,36,0.5)',font:{size:9}}
+                    yBalance: {
+                        position: 'right',
+                        beginAtZero: false,
+                        grid: { display: false },
+                        ticks: { color: 'rgba(251,191,36,0.6)', font: { size: 10 }, callback: v => 'R$ '+(v>=1000?(v/1000).toFixed(0)+'k':v) },
+                        border: { display: false },
+                        title: { display: true, text: 'Saldo Acumulado', color: 'rgba(251,191,36,0.5)', font: { size: 9 } }
                     }
                 },
-                plugins:{
-                    legend:{display:true,labels:{color:'#94a3b8',font:{size:10},boxWidth:12,padding:10}},
-                    tooltip:{
-                        backgroundColor:'rgba(15,23,42,0.95)',
-                        borderColor:'rgba(148,163,184,0.2)',
-                        borderWidth:1,
-                        titleColor:'#e2e8f0',
-                        bodyColor:'#e2e8f0',
-                        cornerRadius:8,
-                        padding:{x:12,y:8},
-                        callbacks:{
+                plugins: {
+                    legend: { display: true, labels: { color: '#94a3b8', font: { size: 10 }, boxWidth: 12, padding: 10 } },
+                    tooltip: {
+                        backgroundColor: 'rgba(15,23,42,0.95)',
+                        borderColor: 'rgba(148,163,184,0.2)',
+                        borderWidth: 1,
+                        titleColor: '#e2e8f0',
+                        bodyColor: '#e2e8f0',
+                        cornerRadius: 8,
+                        padding: { x: 12, y: 8 },
+                        callbacks: {
                             label: ctx => {
                                 const fmt = v => 'R$ '+Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
                                 return ctx.dataset.label+': '+fmt(ctx.raw);
                             },
-                            // MELHORIA 3: saldo líquido do dia no tooltip
                             afterBody: items => {
                                 const i = items[0].dataIndex;
-                                const entPend = cfRecPend[i]  || 0;
+                                const entPend  = cfRecPend[i]  || 0;
                                 const entReceb = cfRecReceb[i] || 0;
-                                const saida  = cfPay[i]      || 0;
-                                const net    = entPend + entReceb - saida;
+                                const saida    = cfPay[i]      || 0;
+                                const net      = entPend + entReceb - saida;
                                 const fmt = v => Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
                                 const signal = net >= 0 ? '\u2191' : '\u2193';
                                 return ['', signal+' Saldo do dia: R$ '+fmt(net), '\u27a1 Saldo acumulado: R$ '+fmt(cfBalance[i])];
