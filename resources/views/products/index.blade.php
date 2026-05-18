@@ -19,12 +19,13 @@
 @php
     $company = auth()->user()->company;
     $limits  = $company ? $company->limits() : ['products' => 50];
+    $isLowStockFilter = request('low_stock') === '1';
 @endphp
 <div class="alert d-flex align-items-center gap-3 mb-4"
      style="background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.2);color:#93c5fd;border-radius:.6rem;">
     <i class="bi bi-box-seam fs-5"></i>
     <div>
-        Plano <strong>{{ $company?->plan_label ?? 'Gratuito' }}</strong> —
+        Plano <strong>{{ $company?->plan_label ?? 'Gratuito' }}</strong> &mdash;
         {{ $totalProducts }} de {{ $limits['products'] }} produto(s) utilizados.
         @if($totalProducts >= $limits['products'])
             <span class="text-warning ms-2">
@@ -35,16 +36,16 @@
 </div>
 
 {{-- Banner de alerta de estoque baixo --}}
-@if(!empty($lowStockAlert) && $lowStockAlert > 0 && !request('low_stock'))
+@if(!empty($lowStockAlert) && $lowStockAlert > 0 && !$isLowStockFilter)
 <div class="alert d-flex align-items-center justify-content-between gap-3 mb-4 alert-dismissible fade show"
      style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);color:#f87171;border-radius:.6rem;"
      role="alert">
     <div class="d-flex align-items-center gap-3">
-        <i class="bi bi-exclamation-triangle-fill fs-5" style="animation:pulse-red 2s infinite;"></i>
+        <i class="bi bi-exclamation-triangle-fill fs-5"></i>
         <div>
             <strong>{{ $lowStockAlert }} produto{{ $lowStockAlert > 1 ? 's' : '' }}</strong>
             com estoque abaixo do mínimo.
-            <a href="{{ route('products.index', ['low_stock' => 1]) }}"
+            <a href="{{ route('products.index', ['low_stock' => '1']) }}"
                class="ms-2 fw-semibold" style="color:#fca5a5;text-decoration:underline;">
                 Ver agora <i class="bi bi-arrow-right"></i>
             </a>
@@ -76,28 +77,37 @@
                 </div>
             </div>
             <div class="col-12 col-md-4">
-                <a href="{{ route('products.index', ['low_stock' => request('low_stock') ? null : 1]) }}"
-                   class="text-decoration-none d-block h-100">
-                    <div class="card dashboard-card text-white border-0 shadow-sm h-100"
-                         style="background: {{ request('low_stock') ? 'linear-gradient(135deg,#991b1b,#dc2626)' : 'linear-gradient(135deg, #dc2626, #ef4444)' }};
-                                cursor:pointer;transition:transform .15s ease;"
-                         onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
-                        <div class="card-body py-3">
-                            <div class="text-soft small text-uppercase fw-semibold mb-1">
-                                Estoque Baixo
-                                @if(request('low_stock'))
-                                    <span style="font-size:.65rem;opacity:.8;"> — filtro ativo</span>
-                                @endif
+                @if($isLowStockFilter)
+                    {{-- Filtro ativo: card clicável para remover o filtro --}}
+                    <a href="{{ route('products.index') }}" class="text-decoration-none d-block h-100">
+                        <div class="card dashboard-card text-white border-0 shadow-sm h-100"
+                             style="background:linear-gradient(135deg,#991b1b,#dc2626);cursor:pointer;">
+                            <div class="card-body py-3">
+                                <div class="text-soft small text-uppercase fw-semibold mb-1">
+                                    Estoque Baixo
+                                    <span style="font-size:.65rem;opacity:.8;"> &mdash; filtro ativo</span>
+                                </div>
+                                <h3 class="mb-0">{{ $lowStockCount }}</h3>
                             </div>
-                            <h3 class="mb-0">{{ $lowStockCount }}</h3>
                         </div>
-                    </div>
-                </a>
+                    </a>
+                @else
+                    {{-- Filtro inativo: card clicável para ativar o filtro --}}
+                    <a href="{{ route('products.index', ['low_stock' => '1']) }}" class="text-decoration-none d-block h-100">
+                        <div class="card dashboard-card text-white border-0 shadow-sm h-100"
+                             style="background:linear-gradient(135deg,#dc2626,#ef4444);cursor:pointer;">
+                            <div class="card-body py-3">
+                                <div class="text-soft small text-uppercase fw-semibold mb-1">Estoque Baixo</div>
+                                <h3 class="mb-0">{{ $lowStockCount }}</h3>
+                            </div>
+                        </div>
+                    </a>
+                @endif
             </div>
         </div>
 
         <form method="GET" action="{{ route('products.index') }}" class="row g-2">
-            @if(request('low_stock'))
+            @if($isLowStockFilter)
                 <input type="hidden" name="low_stock" value="1">
             @endif
             <div class="col-12 col-md-5">
@@ -120,7 +130,7 @@
             </div>
         </form>
 
-        @if(request('low_stock'))
+        @if($isLowStockFilter)
         <div class="mt-3 d-flex align-items-center gap-2" style="font-size:.82rem;color:#fca5a5;">
             <i class="bi bi-funnel-fill"></i>
             Exibindo apenas produtos com <strong>estoque abaixo do mínimo</strong>.
@@ -154,7 +164,7 @@
                                     @if($product->isLowStock())
                                         <i class="bi bi-exclamation-triangle-fill ms-1"
                                            style="color:#f87171;font-size:.75rem;"
-                                           title="Estoque abaixo do mínimo — clique para sugerir OC"></i>
+                                           title="Estoque abaixo do mínimo"></i>
                                     @endif
                                 </div>
                                 @if($product->description)
@@ -168,7 +178,7 @@
                                 {{ $product->sku }}
                             </td>
                             <td class="py-3" style="color:#94a3b8;font-size:.875rem;">
-                                {{ optional($product->category)->name ?? '—' }}
+                                {{ optional($product->category)->name ?? '&mdash;' }}
                             </td>
                             <td class="py-3 fw-semibold text-white">
                                 R$ {{ number_format($product->price, 2, ',', '.') }}
@@ -246,7 +256,7 @@
                         <tr>
                             <td colspan="7" class="text-center text-soft py-5">
                                 <i class="bi bi-box-seam fs-2 d-block mb-2 opacity-25"></i>
-                                @if(request('low_stock'))
+                                @if($isLowStockFilter)
                                     Nenhum produto com estoque abaixo do mínimo.
                                     <div class="mt-2">
                                         <a href="{{ route('products.index') }}" class="btn btn-sm btn-outline-light">Ver todos</a>

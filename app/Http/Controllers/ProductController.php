@@ -27,7 +27,7 @@ class ProductController extends Controller
             $query->where('category_id', $request->category);
         }
 
-        if ($request->boolean('low_stock')) {
+        if ($request->filled('low_stock') && $request->low_stock == '1') {
             $query->where('min_quantity', '>', 0)
                   ->whereColumn('quantity', '<=', 'min_quantity');
         }
@@ -41,12 +41,16 @@ class ProductController extends Controller
             ->whereColumn('quantity', '<=', 'min_quantity')
             ->count();
 
+        // Usado pelo banner de alerta no topo da listagem
+        $lowStockAlert = $lowStockCount;
+
         return view('products.index', compact(
             'products',
             'categories',
             'totalProducts',
             'categoriesCount',
-            'lowStockCount'
+            'lowStockCount',
+            'lowStockAlert'
         ));
     }
 
