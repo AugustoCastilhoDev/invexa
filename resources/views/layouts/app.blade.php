@@ -5,45 +5,65 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Invexa') — Invexa</title>
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0%25' stop-color='%234f46e5'/><stop offset='100%25' stop-color='%237c3aed'/></linearGradient></defs><rect width='32' height='32' rx='8' fill='url(%23g)'/><text x='50%25' y='50%25' dominant-baseline='central' text-anchor='middle' font-family='Inter,system-ui,sans-serif' font-size='18' font-weight='700' fill='white'>I</text></svg>">
+
+    {{-- ✦ Favicon – ícone oficial Invexa (Sky #0EA5E9) --}}
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23080D1A'/%3E%3Cpath d='M7 10h5.5L16 16l3.5-6H25L18 22h-4L7 10Z' fill='%230EA5E9'/%3E%3Ccircle cx='24' cy='10' r='2.2' fill='%2338BDF8'/%3E%3C/svg%3E">
+
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css">
     <style>
+        /* ─── BRAND TOKENS ──────────────────────────────────────────── */
+        :root {
+            --brand-abyss:    #080D1A;
+            --brand-navy:     #0D1929;
+            --brand-sky:      #0EA5E9;
+            --brand-electric: #38BDF8;
+            --brand-ice:      #F0F9FF;
+            --brand-glow:     rgba(14,165,233,.35);
+        }
+
+        /* ─── BASE ───────────────────────────────────────────────────── */
         body {
-            background: radial-gradient(circle at top left, rgba(96,165,250,.10), transparent 20%),
-                        radial-gradient(circle at bottom right, rgba(34,197,94,.12), transparent 18%),
-                        #08101d;
+            background: radial-gradient(circle at top left,  rgba(14,165,233,.07), transparent 22%),
+                        radial-gradient(circle at bottom right, rgba(56,189,248,.05), transparent 20%),
+                        var(--brand-abyss);
             color: #e2e8f0;
         }
+
+        /* ─── NAVBAR ─────────────────────────────────────────────────── */
         .navbar-main {
-            background: rgba(5,10,20,.92); border-bottom: 1px solid rgba(148,163,184,.10);
-            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            background: rgba(8,13,26,.93);
+            border-bottom: 1px solid rgba(14,165,233,.12);
+            backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
             padding-top:.6rem; padding-bottom:.6rem;
         }
+
+        /* Brand logo inline SVG */
         .navbar-brand-custom {
             display:flex; align-items:center; gap:.55rem;
-            font-size:1rem; font-weight:700; color:#f1f5f9 !important;
-            letter-spacing:-.01em; text-decoration:none; transition:opacity .2s ease;
+            font-size:1rem; font-weight:700; color:#F0F9FF !important;
+            letter-spacing:-.01em; text-decoration:none;
+            transition:opacity .2s ease;
         }
-        .navbar-brand-custom:hover { opacity:.85; }
-        .brand-icon {
-            width:2rem; height:2rem; border-radius:.45rem;
-            background:linear-gradient(135deg,#4f46e5,#7c3aed);
-            display:flex; align-items:center; justify-content:center;
-            font-size:.95rem; color:#fff; flex-shrink:0;
-            box-shadow:0 0 0 1px rgba(139,92,246,.25),0 4px 10px rgba(79,70,229,.35);
+        .navbar-brand-custom:hover { opacity:.82; }
+
+        .brand-icon-svg {
+            width:2rem; height:2rem; flex-shrink:0;
+            filter: drop-shadow(0 0 6px var(--brand-glow));
         }
+
         .navbar-main .nav-link {
             color:rgba(226,232,240,.65) !important; font-size:.875rem; font-weight:500;
             padding:.35rem .7rem !important; border-radius:.4rem;
             transition:color .2s ease,background .2s ease;
         }
-        .navbar-main .nav-link:hover { color:#f1f5f9 !important; background:rgba(255,255,255,.06); }
-        .navbar-main .nav-link.active { color:#f1f5f9 !important; background:rgba(255,255,255,.09); }
-        .nav-divider { width:1px; height:1.25rem; background:rgba(148,163,184,.2); align-self:center; margin:0 .25rem; }
+        .navbar-main .nav-link:hover  { color:#F0F9FF !important; background:rgba(14,165,233,.08); }
+        .navbar-main .nav-link.active { color:#38BDF8 !important; background:rgba(14,165,233,.12); }
+        .nav-divider { width:1px; height:1.25rem; background:rgba(14,165,233,.18); align-self:center; margin:0 .25rem; }
+
         .navbar-main .dropdown-menu {
-            background:rgba(10,18,35,.97); border:1px solid rgba(148,163,184,.14);
-            border-radius:.6rem; box-shadow:0 16px 32px rgba(0,0,0,.4);
+            background:rgba(10,18,35,.97); border:1px solid rgba(14,165,233,.14);
+            border-radius:.6rem; box-shadow:0 16px 32px rgba(0,0,0,.45);
             min-width:200px; padding:.4rem; margin-top:.4rem !important;
         }
         .navbar-main .dropdown-item {
@@ -51,33 +71,48 @@
             border-radius:.4rem; padding:.45rem .75rem;
             transition:background .15s ease,color .15s ease;
         }
-        .navbar-main .dropdown-item:hover { background:rgba(255,255,255,.08); color:#f1f5f9; }
-        .navbar-main .dropdown-item.active { background:rgba(99,102,241,.2); color:#a5b4fc; }
-        .navbar-main .dropdown-item-text { font-size:.78rem; color:rgba(148,163,184,.7); padding:.4rem .75rem; }
-        .navbar-main .dropdown-divider { border-color:rgba(148,163,184,.12); margin:.3rem 0; }
+        .navbar-main .dropdown-item:hover  { background:rgba(14,165,233,.1); color:#F0F9FF; }
+        .navbar-main .dropdown-item.active { background:rgba(14,165,233,.18); color:#38BDF8; }
+        .navbar-main .dropdown-item-text   { font-size:.78rem; color:rgba(148,163,184,.7); padding:.4rem .75rem; }
+        .navbar-main .dropdown-divider     { border-color:rgba(14,165,233,.12); margin:.3rem 0; }
+
+        /* Avatar com cor da marca */
         .user-avatar {
             width:1.75rem; height:1.75rem; border-radius:50%;
-            background:linear-gradient(135deg,#4f46e5,#7c3aed);
+            background:linear-gradient(135deg,var(--brand-sky),var(--brand-electric));
             display:inline-flex; align-items:center; justify-content:center;
-            font-size:.72rem; font-weight:700; color:#fff; flex-shrink:0;
+            font-size:.72rem; font-weight:700; color:var(--brand-abyss); flex-shrink:0;
         }
+
+        /* ─── FORMS ──────────────────────────────────────────────────── */
         .form-control, .form-select {
-            background-color:rgba(15,23,42,.6) !important;
-            border-color:rgba(148,163,184,.2) !important;
+            background-color:rgba(13,25,41,.7) !important;
+            border-color:rgba(14,165,233,.2) !important;
             color:#e2e8f0 !important;
         }
         .form-control:focus, .form-select:focus {
-            background-color:rgba(15,23,42,.9) !important;
-            border-color:#3b82f6 !important;
-            box-shadow:0 0 0 0.25rem rgba(59,130,246,.25) !important;
+            background-color:rgba(13,25,41,.95) !important;
+            border-color:var(--brand-sky) !important;
+            box-shadow:0 0 0 0.2rem rgba(14,165,233,.25) !important;
         }
-        .card-dark-bg { background:rgba(15,23,42,.92); border:1px solid rgba(148,163,184,.14); color:#e2e8f0; }
-        .card-header-dark { background:rgba(15,23,42,.92); border-color:rgba(148,163,184,.12); }
-        .table-dark-custom { background:rgba(15,23,42,.88); }
+
+        /* ─── CARDS / TABLES ─────────────────────────────────────────── */
+        .card-dark-bg  { background:rgba(13,25,41,.88); border:1px solid rgba(14,165,233,.1); color:#e2e8f0; }
+        .card-header-dark { background:rgba(13,25,41,.95); border-color:rgba(14,165,233,.1); }
+        .table-dark-custom { background:rgba(13,25,41,.82); }
         .text-soft { color:rgba(226,232,240,.72) !important; }
+
+        /* ─── ALERTS ─────────────────────────────────────────────────── */
         .alert-success { --bs-alert-bg:rgba(34,197,94,.10); --bs-alert-border-color:rgba(34,197,94,.2); color:#4ade80; }
-        .alert-danger  { --bs-alert-bg:rgba(239,68,68,.10); --bs-alert-border-color:rgba(239,68,68,.2); color:#f87171; }
-        .footer-main { background:rgba(5,10,20,.7); border-top:1px solid rgba(148,163,184,.08); }
+        .alert-danger  { --bs-alert-bg:rgba(239,68,68,.10);  --bs-alert-border-color:rgba(239,68,68,.2);  color:#f87171; }
+
+        /* ─── FOOTER ─────────────────────────────────────────────────── */
+        .footer-main {
+            background:rgba(8,13,26,.8);
+            border-top:1px solid rgba(14,165,233,.09);
+        }
+
+        /* ─── STOCK ALERT BADGE ──────────────────────────────────────── */
         .stock-alert-badge {
             display:inline-flex; align-items:center; justify-content:center;
             min-width:1.1rem; height:1.1rem;
@@ -85,24 +120,32 @@
             border-radius:999px; font-size:.6rem; font-weight:700;
             padding:0 .28rem; line-height:1;
             position:relative; top:-1px; margin-left:.25rem;
-            box-shadow:0 0 0 2px rgba(5,10,20,.92);
+            box-shadow:0 0 0 2px var(--brand-abyss);
             animation: pulse-red 2s infinite;
         }
         @keyframes pulse-red {
-            0%,100% { box-shadow:0 0 0 2px rgba(5,10,20,.92),0 0 0 0 rgba(239,68,68,.6); }
-            50%      { box-shadow:0 0 0 2px rgba(5,10,20,.92),0 0 0 4px rgba(239,68,68,.0); }
+            0%,100% { box-shadow:0 0 0 2px var(--brand-abyss),0 0 0 0 rgba(239,68,68,.6); }
+            50%      { box-shadow:0 0 0 2px var(--brand-abyss),0 0 0 4px rgba(239,68,68,.0); }
         }
     </style>
     @stack('styles')
 </head>
 <body>
 
+{{-- ════════════════════ NAVBAR ════════════════════ --}}
 <nav class="navbar navbar-expand-lg navbar-main sticky-top">
     <div class="container-fluid px-4">
-        <a class="navbar-brand-custom" href="{{ route('dashboard') }}">
-            <div class="brand-icon"><i class="bi bi-box-seam-fill"></i></div>
+
+        {{-- Logo da marca --}}
+        <a class="navbar-brand-custom" href="{{ route('home') }}">
+            <svg class="brand-icon-svg" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Invexa">
+                <rect width="32" height="32" rx="7" fill="#080D1A"/>
+                <path d="M7 10h5.5L16 16l3.5-6H25L18 22h-4L7 10Z" fill="#0EA5E9"/>
+                <circle cx="24" cy="10" r="2.2" fill="#38BDF8"/>
+            </svg>
             <span>INVEXA</span>
         </a>
+
         <button class="navbar-toggler border-0 shadow-none p-1" type="button"
                 data-bs-toggle="collapse" data-bs-target="#navbarMain"
                 aria-controls="navbarMain" aria-expanded="false" aria-label="Menu">
@@ -112,7 +155,7 @@
         <div class="collapse navbar-collapse" id="navbarMain">
             <ul class="navbar-nav ms-auto mb-2 mb-lg-0 align-items-lg-center gap-1">
 
-                {{-- 1. Dashboard --}}
+                {{-- Dashboard --}}
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}"
                        href="{{ route('dashboard') }}">
@@ -120,7 +163,7 @@
                     </a>
                 </li>
 
-                {{-- 2. Vendas --}}
+                {{-- Vendas --}}
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('sales.*') ? 'active' : '' }}"
                        href="{{ route('sales.index') }}">
@@ -128,7 +171,7 @@
                     </a>
                 </li>
 
-                {{-- 3. Clientes --}}
+                {{-- Clientes --}}
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('customers.*') ? 'active' : '' }}"
                        href="{{ route('customers.index') }}">
@@ -136,7 +179,7 @@
                     </a>
                 </li>
 
-                {{-- 4. Devoluções --}}
+                {{-- Devoluções --}}
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('returns.*') ? 'active' : '' }}"
                        href="{{ route('returns.index') }}">
@@ -146,9 +189,9 @@
 
                 @if(Auth::check() && Auth::user()->isGerente())
 
-                    {{-- 5. Estoque (dropdown) --}}
+                    {{-- Estoque --}}
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle {{ request()->routeIs('stock.*') || request()->routeIs('products.*') || request()->routeIs('categories.*') ? 'active' : '' }}"
+                        <a class="nav-link dropdown-toggle {{ request()->routeIs('stock.*','products.*','categories.*') ? 'active' : '' }}"
                            href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="bi bi-boxes me-1 opacity-75"></i>Estoque
                             @if(!empty($lowStockAlert) && $lowStockAlert > 0)
@@ -182,9 +225,9 @@
                         </ul>
                     </li>
 
-                    {{-- 6. Compras (dropdown) --}}
+                    {{-- Compras --}}
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle {{ request()->routeIs('suppliers.*') || request()->routeIs('purchase-orders.*') ? 'active' : '' }}"
+                        <a class="nav-link dropdown-toggle {{ request()->routeIs('suppliers.*','purchase-orders.*') ? 'active' : '' }}"
                            href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="bi bi-truck me-1 opacity-75"></i>Compras
                         </a>
@@ -204,9 +247,9 @@
                         </ul>
                     </li>
 
-                    {{-- 7. Financeiro (dropdown com 2 itens) --}}
+                    {{-- Financeiro --}}
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle {{ request()->routeIs('bills.*') || request()->routeIs('receivables.*') ? 'active' : '' }}"
+                        <a class="nav-link dropdown-toggle {{ request()->routeIs('bills.*','receivables.*') ? 'active' : '' }}"
                            href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="bi bi-wallet2 me-1 opacity-75"></i>Financeiro
                         </a>
@@ -226,7 +269,7 @@
                         </ul>
                     </li>
 
-                    {{-- 8. Relatórios (dropdown) --}}
+                    {{-- Relatórios --}}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle {{ request()->routeIs('reports.*') ? 'active' : '' }}"
                            href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -250,7 +293,7 @@
 
                 @endif
 
-                {{-- 9. Usuários (admin only) --}}
+                {{-- Usuários (admin) --}}
                 @if(Auth::check() && Auth::user()->isAdmin())
                     <li class="nav-item">
                         <a class="nav-link {{ request()->routeIs('users.*') ? 'active' : '' }}"
@@ -316,6 +359,7 @@
     </div>
 </nav>
 
+{{-- ════════════════════ CONTEÚDO ════════════════════ --}}
 <main class="py-4 min-vh-100">
     <div class="container">
         @if(session('success'))
@@ -334,17 +378,23 @@
     </div>
 </main>
 
+{{-- ════════════════════ FOOTER ════════════════════ --}}
 <footer class="footer-main py-4">
-    <div class="container text-center" style="color:rgba(148,163,184,.6);font-size:.8rem;">
+    <div class="container text-center" style="color:rgba(148,163,184,.55);font-size:.8rem;">
         <div class="d-flex align-items-center justify-content-center gap-2 mb-1">
-            <i class="bi bi-box-seam-fill" style="color:#7c3aed;"></i>
-            <span class="fw-semibold" style="color:rgba(226,232,240,.7);">INVEXA</span>
+            {{-- Ícone da marca no rodapé --}}
+            <svg width="18" height="18" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <rect width="32" height="32" rx="7" fill="#0D1929"/>
+                <path d="M7 10h5.5L16 16l3.5-6H25L18 22h-4L7 10Z" fill="#0EA5E9"/>
+                <circle cx="24" cy="10" r="2.2" fill="#38BDF8"/>
+            </svg>
+            <span class="fw-semibold" style="color:rgba(226,232,240,.65);">INVEXA</span>
             <span>&copy; {{ date('Y') }}</span>
         </div>
         <div>
             Sistema profissional para gestão de estoque e vendas &middot; Desenvolvido por
             <a href="https://www.instagram.com/castilho_digital/" target="_blank" rel="noopener noreferrer"
-               style="color:#60a5fa;text-decoration:none;font-weight:600;">Castilho Soluções Digitais</a>
+               style="color:#38BDF8;text-decoration:none;font-weight:600;">Castilho Soluções Digitais</a>
         </div>
     </div>
 </footer>

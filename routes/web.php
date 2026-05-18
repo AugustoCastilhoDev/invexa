@@ -6,6 +6,7 @@ use App\Http\Controllers\BillController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PurchaseOrderController;
@@ -26,8 +27,12 @@ Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name
 Route::get('/register', [RegisteredUserController::class, 'create'])->name('register');
 Route::post('/register', [RegisteredUserController::class, 'store'])->name('register.store');
 
-// ── Rotas protegidas ────────────────────────────────────
+// ── Rotas protegidas ────────────────────────────────────────────────
 Route::middleware(['auth', 'company'])->group(function () {
+
+    // ── Home (página inicial pós-login) ──
+    Route::get('/', [HomeController::class, 'index'])->name('home');
+    Route::get('/home', [HomeController::class, 'index'])->name('home.alias');
 
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -68,79 +73,40 @@ Route::middleware(['auth', 'company'])->group(function () {
     Route::get('/stock/create', [StockMovementController::class, 'create'])->name('stock.create');
     Route::post('/stock',       [StockMovementController::class, 'store'])->name('stock.store');
     Route::delete('/stock/{stock}', [StockMovementController::class, 'destroy'])->name('stock.destroy');
-    Route::get('/stock/product/{product}', [StockMovementController::class, 'product'])->name('stock.product');
+
+    // Produtos
+    Route::resource('products', ProductController::class);
+
+    // Categorias
+    Route::resource('categories', CategoryController::class);
 
     // Clientes
-    Route::get('/customers/search', [CustomerController::class, 'search'])->name('customers.search');
     Route::resource('customers', CustomerController::class);
 
-    // Relatórios
-    Route::get('/reports',               [ReportController::class, 'index'])->name('reports.index');
-    Route::get('/reports/export/csv',    [ReportController::class, 'export'])->name('reports.export.csv');
-    Route::get('/reports/export/pdf',    [ReportController::class, 'topProductsPdf'])->name('reports.export.pdf');
-    Route::get('/reports/purchases',     [ReportController::class, 'purchases'])->name('reports.purchases');
-    Route::get('/reports/purchases/csv', [ReportController::class, 'purchasesCsv'])->name('reports.purchases.csv');
-    Route::get('/reports/purchases/pdf', [ReportController::class, 'purchasesPdf'])->name('reports.purchases.pdf');
-
     // Fornecedores
-    Route::get('/suppliers', [SupplierController::class, 'index'])->name('suppliers.index');
-    Route::middleware('role:admin,gerente')->group(function () {
-        Route::get('/suppliers/create',          [SupplierController::class, 'create'])->name('suppliers.create');
-        Route::post('/suppliers',                [SupplierController::class, 'store'])->name('suppliers.store');
-        Route::get('/suppliers/{supplier}/edit', [SupplierController::class, 'edit'])->name('suppliers.edit');
-        Route::put('/suppliers/{supplier}',      [SupplierController::class, 'update'])->name('suppliers.update');
-        Route::delete('/suppliers/{supplier}',   [SupplierController::class, 'destroy'])->name('suppliers.destroy');
-    });
-    Route::get('/suppliers/{supplier}', [SupplierController::class, 'show'])->name('suppliers.show');
+    Route::resource('suppliers', SupplierController::class);
 
     // Ordens de Compra
-    Route::get('/purchase-orders', [PurchaseOrderController::class, 'index'])->name('purchase-orders.index');
-    Route::middleware('role:admin,gerente')->group(function () {
-        Route::get('/purchase-orders/create', [PurchaseOrderController::class, 'create'])->name('purchase-orders.create');
-        Route::post('/purchase-orders',       [PurchaseOrderController::class, 'store'])->name('purchase-orders.store');
-    });
-    Route::get('/purchase-orders/{purchaseOrder}', [PurchaseOrderController::class, 'show'])->name('purchase-orders.show');
-    Route::middleware('role:admin,gerente')->group(function () {
-        Route::get('/purchase-orders/{purchaseOrder}/receive',  [PurchaseOrderController::class, 'receiveForm'])->name('purchase-orders.receive-form');
-        Route::post('/purchase-orders/{purchaseOrder}/receive', [PurchaseOrderController::class, 'receive'])->name('purchase-orders.receive');
-        Route::patch('/purchase-orders/{purchaseOrder}/send',   [PurchaseOrderController::class, 'send'])->name('purchase-orders.send');
-        Route::patch('/purchase-orders/{purchaseOrder}/cancel', [PurchaseOrderController::class, 'cancel'])->name('purchase-orders.cancel');
-    });
+    Route::resource('purchase-orders', PurchaseOrderController::class);
+    Route::patch('/purchase-orders/{purchaseOrder}/receive', [PurchaseOrderController::class, 'receive'])->name('purchase-orders.receive');
 
     // Contas a Pagar
-    Route::get('/bills',                   [BillController::class, 'index'])->name('bills.index');
-    Route::get('/bills/create',            [BillController::class, 'create'])->name('bills.create');
-    Route::post('/bills',                  [BillController::class, 'store'])->name('bills.store');
-    Route::post('/bills/bulk-pay',         [BillController::class, 'bulkPay'])->name('bills.bulk-pay');
-    Route::get('/bills/{bill}',            [BillController::class, 'show'])->name('bills.show');
-    Route::get('/bills/{bill}/edit',       [BillController::class, 'edit'])->name('bills.edit');
-    Route::put('/bills/{bill}',            [BillController::class, 'update'])->name('bills.update');
-    Route::post('/bills/{bill}/pay',       [BillController::class, 'pay'])->name('bills.pay');
-    Route::patch('/bills/{bill}/cancel',   [BillController::class, 'cancel'])->name('bills.cancel');
-    Route::delete('/bills/{bill}',         [BillController::class, 'destroy'])->name('bills.destroy');
+    Route::resource('bills', BillController::class);
+    Route::patch('/bills/{bill}/pay',            [BillController::class, 'pay'])->name('bills.pay');
+    Route::post('/bills/bulk-pay',               [BillController::class, 'bulkPay'])->name('bills.bulk-pay');
+    Route::patch('/bills/{bill}/cancel',         [BillController::class, 'cancel'])->name('bills.cancel');
 
     // Contas a Receber
-    Route::get('/receivables',                          [ReceivableController::class, 'index'])->name('receivables.index');
-    Route::get('/receivables/create',                   [ReceivableController::class, 'create'])->name('receivables.create');
-    Route::post('/receivables',                         [ReceivableController::class, 'store'])->name('receivables.store');
+    Route::resource('receivables', ReceivableController::class);
+    Route::patch('/receivables/{receivable}/receive',   [ReceivableController::class, 'receive'])->name('receivables.receive');
     Route::post('/receivables/bulk-receive',            [ReceivableController::class, 'bulkReceive'])->name('receivables.bulk-receive');
-    Route::get('/receivables/{receivable}',             [ReceivableController::class, 'show'])->name('receivables.show');
-    Route::get('/receivables/{receivable}/edit',        [ReceivableController::class, 'edit'])->name('receivables.edit');
-    Route::put('/receivables/{receivable}',             [ReceivableController::class, 'update'])->name('receivables.update');
-    Route::post('/receivables/{receivable}/receive',    [ReceivableController::class, 'receive'])->name('receivables.receive');
     Route::patch('/receivables/{receivable}/cancel',    [ReceivableController::class, 'cancel'])->name('receivables.cancel');
-    Route::delete('/receivables/{receivable}',          [ReceivableController::class, 'destroy'])->name('receivables.destroy');
 
-    // Produtos e Categorias
-    Route::middleware('role:admin,gerente')->group(function () {
-        Route::resource('products', ProductController::class);
-        Route::resource('categories', CategoryController::class);
-    });
+    // Relatórios
+    Route::get('/reports',           [ReportController::class, 'index'])->name('reports.index');
+    Route::get('/reports/purchases', [ReportController::class, 'purchases'])->name('reports.purchases');
 
     // Usuários
-    Route::middleware('role:admin')->group(function () {
-        Route::resource('users', UserController::class)->except(['show']);
-        Route::patch('/users/{user}/toggle-active', [UserController::class, 'toggleActive'])
-            ->name('users.toggle-active');
-    });
+    Route::resource('users', UserController::class);
+
 });
