@@ -24,7 +24,7 @@ class PurchaseOrderController extends Controller
         }
         if ($request->filled('status')) { $query->where('status', $request->status); }
         $orders = $query->orderByDesc('order_date')->paginate(10);
-        return view('purchase-orders.index', compact('orders'));
+        return view('purchase_orders.index', compact('orders'));
     }
 
     public function create()
@@ -32,7 +32,7 @@ class PurchaseOrderController extends Controller
         $companyId = auth()->user()->company_id;
         $suppliers = Supplier::where('company_id', $companyId)->orderBy('name')->get();
         $products  = Product::where('company_id', $companyId)->where('active', true)->orderBy('name')->get(['id','name','price']);
-        return view('purchase-orders.create', compact('suppliers','products'));
+        return view('purchase_orders.create', compact('suppliers','products'));
     }
 
     public function store(Request $request)
@@ -70,14 +70,13 @@ class PurchaseOrderController extends Controller
                         'subtotal'          => $item['quantity'] * $item['price'],
                     ]);
                 }
-                // Vínculo automático: OC pendente/recebida → conta a pagar
                 if (in_array($validated['status'], ['pendente','recebida'])) {
                     $supplier = \App\Models\Supplier::find($validated['supplier_id']);
                     Bill::create([
                         'company_id'        => $companyId,
                         'supplier_id'       => $validated['supplier_id'],
                         'purchase_order_id' => $order->id,
-                        'description'       => "OC #{$order->id} — " . ($supplier?->name ?? 'Fornecedor'),
+                        'description'       => "OC #{$order->id} \u2014 " . ($supplier?->name ?? 'Fornecedor'),
                         'amount'            => $total,
                         'due_date'          => $order->expected_date ?? $order->order_date->addDays(30),
                         'status'            => 'pendente',
@@ -93,7 +92,7 @@ class PurchaseOrderController extends Controller
     public function show(PurchaseOrder $purchaseOrder)
     {
         $purchaseOrder->load(['supplier','items.product','bill']);
-        return view('purchase-orders.show', compact('purchaseOrder'));
+        return view('purchase_orders.show', compact('purchaseOrder'));
     }
 
     public function edit(PurchaseOrder $purchaseOrder)
@@ -102,7 +101,7 @@ class PurchaseOrderController extends Controller
         $suppliers = Supplier::where('company_id', $companyId)->orderBy('name')->get();
         $products  = Product::where('company_id', $companyId)->where('active', true)->orderBy('name')->get(['id','name','price']);
         $purchaseOrder->load('items.product');
-        return view('purchase-orders.edit', compact('purchaseOrder','suppliers','products'));
+        return view('purchase_orders.edit', compact('purchaseOrder','suppliers','products'));
     }
 
     public function update(Request $request, PurchaseOrder $purchaseOrder)
@@ -150,13 +149,13 @@ class PurchaseOrderController extends Controller
     public function destroy(PurchaseOrder $purchaseOrder)
     {
         $purchaseOrder->delete();
-        return redirect()->route('purchase-orders.index')->with('success', 'Ordem de compra excluída.');
+        return redirect()->route('purchase-orders.index')->with('success', 'Ordem de compra exclu\u00edda.');
     }
 
     public function receive(PurchaseOrder $purchaseOrder)
     {
         if ($purchaseOrder->status === 'recebida') {
-            return back()->with('error', 'Esta OC já foi recebida.');
+            return back()->with('error', 'Esta OC j\u00e1 foi recebida.');
         }
         $companyId = auth()->user()->company_id;
         DB::transaction(function () use ($purchaseOrder, $companyId) {
