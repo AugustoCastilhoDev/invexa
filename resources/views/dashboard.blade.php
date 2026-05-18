@@ -219,7 +219,8 @@ body {
                         <span style="color:#4ade80;">&#9632;</span> A receber &nbsp;
                         <span style="color:#6ee7b7;">&#9632;</span> Já recebido &nbsp;
                         <span style="color:#f87171;">&#9632;</span> A pagar &nbsp;
-                        <span style="color:#fbbf24;">&#9632;</span> Saldo acumulado
+                        <span style="color:#fbbf24;">&#9632;</span> Saldo (+) &nbsp;
+                        <span style="color:#a78bfa;">&#9632;</span> Saldo (&minus;)
                     </p>
                 </div>
                 <div class="d-flex gap-1 flex-shrink-0">
@@ -467,12 +468,12 @@ document.addEventListener('DOMContentLoaded', function () {
         const cfPay         = {!! json_encode($cfDataPay->values()) !!};
         const cfBalance     = {!! json_encode($cfDataBalance->values()) !!};
 
-        // Cor dinâmica das barras de saldo: amarelo = positivo, vermelho = negativo
+        // Saldo positivo = amarelo-dourado | Saldo negativo = roxo/violeta (distinto do vermelho de A Pagar)
         const balanceColors = cfBalance.map(v => v >= 0
-            ? 'rgba(251,191,36,0.75)'
-            : 'rgba(248,113,113,0.75)'
+            ? 'rgba(251,191,36,0.80)'   // amarelo dourado
+            : 'rgba(167,139,250,0.80)'  // roxo violeta
         );
-        const balanceBorder = cfBalance.map(v => v >= 0 ? '#fbbf24' : '#f87171');
+        const balanceBorder = cfBalance.map(v => v >= 0 ? '#fbbf24' : '#a78bfa');
 
         new Chart(cfCtx, {
             type: 'bar',
