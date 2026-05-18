@@ -248,21 +248,27 @@ class ReportController extends Controller
     // ---------------------------------------------------------------
     public function stock(Request $request)
     {
-        [$companyId, $products, $totalActive, $totalLow, $totalValue] = $this->stockData($request);
+        [$companyId, $filter, $products, $totalActive, $totalLow, $totalValue] = $this->stockData($request);
 
         return view('reports.stock', compact(
-            'products', 'totalActive', 'totalLow', 'totalValue'
+            'filter', 'products', 'totalActive', 'totalLow', 'totalValue'
         ));
     }
 
     public function stockCsv(Request $request): Response
     {
-        [, $products] = $this->stockData($request);
+        [, , $products] = $this->stockData($request);
         $filename = 'estoque_' . now()->format('Ymd') . '.csv';
 
         $lines[] = implode(';', ['Produto', 'Categoria', 'Qtd. em Estoque', 'Estoque Mín.', 'Preço de Custo', 'Preço de Venda', 'Status']);
         foreach ($products as $p) {
-            $alert = $p->min_quantity > 0 && $p->quantity <= $p->min_quantity ? 'Estoque Baixo' : 'OK';
+            if (!$p->active) {
+                $statusLabel = 'Inativo';
+            } elseif ($p->min_quantity > 0 && $p->quantity <= $p->min_quantity) {
+                $statusLabel = 'Estoque Baixo';
+            } else {
+                $statusLabel = 'OK';
+            }
             $lines[] = implode(';', [
                 $p->name,
                 optional($p->category)->name ?? '',
@@ -270,7 +276,7 @@ class ReportController extends Controller
                 $p->min_quantity ?? 0,
                 number_format($p->cost_price ?? 0, 2, ',', '.'),
                 number_format($p->price, 2, ',', '.'),
-                $alert,
+                $statusLabel,
             ]);
         }
 
@@ -279,7 +285,7 @@ class ReportController extends Controller
 
     public function stockPdf(Request $request): Response
     {
-        [, $products, $totalActive, $totalLow, $totalValue] = $this->stockData($request);
+        [, , $products, $totalActive, $totalLow, $totalValue] = $this->stockData($request);
 
         $html = view('reports.stock-pdf', compact(
             'products', 'totalActive', 'totalLow', 'totalValue'
@@ -448,19 +454,25 @@ class ReportController extends Controller
 
         $query = Product::with('category')
             ->where('company_id', $companyId)
-            ->where('active', 1)
             ->orderBy('name');
 
-        if ($filter === 'low') {
-            $query->whereColumn('quantity', '<=', 'min_quantity')->where('min_quantity', '>', 0);
+        if ($filter === 'inactive') {
+            $query->where('active', 0);
+        } elseif ($filter === 'low') {
+            $query->where('active', 1)
+                  ->whereColumn('quantity', '<=', 'min_quantity')
+                  ->where('min_quantity', '>', 0);
+        } else {
+            // 'all' — apenas ativos
+            $query->where('active', 1);
         }
 
         $products    = $query->get();
         $totalActive = $products->count();
-        $totalLow    = $products->filter(fn($p) => $p->min_quantity > 0 && $p->quantity <= $p->min_quantity)->count();
+        $totalLow    = $products->filter(fn($p) => $p->active && $p->min_quantity > 0 && $p->quantity <= $p->min_quantity)->count();
         $totalValue  = $products->sum(fn($p) => ($p->cost_price ?? $p->price) * $p->quantity);
 
-        return [$companyId, $products, $totalActive, $totalLow, $totalValue];
+        return [$companyId, $filter, $products, $totalActive, $totalLow, $totalValue];
     }
 
     private function suppliersData(Request $request): array
