@@ -3,60 +3,57 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class AuditLog extends Model
 {
-    public $timestamps = false;
-
     protected $fillable = [
-        'company_id',
         'user_id',
+        'company_id',
         'action',
-        'model',
+        'model_type',
         'model_id',
-        'before',
-        'after',
-        'ip',
+        'old_values',
+        'new_values',
+        'ip_address',
         'user_agent',
-        'created_at',
     ];
 
     protected $casts = [
-        'before'     => 'array',
-        'after'      => 'array',
-        'created_at' => 'datetime',
+        'old_values' => 'array',
+        'new_values' => 'array',
     ];
 
-    public function user()
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    public function company()
+    public function company(): BelongsTo
     {
         return $this->belongsTo(Company::class);
     }
 
-    /** Registra uma ação de auditoria */
-    public static function record(
-        string $action,
-        ?Model $model = null,
-        ?array $before = null,
-        ?array $after  = null
-    ): void {
-        if (! auth()->check()) return;
+    public function getModelLabelAttribute(): string
+    {
+        $map = [
+            'App\\Models\\Sale'       => 'Venda',
+            'App\\Models\\Bill'       => 'Conta a Pagar',
+            'App\\Models\\Receivable' => 'Conta a Receber',
+            'App\\Models\\Product'    => 'Produto',
+            'App\\Models\\Customer'   => 'Cliente',
+            'App\\Models\\Supplier'   => 'Fornecedor',
+        ];
+        return $map[$this->model_type] ?? class_basename($this->model_type);
+    }
 
-        static::create([
-            'company_id' => auth()->user()->company_id,
-            'user_id'    => auth()->id(),
-            'action'     => $action,
-            'model'      => $model ? get_class($model) : null,
-            'model_id'   => $model?->getKey(),
-            'before'     => $before,
-            'after'      => $after,
-            'ip'         => request()->ip(),
-            'user_agent' => request()->userAgent(),
-            'created_at' => now(),
-        ]);
+    public function getActionLabelAttribute(): string
+    {
+        return match($this->action) {
+            'created' => 'Criado',
+            'updated' => 'Atualizado',
+            'deleted' => 'Excluído',
+            default   => ucfirst($this->action),
+        };
     }
 }

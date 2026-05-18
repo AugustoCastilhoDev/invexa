@@ -2,26 +2,45 @@
 
 namespace App\Observers;
 
-use App\Models\Sale;
 use App\Models\AuditLog;
+use App\Models\Sale;
 
 class SaleObserver
 {
-    private function log(string $event, Sale $model, ?Sale $old = null): void
+    public function created(Sale $sale): void
     {
         AuditLog::create([
-            'user_id'    => auth()->id(),
-            'company_id' => $model->company_id,
-            'action'     => $event,
-            'model_type' => Sale::class,
-            'model_id'   => $model->id,
-            'old_values' => $old ? $old->getOriginal() : null,
-            'new_values' => $model->getAttributes(),
+            'user_id'      => auth()->id(),
+            'company_id'   => $sale->company_id,
+            'action'       => 'created',
+            'model_type'   => Sale::class,
+            'model_id'     => $sale->id,
+            'new_values'   => $sale->toArray(),
         ]);
     }
 
-    public function created(Sale $sale): void  { $this->log('created', $sale); }
-    public function updated(Sale $sale): void  { $this->log('updated', $sale, $sale); }
-    public function deleted(Sale $sale): void  { $this->log('deleted', $sale); }
-    public function restored(Sale $sale): void { $this->log('restored', $sale); }
+    public function updated(Sale $sale): void
+    {
+        AuditLog::create([
+            'user_id'    => auth()->id(),
+            'company_id' => $sale->company_id,
+            'action'     => 'updated',
+            'model_type' => Sale::class,
+            'model_id'   => $sale->id,
+            'old_values' => $sale->getOriginal(),
+            'new_values' => $sale->getDirty(),
+        ]);
+    }
+
+    public function deleted(Sale $sale): void
+    {
+        AuditLog::create([
+            'user_id'    => auth()->id(),
+            'company_id' => $sale->company_id,
+            'action'     => 'deleted',
+            'model_type' => Sale::class,
+            'model_id'   => $sale->id,
+            'old_values' => $sale->toArray(),
+        ]);
+    }
 }

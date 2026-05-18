@@ -2,21 +2,38 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Customer extends Model
 {
-    use SoftDeletes;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'company_id','name','email','phone',
-        'document','address','city','state','zip_code','notes',
+        'company_id',
+        'name',
+        'email',
+        'phone',
+        'cpf_cnpj',
+        'address',
+        'notes',
     ];
 
-    public function company(): BelongsTo    { return $this->belongsTo(Company::class); }
-    public function sales(): HasMany        { return $this->hasMany(Sale::class); }
-    public function receivables(): HasMany  { return $this->hasMany(Receivable::class); }
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(Company::class);
+    }
+
+    public function sales(): HasMany
+    {
+        return $this->hasMany(Sale::class);
+    }
+
+    public function receivables(): HasMany
+    {
+        return $this->hasMany(Receivable::class);
+    }
 }

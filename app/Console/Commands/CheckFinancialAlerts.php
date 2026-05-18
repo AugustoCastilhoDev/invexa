@@ -3,51 +3,69 @@
 namespace App\Console\Commands;
 
 use App\Models\Bill;
+use App\Models\Product;
 use App\Models\Receivable;
 use App\Models\User;
-use App\Notifications\DueSoonNotification;
-use App\Notifications\OverdueNotification;
+use App\Notifications\BillDueNotification;
+use App\Notifications\BillOverdueNotification;
+use App\Notifications\LowStockNotification;
+use App\Notifications\ReceivableDueNotification;
+use Carbon\Carbon;
 use Illuminate\Console\Command;
 
 class CheckFinancialAlerts extends Command
 {
-    protected $signature   = 'invexa:financial-alerts';
-    protected $description = 'Envia notificações de contas vencidas e a vencer nos próximos 3 dias.';
+    protected $signature   = 'invexa:check-alerts';
+    protected $description = 'Envia notificações de estoque baixo, contas a vencer e contas vencidas';
 
     public function handle(): void
     {
-        // Contas a Pagar
-        Bill::where('status', 'pendente')
-            ->whereDate('due_date', '<=', now()->addDays(3))
-            ->each(function (Bill $bill) {
-                $users = User::where('company_id', $bill->company_id)
-                    ->whereIn('role', ['admin', 'gerente'])->get();
+        $today    = Carbon::today();
+        $in3Days  = Carbon::today()->addDays(3);
 
-                $dto = [$bill->description, (float)$bill->amount, $bill->due_date->format('d/m/Y')];
+        // Percorre companies e envia aos usuários admin/gerente de cada empresa
+        $companies = \App\Models\Company::all();
 
-                if ($bill->due_date->isPast()) {
-                    $users->each(fn($u) => $u->notify(new OverdueNotification('bill', $bill->id, ...$dto)));
-                } else {
-                    $users->each(fn($u) => $u->notify(new DueSoonNotification('bill', $bill->id, ...$dto)));
-                }
-            });
+        foreach ($companies as $company) {
+            $recipients = User::where('company_id', $company->id)
+                ->whereIn('role', ['admin', 'gerente'])
+                ->where('active', true)
+                ->get();
 
-        // Contas a Receber
-        Receivable::where('status', 'pendente')
-            ->whereDate('due_date', '<=', now()->addDays(3))
-            ->each(function (Receivable $r) {
-                $users = User::where('company_id', $r->company_id)
-                    ->whereIn('role', ['admin', 'gerente'])->get();
+            if ($recipients->isEmpty()) continue;
 
-                $dto = [$r->description, (float)$r->amount, $r->due_date->format('d/m/Y')];
+            // Estoque baixo (min_stock configurável no produto; padrão 5)
+            Product::where('company_id', $company->id)
+                ->whereRaw('quantity <= COALESCE(min_stock, 5)')
+                ->each(function (Product $product) use ($recipients) {
+                    $recipients->each(fn($u) => $u->notify(new LowStockNotification($product)));
+                });
 
-                if ($r->due_date->isPast()) {
-                    $users->each(fn($u) => $u->notify(new OverdueNotification('receivable', $r->id, ...$dto)));
-                } else {
-                    $users->each(fn($u) => $u->notify(new DueSoonNotification('receivable', $r->id, ...$dto)));
-                }
-            });
+            // Contas a pagar vencendo em 3 dias
+            Bill::where('company_id', $company->id)
+                ->where('status', 'pendente')
+                ->whereBetween('due_date', [$today, $in3Days])
+                ->each(function (Bill $bill) use ($recipients) {
+                    $recipients->each(fn($u) => $u->notify(new BillDueNotification($bill)));
+                });
 
-        $this->info('Alertas financeiros processados.');
+            // Contas a pagar vencidas
+            Bill::where('company_id', $company->id)
+                ->where('status', 'pendente')
+                ->where('due_date', '<', $today)
+                ->each(function (Bill $bill) use ($recipients) {
+                    $recipients->each(fn($u) => $u->notify(new BillOverdueNotification($bill)));
+                });
+
+            // Contas a receber vencendo em 3 dias
+            Receivable::where('company_id', $company->id)
+                ->where('status', 'pendente')
+                ->whereBetween('due_date', [$today, $in3Days])
+                ->each(function (Receivable $receivable) use ($recipients) {
+                    $recipients->each(fn($u) => $u->notify(new ReceivableDueNotification($receivable)));
+                });
+        }
+
+        $this->info('Alertas verificados e notificações enviadas.');
     }
 }

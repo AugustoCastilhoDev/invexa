@@ -2,25 +2,45 @@
 
 namespace App\Observers;
 
-use App\Models\Receivable;
 use App\Models\AuditLog;
+use App\Models\Receivable;
 
 class ReceivableObserver
 {
-    private function log(string $event, Receivable $model): void
+    public function created(Receivable $receivable): void
     {
         AuditLog::create([
             'user_id'    => auth()->id(),
-            'company_id' => $model->company_id,
-            'action'     => $event,
+            'company_id' => $receivable->company_id,
+            'action'     => 'created',
             'model_type' => Receivable::class,
-            'model_id'   => $model->id,
-            'old_values' => null,
-            'new_values' => $model->getAttributes(),
+            'model_id'   => $receivable->id,
+            'new_values' => $receivable->toArray(),
         ]);
     }
 
-    public function created(Receivable $r): void  { $this->log('created', $r); }
-    public function updated(Receivable $r): void  { $this->log('updated', $r); }
-    public function deleted(Receivable $r): void  { $this->log('deleted', $r); }
+    public function updated(Receivable $receivable): void
+    {
+        AuditLog::create([
+            'user_id'    => auth()->id(),
+            'company_id' => $receivable->company_id,
+            'action'     => 'updated',
+            'model_type' => Receivable::class,
+            'model_id'   => $receivable->id,
+            'old_values' => $receivable->getOriginal(),
+            'new_values' => $receivable->getDirty(),
+        ]);
+    }
+
+    public function deleted(Receivable $receivable): void
+    {
+        AuditLog::create([
+            'user_id'    => auth()->id(),
+            'company_id' => $receivable->company_id,
+            'action'     => 'deleted',
+            'model_type' => Receivable::class,
+            'model_id'   => $receivable->id,
+            'old_values' => $receivable->toArray(),
+        ]);
+    }
 }

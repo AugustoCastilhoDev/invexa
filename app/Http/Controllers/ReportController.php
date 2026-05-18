@@ -3,11 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Bill;
-use App\Models\PurchaseOrder;
 use App\Models\Receivable;
 use App\Models\Sale;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class ReportController extends Controller
 {
@@ -19,74 +19,105 @@ class ReportController extends Controller
     public function financial(Request $request)
     {
         $companyId = auth()->user()->company_id;
-        $period    = $request->get('period', 'month');
-        $from      = match($period) {
-            'week'    => now()->startOfWeek(),
-            'month'   => now()->startOfMonth(),
-            'quarter' => now()->startOfQuarter(),
-            'year'    => now()->startOfYear(),
-            'custom'  => Carbon::parse($request->get('from', now()->startOfMonth())),
-            default   => now()->startOfMonth(),
-        };
-        $to = $period === 'custom'
-            ? Carbon::parse($request->get('to', now()))
-            : now();
 
-        // Receitas (contas recebidas)
-        $revenues = Receivable::where('company_id', $companyId)
-            ->where('status', 'recebida')
-            ->whereBetween('payment_date', [$from, $to])
-            ->selectRaw('DATE(payment_date) as day, SUM(amount) as total')
-            ->groupBy('day')->orderBy('day')->get();
+        // Período
+        $period = $request->get('period', 'month');
+        [$from, $to] = $this->resolvePeriod($period, $request);
 
-        // Despesas (contas pagas)
-        $expenses = Bill::where('company_id', $companyId)
-            ->where('status', 'paga')
-            ->whereBetween('payment_date', [$from, $to])
-            ->selectRaw('DATE(payment_date) as day, SUM(amount) as total')
-            ->groupBy('day')->orderBy('day')->get();
+        // Receitas: recebíveis pagos + vendas concluídas sem recebível
+        $receivablesPaid = Receivable::where('company_id', $companyId)
+            ->where('status', 'recebido')
+            ->whereBetween('paid_at', [$from, $to])
+            ->sum('amount');
 
-        $totalRevenue = $revenues->sum('total');
-        $totalExpense = $expenses->sum('total');
-        $netBalance   = $totalRevenue - $totalExpense;
+        // Receitas pendentes
+        $receivablesPending = Receivable::where('company_id', $companyId)
+            ->where('status', 'pendente')
+            ->whereBetween('due_date', [$from, $to])
+            ->sum('amount');
 
-        // Pendentes
-        $pendingReceivables = Receivable::where('company_id', $companyId)->where('status','pendente')->sum('amount');
-        $pendingBills       = Bill::where('company_id', $companyId)->where('status','pendente')->sum('amount');
+        // Receitas vencidas
+        $receivablesOverdue = Receivable::where('company_id', $companyId)
+            ->where('status', 'pendente')
+            ->where('due_date', '<', now())
+            ->sum('amount');
 
-        // Vencidos
-        $overdueReceivables = Receivable::where('company_id', $companyId)->where('status','pendente')->whereDate('due_date','<', now())->sum('amount');
-        $overdueBills       = Bill::where('company_id', $companyId)->where('status','pendente')->whereDate('due_date','<', now())->sum('amount');
+        // Despesas pagas
+        $billsPaid = Bill::where('company_id', $companyId)
+            ->where('status', 'pago')
+            ->whereBetween('paid_at', [$from, $to])
+            ->sum('amount');
 
-        // Vendas do período
-        $salesTotal = Sale::where('company_id', $companyId)
-            ->where('status','concluida')
-            ->whereBetween('sale_date', [$from, $to])
-            ->sum('total');
+        // Despesas pendentes
+        $billsPending = Bill::where('company_id', $companyId)
+            ->where('status', 'pendente')
+            ->whereBetween('due_date', [$from, $to])
+            ->sum('amount');
 
-        // Compras do período
-        $purchasesTotal = PurchaseOrder::where('company_id', $companyId)
-            ->whereIn('status', ['recebida'])
-            ->whereBetween('order_date', [$from, $to])
-            ->sum('total');
+        // Despesas vencidas
+        $billsOverdue = Bill::where('company_id', $companyId)
+            ->where('status', 'pendente')
+            ->where('due_date', '<', now())
+            ->sum('amount');
+
+        // Saldo líquido (realizado)
+        $netBalance = $receivablesPaid - $billsPaid;
+
+        // Projetado
+        $projectedBalance = ($receivablesPaid + $receivablesPending) - ($billsPaid + $billsPending);
+
+        // Receitas por mês (para gráfico — últimos 6 meses)
+        $monthlyRevenue = Receivable::where('company_id', $companyId)
+            ->where('status', 'recebido')
+            ->where('paid_at', '>=', now()->subMonths(5)->startOfMonth())
+            ->selectRaw("DATE_FORMAT(paid_at, '%Y-%m') as month, SUM(amount) as total")
+            ->groupBy('month')
+            ->orderBy('month')
+            ->pluck('total', 'month');
+
+        $monthlyExpenses = Bill::where('company_id', $companyId)
+            ->where('status', 'pago')
+            ->where('paid_at', '>=', now()->subMonths(5)->startOfMonth())
+            ->selectRaw("DATE_FORMAT(paid_at, '%Y-%m') as month, SUM(amount) as total")
+            ->groupBy('month')
+            ->orderBy('month')
+            ->pluck('total', 'month');
+
+        // Lista de lançamentos do período
+        $receivables = Receivable::with('customer')
+            ->where('company_id', $companyId)
+            ->whereBetween('due_date', [$from, $to])
+            ->orderBy('due_date')
+            ->get();
+
+        $bills = Bill::with('supplier')
+            ->where('company_id', $companyId)
+            ->whereBetween('due_date', [$from, $to])
+            ->orderBy('due_date')
+            ->get();
 
         return view('reports.financial', compact(
-            'revenues','expenses','totalRevenue','totalExpense','netBalance',
-            'pendingReceivables','pendingBills','overdueReceivables','overdueBills',
-            'salesTotal','purchasesTotal','period','from','to'
+            'period', 'from', 'to',
+            'receivablesPaid', 'receivablesPending', 'receivablesOverdue',
+            'billsPaid', 'billsPending', 'billsOverdue',
+            'netBalance', 'projectedBalance',
+            'monthlyRevenue', 'monthlyExpenses',
+            'receivables', 'bills'
         ));
     }
 
-    public function purchases(Request $request)
+    private function resolvePeriod(string $period, Request $request): array
     {
-        $companyId = auth()->user()->company_id;
-        $query = PurchaseOrder::with(['supplier','items.product'])->where('company_id', $companyId);
-        if ($request->filled('from')) { $query->whereDate('order_date', '>=', $request->from); }
-        if ($request->filled('to'))   { $query->whereDate('order_date', '<=', $request->to); }
-        if ($request->filled('status')) { $query->where('status', $request->status); }
-        $orders      = $query->orderByDesc('order_date')->paginate(15);
-        $totalOrders = (clone $query)->count();
-        $totalValue  = (clone $query)->sum('total');
-        return view('reports.purchases', compact('orders','totalOrders','totalValue'));
+        return match ($period) {
+            'week'    => [now()->startOfWeek(), now()->endOfWeek()],
+            'month'   => [now()->startOfMonth(), now()->endOfMonth()],
+            'quarter' => [now()->startOfQuarter(), now()->endOfQuarter()],
+            'year'    => [now()->startOfYear(), now()->endOfYear()],
+            'custom'  => [
+                Carbon::parse($request->get('from', now()->startOfMonth())),
+                Carbon::parse($request->get('to', now()->endOfMonth()))->endOfDay(),
+            ],
+            default   => [now()->startOfMonth(), now()->endOfMonth()],
+        };
     }
 }

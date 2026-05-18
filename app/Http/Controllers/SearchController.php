@@ -10,34 +10,60 @@ use Illuminate\Http\Request;
 
 class SearchController extends Controller
 {
-    public function index(Request $request)
+    public function __invoke(Request $request)
     {
-        $q         = $request->get('q', '');
+        $q         = trim($request->get('q', ''));
         $companyId = auth()->user()->company_id;
 
         if (strlen($q) < 2) {
-            return view('search.results', ['q' => $q, 'results' => []]);
+            return view('search.results', [
+                'q'         => $q,
+                'customers' => collect(),
+                'products'  => collect(),
+                'suppliers' => collect(),
+                'sales'     => collect(),
+            ]);
         }
 
         $like = '%' . $q . '%';
 
-        $products = Product::where('company_id', $companyId)
-            ->where(fn($x) => $x->where('name','like',$like)->orWhere('sku','like',$like))
-            ->limit(10)->get(['id','name','sku','price','quantity']);
-
         $customers = Customer::where('company_id', $companyId)
-            ->where(fn($x) => $x->where('name','like',$like)->orWhere('email','like',$like)->orWhere('document','like',$like))
-            ->limit(10)->get(['id','name','email','phone']);
+            ->where(fn($query) => $query
+                ->where('name', 'like', $like)
+                ->orWhere('email', 'like', $like)
+                ->orWhere('phone', 'like', $like)
+                ->orWhere('cpf_cnpj', 'like', $like)
+            )
+            ->limit(8)
+            ->get();
+
+        $products = Product::where('company_id', $companyId)
+            ->where(fn($query) => $query
+                ->where('name', 'like', $like)
+                ->orWhere('sku', 'like', $like)
+                ->orWhere('description', 'like', $like)
+            )
+            ->limit(8)
+            ->get();
 
         $suppliers = Supplier::where('company_id', $companyId)
-            ->where(fn($x) => $x->where('name','like',$like)->orWhere('email','like',$like))
-            ->limit(10)->get(['id','name','email','phone']);
+            ->where(fn($query) => $query
+                ->where('name', 'like', $like)
+                ->orWhere('cnpj', 'like', $like)
+                ->orWhere('email', 'like', $like)
+            )
+            ->limit(8)
+            ->get();
 
         $sales = Sale::with('customer')
             ->where('company_id', $companyId)
-            ->where(fn($x) => $x->where('customer_name','like',$like)->orWhere('id','like',$like))
-            ->limit(10)->get(['id','customer_name','total','status','sale_date']);
+            ->where(fn($query) => $query
+                ->where('customer_name', 'like', $like)
+                ->orWhere('id', is_numeric($q) ? $q : -1)
+            )
+            ->limit(5)
+            ->get();
 
-        return view('search.results', compact('q','products','customers','suppliers','sales'));
+        return view('search.results', compact('q', 'customers', 'products', 'suppliers', 'sales'));
     }
 }

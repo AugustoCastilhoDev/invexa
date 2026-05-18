@@ -5,11 +5,10 @@ namespace App\Providers;
 use App\Models\Bill;
 use App\Models\Customer;
 use App\Models\Product;
-use App\Models\PurchaseOrder;
 use App\Models\Receivable;
 use App\Models\Sale;
-use App\Models\Supplier;
 use App\Observers\BillObserver;
+use App\Observers\CustomerObserver;
 use App\Observers\ProductObserver;
 use App\Observers\ReceivableObserver;
 use App\Observers\SaleObserver;
@@ -21,15 +20,19 @@ use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
-    public function register(): void {}
+    public function register(): void
+    {
+        //
+    }
 
     public function boot(): void
     {
-        // Observers
+        // Observers — Audit Log ativo em todos os modelos principais
         Sale::observe(SaleObserver::class);
-        Product::observe(ProductObserver::class);
         Bill::observe(BillObserver::class);
         Receivable::observe(ReceivableObserver::class);
+        Product::observe(ProductObserver::class);
+        Customer::observe(CustomerObserver::class);
 
         // Policies
         Gate::policy(Sale::class, SalePolicy::class);

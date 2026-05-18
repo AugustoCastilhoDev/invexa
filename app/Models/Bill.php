@@ -2,41 +2,64 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Bill extends Model
 {
-    use SoftDeletes;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'company_id','supplier_id','purchase_order_id','description',
-        'amount','due_date','status','payment_date','payment_method',
-        'notes','installment_number','installments_total',
-        'recurrence','parent_bill_id',
+        'company_id',
+        'supplier_id',
+        'purchase_order_id',
+        'description',
+        'amount',
+        'due_date',
+        'paid_at',
+        'status',
+        'notes',
+        'installments',
+        'installment_number',
+        'recurrence',
+        'parent_bill_id',
     ];
 
     protected $casts = [
-        'due_date'     => 'date',
-        'payment_date' => 'date',
-        'amount'       => 'decimal:2',
+        'due_date' => 'date',
+        'paid_at'  => 'datetime',
+        'amount'   => 'decimal:2',
     ];
 
-    public function company(): BelongsTo      { return $this->belongsTo(Company::class); }
-    public function supplier(): BelongsTo     { return $this->belongsTo(Supplier::class); }
-    public function purchaseOrder(): BelongsTo { return $this->belongsTo(PurchaseOrder::class); }
-    public function parent(): BelongsTo        { return $this->belongsTo(Bill::class, 'parent_bill_id'); }
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(Company::class);
+    }
+
+    public function supplier(): BelongsTo
+    {
+        return $this->belongsTo(Supplier::class);
+    }
+
+    public function purchaseOrder(): BelongsTo
+    {
+        return $this->belongsTo(PurchaseOrder::class);
+    }
+
+    public function parentBill(): BelongsTo
+    {
+        return $this->belongsTo(Bill::class, 'parent_bill_id');
+    }
+
+    public function installmentBills()
+    {
+        return $this->hasMany(Bill::class, 'parent_bill_id');
+    }
 
     public function isOverdue(): bool
     {
-        return $this->status === 'pendente' && $this->due_date->isPast();
-    }
-
-    public function isDueSoon(int $days = 3): bool
-    {
-        return $this->status === 'pendente'
-            && $this->due_date->isFuture()
-            && $this->due_date->diffInDays(now()) <= $days;
+        return $this->status === 'pendente' && $this->due_date < now();
     }
 }

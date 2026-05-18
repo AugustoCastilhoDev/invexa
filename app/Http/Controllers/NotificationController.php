@@ -8,22 +8,20 @@ class NotificationController extends Controller
 {
     public function index()
     {
-        $notifications = auth()->user()->notifications()->latest()->paginate(20);
+        $notifications = auth()->user()->notifications()->paginate(20);
+        auth()->user()->unreadNotifications->markAsRead();
         return view('notifications.index', compact('notifications'));
-    }
-
-    public function markRead(string $id)
-    {
-        $notification = auth()->user()->notifications()->findOrFail($id);
-        $notification->markAsRead();
-        $data = $notification->data;
-        $url  = $data['url'] ?? route('home');
-        return redirect($url);
     }
 
     public function markAllRead()
     {
         auth()->user()->unreadNotifications->markAsRead();
-        return back()->with('success', 'Todas as notificações marcadas como lidas.');
+        return back()->with('success', 'Todas as notificações foram marcadas como lidas.');
+    }
+
+    public function destroy(string $id)
+    {
+        auth()->user()->notifications()->where('id', $id)->delete();
+        return back()->with('success', 'Notificação removida.');
     }
 }

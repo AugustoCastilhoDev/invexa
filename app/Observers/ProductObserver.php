@@ -2,38 +2,45 @@
 
 namespace App\Observers;
 
-use App\Models\Product;
 use App\Models\AuditLog;
-use App\Notifications\LowStockNotification;
-use App\Models\User;
+use App\Models\Product;
 
 class ProductObserver
 {
-    private function log(string $event, Product $model): void
+    public function created(Product $product): void
     {
         AuditLog::create([
             'user_id'    => auth()->id(),
-            'company_id' => $model->company_id,
-            'action'     => $event,
+            'company_id' => $product->company_id,
+            'action'     => 'created',
             'model_type' => Product::class,
-            'model_id'   => $model->id,
-            'old_values' => null,
-            'new_values' => $model->getAttributes(),
+            'model_id'   => $product->id,
+            'new_values' => $product->toArray(),
         ]);
     }
 
-    public function created(Product $product): void  { $this->log('created', $product); }
-    public function deleted(Product $product): void  { $this->log('deleted', $product); }
-
     public function updated(Product $product): void
     {
-        $this->log('updated', $product);
+        AuditLog::create([
+            'user_id'    => auth()->id(),
+            'company_id' => $product->company_id,
+            'action'     => 'updated',
+            'model_type' => Product::class,
+            'model_id'   => $product->id,
+            'old_values' => $product->getOriginal(),
+            'new_values' => $product->getDirty(),
+        ]);
+    }
 
-        // Dispara notificação de estoque baixo
-        if ($product->isLowStock() && $product->wasChanged('quantity')) {
-            User::where('company_id', $product->company_id)
-                ->whereIn('role', ['admin', 'gerente'])
-                ->each(fn(User $u) => $u->notify(new LowStockNotification($product)));
-        }
+    public function deleted(Product $product): void
+    {
+        AuditLog::create([
+            'user_id'    => auth()->id(),
+            'company_id' => $product->company_id,
+            'action'     => 'deleted',
+            'model_type' => Product::class,
+            'model_id'   => $product->id,
+            'old_values' => $product->toArray(),
+        ]);
     }
 }
