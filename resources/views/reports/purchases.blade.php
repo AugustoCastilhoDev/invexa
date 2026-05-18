@@ -186,7 +186,7 @@
                                 @forelse($topItems as $item)
                                     <tr style="border-color:rgba(148,163,184,.07);">
                                         <td class="ps-3 py-2 text-white" style="font-size:.85rem;">{{ $item->product_name }}</td>
-                                        <td class="py-2 text-soft" style="font-size:.8rem;">{{ $item->category_name ?? '&mdash;' }}</td>
+                                        <td class="py-2 text-soft" style="font-size:.8rem;">{{ $item->category_name ?? '—' }}</td>
                                         <td class="py-2 text-center text-white">{{ $item->total_qty }}</td>
                                         <td class="py-2 text-center text-soft">{{ $item->total_orders }}</td>
                                         <td class="py-2 text-end pe-3 fw-semibold text-white">R$ {{ number_format($item->total_cost, 2, ',', '.') }}</td>
@@ -238,7 +238,7 @@
                                     </td>
                                     <td class="py-3 text-soft" style="font-size:.85rem;">{{ $order->created_at->format('d/m/Y') }}</td>
                                     <td class="py-3 text-soft" style="font-size:.85rem;">
-                                        {{ $order->received_at ? $order->received_at->format('d/m/Y') : '&mdash;' }}
+                                        {{ $order->received_at ? $order->received_at->format('d/m/Y') : '—' }}
                                     </td>
                                     <td class="py-3 text-end pe-3 fw-semibold text-white">R$ {{ number_format($order->total, 2, ',', '.') }}</td>
                                 </tr>
