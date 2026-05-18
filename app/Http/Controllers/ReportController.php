@@ -22,7 +22,7 @@ class ReportController extends Controller
     }
 
     // ---------------------------------------------------------------
-    // Relatório de Compras
+    // Relatorio de Compras
     // ---------------------------------------------------------------
     public function purchases(Request $request)
     {
@@ -62,7 +62,7 @@ class ReportController extends Controller
         [, , $from, $to, , , $orders] = $this->purchasesData($request);
         $filename = 'compras_' . $from->format('Ymd') . '_' . $to->format('Ymd') . '.csv';
 
-        $lines[] = implode(';', ['Número', 'Fornecedor', 'Status', 'Emissão', 'Recebimento', 'Total']);
+        $lines[] = implode(';', ['Numero', 'Fornecedor', 'Status', 'Emissao', 'Recebimento', 'Total']);
         foreach ($orders as $o) {
             $lines[] = implode(';', [
                 $o->number,
@@ -93,7 +93,7 @@ class ReportController extends Controller
     }
 
     // ---------------------------------------------------------------
-    // Relatório Financeiro
+    // Relatorio Financeiro
     // ---------------------------------------------------------------
     public function financial(Request $request)
     {
@@ -116,7 +116,7 @@ class ReportController extends Controller
         [, , $from, $to, $receivables, $bills] = $this->financialData($request);
         $filename = 'financeiro_' . $from->format('Ymd') . '_' . $to->format('Ymd') . '.csv';
 
-        $lines[] = implode(';', ['Tipo', 'Descrição', 'Vencimento', 'Valor', 'Status']);
+        $lines[] = implode(';', ['Tipo', 'Descricao', 'Vencimento', 'Valor', 'Status']);
         foreach ($receivables as $r) {
             $lines[] = implode(';', [
                 'Receita',
@@ -157,7 +157,7 @@ class ReportController extends Controller
     }
 
     // ---------------------------------------------------------------
-    // Relatório de Vendas
+    // Relatorio de Vendas
     // ---------------------------------------------------------------
     public function sales(Request $request)
     {
@@ -175,7 +175,7 @@ class ReportController extends Controller
         [, , $from, $to, $sales] = $this->salesData($request);
         $filename = 'vendas_' . $from->format('Ymd') . '_' . $to->format('Ymd') . '.csv';
 
-        $lines[] = implode(';', ['Nº Venda', 'Cliente', 'Data', 'Status', 'Total']);
+        $lines[] = implode(';', ['No Venda', 'Cliente', 'Data', 'Status', 'Total']);
         foreach ($sales as $s) {
             $lines[] = implode(';', [
                 $s->id,
@@ -201,7 +201,7 @@ class ReportController extends Controller
     }
 
     // ---------------------------------------------------------------
-    // Relatório de Contas a Pagar
+    // Relatorio de Contas a Pagar
     // ---------------------------------------------------------------
     public function bills(Request $request)
     {
@@ -219,7 +219,7 @@ class ReportController extends Controller
         [, , $from, $to, $bills] = $this->billsData($request);
         $filename = 'contas_pagar_' . $from->format('Ymd') . '_' . $to->format('Ymd') . '.csv';
 
-        $lines[] = implode(';', ['Descrição', 'Fornecedor', 'Vencimento', 'Valor', 'Status']);
+        $lines[] = implode(';', ['Descricao', 'Fornecedor', 'Vencimento', 'Valor', 'Status']);
         foreach ($bills as $b) {
             $lines[] = implode(';', [
                 $b->description,
@@ -245,7 +245,7 @@ class ReportController extends Controller
     }
 
     // ---------------------------------------------------------------
-    // Relatório de Estoque
+    // Relatorio de Estoque
     // ---------------------------------------------------------------
     public function stock(Request $request)
     {
@@ -261,7 +261,7 @@ class ReportController extends Controller
         [, , $products] = $this->stockData($request);
         $filename = 'estoque_' . now()->format('Ymd') . '.csv';
 
-        $lines[] = implode(';', ['Produto', 'Categoria', 'Qtd. em Estoque', 'Estoque Mín.', 'Preço de Custo', 'Preço de Venda', 'Status']);
+        $lines[] = implode(';', ['Produto', 'Categoria', 'Qtd. em Estoque', 'Estoque Min.', 'Preco de Custo', 'Preco de Venda', 'Status']);
         foreach ($products as $p) {
             if (!$p->active) {
                 $statusLabel = 'Inativo';
@@ -296,7 +296,7 @@ class ReportController extends Controller
     }
 
     // ---------------------------------------------------------------
-    // Relatório de Fornecedores
+    // Relatorio de Fornecedores
     // ---------------------------------------------------------------
     public function suppliers(Request $request)
     {
@@ -335,7 +335,7 @@ class ReportController extends Controller
     }
 
     // ---------------------------------------------------------------
-    // Relatório de Produtos Mais Vendidos
+    // Relatorio de Produtos Mais Vendidos
     // ---------------------------------------------------------------
     public function topProducts(Request $request)
     {
@@ -352,7 +352,7 @@ class ReportController extends Controller
         [, , $from, $to, $products] = $this->topProductsData($request);
         $filename = 'produtos_mais_vendidos_' . $from->format('Ymd') . '_' . $to->format('Ymd') . '.csv';
 
-        $lines[] = implode(';', ['#', 'Produto', 'Categoria', 'Qtd. Vendida', 'Nº de Vendas', 'Receita Total', 'Ticket Médio']);
+        $lines[] = implode(';', ['#', 'Produto', 'Categoria', 'Qtd. Vendida', 'No de Vendas', 'Receita Total', 'Ticket Medio']);
         foreach ($products as $i => $p) {
             $ticketMedio = $p->total_sales > 0
                 ? number_format($p->total_revenue / $p->total_sales, 2, ',', '.')
@@ -464,7 +464,6 @@ class ReportController extends Controller
                   ->whereColumn('quantity', '<=', 'min_quantity')
                   ->where('min_quantity', '>', 0);
         } else {
-            // 'all' — apenas ativos
             $query->where('active', 1);
         }
 
@@ -495,18 +494,10 @@ class ReportController extends Controller
         $period    = $request->get('period', '30');
         [$from, $to] = $this->resolvePurchasePeriod($period, $request);
 
-        /*
-         * ATENÇÃO: usamos SaleItem::query() (Eloquent) em vez de DB::table()
-         * para que o scope de SoftDeletes na tabela `sales` seja respeitado
-         * via join condicional com deleted_at IS NULL.
-         *
-         * Também agrupamos por si.product_id para evitar duplicatas quando
-         * o mesmo produto tem nomes idênticos mas IDs diferentes.
-         */
         $products = SaleItem::query()
             ->join('sales as s', function ($join) {
                 $join->on('s.id', '=', 'sale_items.sale_id')
-                     ->whereNull('s.deleted_at');   // respeita SoftDeletes
+                     ->whereNull('s.deleted_at');
             })
             ->join('products as p', 'p.id', '=', 'sale_items.product_id')
             ->leftJoin('categories as c', 'c.id', '=', 'p.category_id')
@@ -516,14 +507,14 @@ class ReportController extends Controller
             ->groupBy('sale_items.product_id', 'p.name', 'c.name')
             ->orderByDesc('total_revenue')
             ->limit(20)
-            ->selectRaw('
-                sale_items.product_id,
-                p.name               AS product_name,
-                c.name               AS category_name,
-                SUM(sale_items.quantity)          AS total_qty,
-                COUNT(DISTINCT sale_items.sale_id) AS total_sales,
-                SUM(sale_items.subtotal)           AS total_revenue
-            ')
+            ->selectRaw(
+                'sale_items.product_id,' .
+                'p.name AS product_name,' .
+                'c.name AS category_name,' .
+                'SUM(sale_items.quantity) AS total_qty,' .
+                'COUNT(DISTINCT sale_items.sale_id) AS total_sales,' .
+                'SUM(sale_items.subtotal) AS total_revenue'
+            )
             ->get();
 
         $top8        = $products->take(8);
@@ -549,8 +540,12 @@ class ReportController extends Controller
             ->where('company_id', $companyId)
             ->whereBetween('order_date', [$from, $to]);
 
-        if ($supplierId) $query->where('supplier_id', $supplierId);
-        if ($status)     $query->where('status', $status);
+        if ($supplierId) {
+            $query->where('supplier_id', $supplierId);
+        }
+        if ($status) {
+            $query->where('status', $status);
+        }
 
         $orders = $query->orderByDesc('order_date')->get();
 
@@ -567,13 +562,13 @@ class ReportController extends Controller
             ->whereNotIn('po.status', ['cancelada'])
             ->whereBetween('po.order_date', [$from, $to])
             ->when($supplierId, fn($q) => $q->where('po.supplier_id', $supplierId))
-            ->selectRaw('
-                p.name  as product_name,
-                c.name  as category_name,
-                SUM(poi.quantity)         as total_qty,
-                COUNT(DISTINCT po.id)     as total_orders,
-                SUM(poi.subtotal)         as total_cost
-            ')
+            ->selectRaw(
+                'p.name AS product_name,' .
+                'c.name AS category_name,' .
+                'SUM(poi.quantity) AS total_qty,' .
+                'COUNT(DISTINCT po.id) AS total_orders,' .
+                'SUM(poi.subtotal) AS total_cost'
+            )
             ->groupBy('poi.product_id', 'p.name', 'c.name')
             ->orderByDesc('total_cost')
             ->limit(10)
@@ -583,28 +578,40 @@ class ReportController extends Controller
     private function resolvePurchasePeriod(string $period, Request $request): array
     {
         if ($period === 'custom') {
-            return [
-                Carbon::parse($request->get('from', now()->subDays(30)))->startOfDay(),
-                Carbon::parse($request->get('to', now()))->endOfDay(),
-            ];
+            $from = Carbon::parse($request->get('from', now()->subDays(30)))->startOfDay();
+            $to   = Carbon::parse($request->get('to', now()))->endOfDay();
+            return [$from, $to];
         }
+
         $days = is_numeric($period) ? (int) $period : 30;
         return [now()->subDays($days - 1)->startOfDay(), now()->endOfDay()];
     }
 
     private function resolvePeriod(string $period, Request $request): array
     {
-        return match ($period) {
-            'week'    => [now()->startOfWeek(), now()->endOfWeek()],
-            'month'   => [now()->startOfMonth(), now()->endOfMonth()],
-            'quarter' => [now()->startOfQuarter(), now()->endOfQuarter()],
-            'year'    => [now()->startOfYear(), now()->endOfYear()],
-            'custom'  => [
-                Carbon::parse($request->get('from', now()->startOfMonth())),
-                Carbon::parse($request->get('to', now()->endOfMonth()))->endOfDay(),
-            ],
-            default   => [now()->startOfMonth(), now()->endOfMonth()],
-        ];
+        if ($period === 'week') {
+            return [now()->startOfWeek(), now()->endOfWeek()];
+        }
+
+        if ($period === 'month') {
+            return [now()->startOfMonth(), now()->endOfMonth()];
+        }
+
+        if ($period === 'quarter') {
+            return [now()->startOfQuarter(), now()->endOfQuarter()];
+        }
+
+        if ($period === 'year') {
+            return [now()->startOfYear(), now()->endOfYear()];
+        }
+
+        if ($period === 'custom') {
+            $from = Carbon::parse($request->get('from', now()->startOfMonth()));
+            $to   = Carbon::parse($request->get('to', now()->endOfMonth()))->endOfDay();
+            return [$from, $to];
+        }
+
+        return [now()->startOfMonth(), now()->endOfMonth()];
     }
 
     private function csvResponse(string $content, string $filename): Response
