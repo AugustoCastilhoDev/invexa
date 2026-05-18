@@ -11,13 +11,36 @@ class Receivable extends Model
 {
     use HasFactory, SoftDeletes;
 
+    const PAYMENT_METHODS = [
+        'dinheiro'        => 'Dinheiro',
+        'pix'             => 'PIX',
+        'cartao_credito'  => 'Cartão de Crédito',
+        'cartao_debito'   => 'Cartão de Débito',
+        'boleto'          => 'Boleto',
+        'transferencia'   => 'Transferência Bancária',
+        'cheque'          => 'Cheque',
+    ];
+
+    const CATEGORIES = [
+        'venda'           => 'Venda',
+        'servico'         => 'Serviço Prestado',
+        'aluguel'         => 'Aluguel',
+        'comissao'        => 'Comissão',
+        'reembolso'       => 'Reembolso',
+        'outros'          => 'Outros',
+    ];
+
     protected $fillable = [
         'company_id',
         'customer_id',
         'sale_id',
         'description',
+        'category',
         'amount',
+        'amount_received',
+        'payment_method',
         'due_date',
+        'received_at',
         'paid_at',
         'status',
         'notes',
@@ -28,10 +51,43 @@ class Receivable extends Model
     ];
 
     protected $casts = [
-        'due_date' => 'date',
-        'paid_at'  => 'datetime',
-        'amount'   => 'decimal:2',
+        'due_date'        => 'date',
+        'paid_at'         => 'datetime',
+        'received_at'     => 'datetime',
+        'amount'          => 'decimal:2',
+        'amount_received' => 'decimal:2',
     ];
+
+    // ── Accessors ─────────────────────────────────────────────
+
+    public function getStatusLabelAttribute(): string
+    {
+        return match ($this->status) {
+            'pendente'  => 'Pendente',
+            'recebida'  => 'Recebida',
+            'vencida'   => 'Vencida',
+            'cancelada' => 'Cancelada',
+            default     => ucfirst($this->status),
+        };
+    }
+
+    public function getStatusColorAttribute(): string
+    {
+        return match ($this->status) {
+            'pendente'  => 'warning',
+            'recebida'  => 'success',
+            'vencida'   => 'danger',
+            'cancelada' => 'secondary',
+            default     => 'secondary',
+        };
+    }
+
+    public function getCategoryLabelAttribute(): string
+    {
+        return self::CATEGORIES[$this->category] ?? ucfirst($this->category ?? 'Outros');
+    }
+
+    // ── Relationships ──────────────────────────────────────────
 
     public function company(): BelongsTo
     {
@@ -57,6 +113,8 @@ class Receivable extends Model
     {
         return $this->hasMany(Receivable::class, 'parent_receivable_id');
     }
+
+    // ── Helpers ────────────────────────────────────────────────
 
     public function isOverdue(): bool
     {
