@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -17,10 +18,38 @@ class Customer extends Model
         'name',
         'email',
         'phone',
+        'document',   // usado pelo controller (store/update)
         'cpf_cnpj',
         'address',
+        'city',
+        'state',
+        'active',
         'notes',
     ];
+
+    protected $casts = [
+        'active' => 'boolean',
+    ];
+
+    // ------------------------------------
+    // Scopes
+    // ------------------------------------
+
+    /** Filtra pelo company_id */
+    public function scopeForCompany(Builder $query, int $companyId): Builder
+    {
+        return $query->where('company_id', $companyId);
+    }
+
+    /** Filtra apenas clientes ativos */
+    public function scopeActive(Builder $query): Builder
+    {
+        return $query->where('active', true);
+    }
+
+    // ------------------------------------
+    // Relationships
+    // ------------------------------------
 
     public function company(): BelongsTo
     {
