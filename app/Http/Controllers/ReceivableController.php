@@ -6,205 +6,131 @@ use App\Models\Customer;
 use App\Models\Receivable;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class ReceivableController extends Controller
 {
     public function index(Request $request)
     {
         $companyId = auth()->user()->company_id;
-
-        Receivable::forCompany($companyId)
-            ->where('status', 'pendente')
-            ->where('due_date', '<', today())
-            ->update(['status' => 'vencida']);
-
-        $query = Receivable::with('customer', 'sale')->forCompany($companyId);
-
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
+        $query = Receivable::with('customer')->where('company_id', $companyId);
+        if ($request->filled('search'))  { $query->where('description','like','%'.$request->search.'%'); }
+        if ($request->filled('status'))  { $query->where('status', $request->status); }
+        if ($request->filled('from'))    { $query->whereDate('due_date','>=', $request->from); }
+        if ($request->filled('to'))      { $query->whereDate('due_date','<=', $request->to); }
+        if ($request->boolean('trashed') && auth()->user()->hasRole(['admin','gerente'])) {
+            $query->onlyTrashed();
         }
-        if ($request->filled('category')) {
-            $query->where('category', $request->category);
-        }
-        if ($request->filled('from')) {
-            $query->whereDate('due_date', '>=', Carbon::parse($request->from)->startOfDay());
-        }
-        if ($request->filled('to')) {
-            $query->whereDate('due_date', '<=', Carbon::parse($request->to)->endOfDay());
-        }
-        if ($request->filled('search')) {
-            $search = '%' . $request->search . '%';
-            $query->where(function ($q) use ($search) {
-                $q->where('description', 'like', $search)
-                  ->orWhereHas('customer', fn($c) => $c->where('name', 'like', $search));
-            });
-        }
-
-        $totalPending   = Receivable::forCompany($companyId)->whereIn('status', ['pendente', 'vencida'])->sum('amount');
-        $totalOverdue   = Receivable::forCompany($companyId)->where('status', 'vencida')->sum('amount');
-        $totalReceived  = Receivable::forCompany($companyId)->where('status', 'recebida')->sum('amount_received');
-        $countOverdue   = Receivable::forCompany($companyId)->where('status', 'vencida')->count();
-
-        $receivables = $query->orderBy('due_date')->orderByDesc('id')->paginate(15)->withQueryString();
-        $customers   = Customer::where('company_id', $companyId)->where('active', true)->orderBy('name')->get();
-        $categories  = Receivable::CATEGORY_LABELS;
-        $statuses    = Receivable::STATUS_LABELS;
-
-        return view('receivables.index', compact(
-            'receivables', 'customers', 'categories', 'statuses',
-            'totalPending', 'totalOverdue', 'totalReceived', 'countOverdue'
-        ));
-    }
-
-    /**
-     * Baixa em lote: marca vários recebimentos como recebidos de uma vez.
-     */
-    public function bulkReceive(Request $request)
-    {
-        $companyId = auth()->user()->company_id;
-
-        $validated = $request->validate([
-            'ids'            => ['required', 'array', 'min:1'],
-            'ids.*'          => ['integer'],
-            'received_at'    => ['required', 'date'],
-            'payment_method' => ['required', 'in:' . implode(',', array_keys(Receivable::PAYMENT_METHODS))],
-        ], [
-            'ids.required'            => 'Selecione ao menos uma conta.',
-            'received_at.required'    => 'Informe a data de recebimento.',
-            'payment_method.required' => 'Selecione a forma de pagamento.',
-        ]);
-
-        $receivables = Receivable::forCompany($companyId)
-            ->whereIn('id', $validated['ids'])
-            ->whereIn('status', ['pendente', 'vencida'])
-            ->get();
-
-        foreach ($receivables as $rec) {
-            $rec->update([
-                'amount_received' => $rec->amount,
-                'received_at'     => $validated['received_at'],
-                'payment_method'  => $validated['payment_method'],
-                'status'          => 'recebida',
-            ]);
-        }
-
-        $count = $receivables->count();
-        return redirect()->route('receivables.index', $request->except(['ids', 'received_at', 'payment_method', '_token']))
-            ->with('success', $count > 0 ? "{$count} conta(s) marcada(s) como recebida(s)." : 'Nenhuma conta elegível selecionada.');
+        $total    = (clone $query)->sum('amount');
+        $received = (clone $query)->where('status','recebida')->sum('amount');
+        $pending  = (clone $query)->where('status','pendente')->sum('amount');
+        $receivables = $query->orderBy('due_date')->paginate(15);
+        return view('receivables.index', compact('receivables','total','received','pending'));
     }
 
     public function create()
     {
-        $companyId      = auth()->user()->company_id;
-        $customers      = Customer::where('company_id', $companyId)->where('active', true)->orderBy('name')->get();
-        $categories     = Receivable::CATEGORY_LABELS;
-        $paymentMethods = Receivable::PAYMENT_METHODS;
-        return view('receivables.create', compact('customers', 'categories', 'paymentMethods'));
+        $customers = Customer::where('company_id', auth()->user()->company_id)->orderBy('name')->get();
+        return view('receivables.create', compact('customers'));
     }
 
     public function store(Request $request)
     {
         $companyId = auth()->user()->company_id;
-
         $validated = $request->validate([
-            'description' => ['required', 'string', 'max:255'],
-            'amount'      => ['required', 'numeric', 'min:0.01'],
-            'due_date'    => ['required', 'date'],
-            'category'    => ['required', 'in:' . implode(',', array_keys(Receivable::CATEGORY_LABELS))],
-            'customer_id' => ['nullable', 'exists:customers,id'],
-            'notes'       => ['nullable', 'string'],
+            'description'   => ['required','string','max:255'],
+            'customer_id'   => ['nullable','exists:customers,id'],
+            'amount'        => ['required','numeric','min:0.01'],
+            'due_date'      => ['required','date'],
+            'status'        => ['required','in:pendente,recebida,cancelada'],
+            'payment_method'=> ['nullable','string'],
+            'notes'         => ['nullable','string'],
+            'installments'  => ['nullable','integer','min:1','max:60'],
+            'recurrence'    => ['nullable','in:none,monthly,weekly'],
         ]);
 
-        $status = Carbon::parse($validated['due_date'])->isPast() ? 'vencida' : 'pendente';
+        $installments = (int) ($validated['installments'] ?? 1);
+        $recurrence   = $validated['recurrence'] ?? 'none';
 
-        Receivable::create(array_merge($validated, [
-            'company_id'      => $companyId,
-            'status'          => $status,
-            'amount_received' => 0,
-        ]));
+        DB::transaction(function () use ($validated, $companyId, $installments, $recurrence) {
+            $parentId = null;
+            for ($i = 1; $i <= $installments; $i++) {
+                $due = Carbon::parse($validated['due_date'])->addMonths($i - 1);
+                $r = Receivable::create([
+                    'company_id'              => $companyId,
+                    'customer_id'             => $validated['customer_id'] ?? null,
+                    'description'             => $installments > 1
+                        ? $validated['description'] . " ({$i}/{$installments})"
+                        : $validated['description'],
+                    'amount'                  => round((float)$validated['amount'] / $installments, 2),
+                    'due_date'                => $due,
+                    'status'                  => $validated['status'],
+                    'payment_method'          => $validated['payment_method'] ?? null,
+                    'notes'                   => $validated['notes'] ?? null,
+                    'installment_number'      => $installments > 1 ? $i : null,
+                    'installments_total'      => $installments > 1 ? $installments : null,
+                    'recurrence'              => $recurrence !== 'none' ? $recurrence : null,
+                    'parent_receivable_id'    => $i > 1 ? $parentId : null,
+                ]);
+                if ($i === 1) { $parentId = $r->id; }
+            }
+        });
 
-        return redirect()->route('receivables.index')
-            ->with('success', 'Conta a receber registrada com sucesso.');
+        return redirect()->route('receivables.index')->with('success', 'Conta a receber criada com sucesso.');
     }
 
     public function show(Receivable $receivable)
     {
-        abort_if($receivable->company_id !== auth()->user()->company_id, 403);
-        $receivable->load('customer', 'sale');
+        $receivable->load(['customer','sale']);
         return view('receivables.show', compact('receivable'));
     }
 
     public function edit(Receivable $receivable)
     {
-        abort_if($receivable->company_id !== auth()->user()->company_id, 403);
-        $companyId      = auth()->user()->company_id;
-        $customers      = Customer::where('company_id', $companyId)->where('active', true)->orderBy('name')->get();
-        $categories     = Receivable::CATEGORY_LABELS;
-        $paymentMethods = Receivable::PAYMENT_METHODS;
-        return view('receivables.edit', compact('receivable', 'customers', 'categories', 'paymentMethods'));
+        $customers = Customer::where('company_id', auth()->user()->company_id)->orderBy('name')->get();
+        return view('receivables.edit', compact('receivable','customers'));
     }
 
     public function update(Request $request, Receivable $receivable)
     {
-        abort_if($receivable->company_id !== auth()->user()->company_id, 403);
-
         $validated = $request->validate([
-            'description' => ['required', 'string', 'max:255'],
-            'amount'      => ['required', 'numeric', 'min:0.01'],
-            'due_date'    => ['required', 'date'],
-            'category'    => ['required', 'in:' . implode(',', array_keys(Receivable::CATEGORY_LABELS))],
-            'customer_id' => ['nullable', 'exists:customers,id'],
-            'notes'       => ['nullable', 'string'],
+            'description'    => ['required','string','max:255'],
+            'customer_id'    => ['nullable','exists:customers,id'],
+            'amount'         => ['required','numeric','min:0.01'],
+            'due_date'       => ['required','date'],
+            'status'         => ['required','in:pendente,recebida,cancelada'],
+            'payment_method' => ['nullable','string'],
+            'notes'          => ['nullable','string'],
         ]);
-
         $receivable->update($validated);
-
-        return redirect()->route('receivables.show', $receivable)
-            ->with('success', 'Conta a receber atualizada com sucesso.');
-    }
-
-    public function receive(Request $request, Receivable $receivable)
-    {
-        abort_if($receivable->company_id !== auth()->user()->company_id, 403);
-        abort_if(in_array($receivable->status, ['recebida', 'cancelada']), 422);
-
-        $validated = $request->validate([
-            'amount_received' => ['required', 'numeric', 'min:0.01'],
-            'received_at'     => ['required', 'date'],
-            'payment_method'  => ['required', 'in:' . implode(',', array_keys(Receivable::PAYMENT_METHODS))],
-        ], [
-            'amount_received.required' => 'Informe o valor recebido.',
-            'received_at.required'     => 'Informe a data do recebimento.',
-            'payment_method.required'  => 'Selecione a forma de pagamento.',
-        ]);
-
-        $newAmountReceived = (float) $receivable->amount_received + (float) $validated['amount_received'];
-        $status = $newAmountReceived >= (float) $receivable->amount ? 'recebida' : 'pendente';
-
-        $receivable->update([
-            'amount_received' => $newAmountReceived,
-            'received_at'     => $validated['received_at'],
-            'payment_method'  => $validated['payment_method'],
-            'status'          => $status,
-        ]);
-
-        return redirect()->route('receivables.show', $receivable)
-            ->with('success', $status === 'recebida' ? 'Conta marcada como recebida!' : 'Recebimento parcial registrado.');
-    }
-
-    public function cancel(Receivable $receivable)
-    {
-        abort_if($receivable->company_id !== auth()->user()->company_id, 403);
-        abort_if($receivable->status === 'cancelada', 422);
-        $receivable->update(['status' => 'cancelada']);
-        return back()->with('success', 'Conta a receber cancelada.');
+        return redirect()->route('receivables.index')->with('success', 'Conta a receber atualizada.');
     }
 
     public function destroy(Receivable $receivable)
     {
-        abort_if($receivable->company_id !== auth()->user()->company_id, 403);
         $receivable->delete();
-        return redirect()->route('receivables.index')
-            ->with('success', 'Conta a receber excluída com sucesso.');
+        return redirect()->route('receivables.index')->with('success', 'Conta movida para a lixeira.');
+    }
+
+    public function receive(Receivable $receivable)
+    {
+        if ($receivable->status === 'recebida') { return back()->with('error', 'Já recebida.'); }
+        $receivable->update(['status' => 'recebida', 'payment_date' => now()]);
+        return back()->with('success', 'Conta marcada como recebida.');
+    }
+
+    public function bulkReceive(Request $request)
+    {
+        $ids = $request->input('ids', []);
+        $companyId = auth()->user()->company_id;
+        Receivable::whereIn('id', $ids)->where('company_id', $companyId)->where('status','pendente')
+            ->update(['status' => 'recebida', 'payment_date' => now()]);
+        return back()->with('success', count($ids) . ' conta(s) marcada(s) como recebida(s).');
+    }
+
+    public function cancel(Receivable $receivable)
+    {
+        $receivable->update(['status' => 'cancelada']);
+        return back()->with('success', 'Conta cancelada.');
     }
 }

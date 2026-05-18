@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Bill;
 use App\Models\Product;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderItem;
 use App\Models\Supplier;
 use App\Models\StockMovement;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -15,188 +17,166 @@ class PurchaseOrderController extends Controller
     public function index(Request $request)
     {
         $companyId = auth()->user()->company_id;
-
-        $query = PurchaseOrder::with('supplier')
-            ->where('company_id', $companyId);
-
-        if ($request->filled('supplier')) {
-            $query->where('supplier_id', $request->supplier);
+        $query = PurchaseOrder::with(['supplier', 'items.product'])->where('company_id', $companyId);
+        if ($request->filled('search')) {
+            $s = '%'.$request->search.'%';
+            $query->whereHas('supplier', fn($q) => $q->where('name','like',$s));
         }
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
-        }
-
-        $orders    = $query->orderByDesc('id')->paginate(15)->withQueryString();
-        $suppliers = Supplier::where('company_id', $companyId)->where('active', true)->orderBy('name')->get();
-
-        $totalOrders   = PurchaseOrder::where('company_id', $companyId)->count();
-        $pendingOrders = PurchaseOrder::where('company_id', $companyId)
-                            ->whereIn('status', ['enviada', 'recebida_parcial'])->count();
-        $totalValue    = PurchaseOrder::where('company_id', $companyId)
-                            ->whereIn('status', ['enviada', 'recebida_parcial', 'recebida'])
-                            ->sum('total');
-
-        return view('purchase_orders.index', compact(
-            'orders', 'suppliers', 'totalOrders', 'pendingOrders', 'totalValue'
-        ));
+        if ($request->filled('status')) { $query->where('status', $request->status); }
+        $orders = $query->orderByDesc('order_date')->paginate(10);
+        return view('purchase-orders.index', compact('orders'));
     }
 
     public function create()
     {
         $companyId = auth()->user()->company_id;
-        $suppliers = Supplier::where('company_id', $companyId)->where('active', true)->orderBy('name')->get();
-        $products  = Product::where('company_id', $companyId)->where('active', true)->orderBy('name')->get();
-
-        return view('purchase_orders.create', compact('suppliers', 'products'));
+        $suppliers = Supplier::where('company_id', $companyId)->orderBy('name')->get();
+        $products  = Product::where('company_id', $companyId)->where('active', true)->orderBy('name')->get(['id','name','price']);
+        return view('purchase-orders.create', compact('suppliers','products'));
     }
 
     public function store(Request $request)
     {
-        $request->validate([
-            'supplier_id'           => ['required', 'exists:suppliers,id'],
-            'expected_date'         => ['nullable', 'date'],
-            'notes'                 => ['nullable', 'string'],
-            'items'                 => ['required', 'array', 'min:1'],
-            'items.*.product_id'    => ['required', 'exists:products,id'],
-            'items.*.quantity'      => ['required', 'integer', 'min:1'],
-            'items.*.unit_cost'     => ['required', 'numeric', 'min:0'],
-        ], [
-            'supplier_id.required'        => 'Selecione um fornecedor.',
-            'items.required'              => 'Adicione pelo menos um item.',
-            'items.*.product_id.required' => 'Selecione o produto.',
-            'items.*.quantity.required'   => 'Informe a quantidade.',
-            'items.*.unit_cost.required'  => 'Informe o custo unitário.',
-        ]);
-
         $companyId = auth()->user()->company_id;
-
-        DB::transaction(function () use ($request, $companyId) {
-            $total = 0;
-            foreach ($request->items as $item) {
-                $total += $item['quantity'] * $item['unit_cost'];
-            }
-
-            $order = PurchaseOrder::create([
-                'company_id'    => $companyId,
-                'supplier_id'   => $request->supplier_id,
-                'user_id'       => auth()->id(),
-                'number'        => PurchaseOrder::nextNumber($companyId),
-                'status'        => $request->has('send') ? 'enviada' : 'rascunho',
-                'expected_date' => $request->expected_date,
-                'notes'         => $request->notes,
-                'total'         => $total,
-            ]);
-
-            foreach ($request->items as $item) {
-                $order->items()->create([
-                    'product_id'        => $item['product_id'],
-                    'quantity'          => $item['quantity'],
-                    'quantity_received' => 0,
-                    'unit_cost'         => $item['unit_cost'],
-                    'subtotal'          => $item['quantity'] * $item['unit_cost'],
+        $validated = $request->validate([
+            'supplier_id'        => ['required','exists:suppliers,id'],
+            'order_date'         => ['required','date'],
+            'expected_date'      => ['nullable','date','after_or_equal:order_date'],
+            'status'             => ['required','in:pendente,recebida,cancelada'],
+            'notes'              => ['nullable','string'],
+            'items'              => ['required','array','min:1'],
+            'items.*.product_id' => ['required','exists:products,id'],
+            'items.*.quantity'   => ['required','integer','min:1'],
+            'items.*.price'      => ['required','numeric','min:0'],
+        ]);
+        try {
+            DB::transaction(function () use ($validated, $companyId) {
+                $total = collect($validated['items'])->sum(fn($i) => $i['quantity'] * $i['price']);
+                $order = PurchaseOrder::create([
+                    'company_id'    => $companyId,
+                    'supplier_id'   => $validated['supplier_id'],
+                    'order_date'    => Carbon::parse($validated['order_date']),
+                    'expected_date' => isset($validated['expected_date']) ? Carbon::parse($validated['expected_date']) : null,
+                    'status'        => $validated['status'],
+                    'notes'         => $validated['notes'] ?? null,
+                    'total'         => $total,
                 ]);
-            }
-        });
-
-        return redirect()->route('purchase-orders.index')
-            ->with('success', 'Ordem de compra criada com sucesso.');
+                foreach ($validated['items'] as $item) {
+                    PurchaseOrderItem::create([
+                        'purchase_order_id' => $order->id,
+                        'product_id'        => $item['product_id'],
+                        'quantity'          => $item['quantity'],
+                        'price'             => $item['price'],
+                        'subtotal'          => $item['quantity'] * $item['price'],
+                    ]);
+                }
+                // Vínculo automático: OC pendente/recebida → conta a pagar
+                if (in_array($validated['status'], ['pendente','recebida'])) {
+                    $supplier = \App\Models\Supplier::find($validated['supplier_id']);
+                    Bill::create([
+                        'company_id'        => $companyId,
+                        'supplier_id'       => $validated['supplier_id'],
+                        'purchase_order_id' => $order->id,
+                        'description'       => "OC #{$order->id} — " . ($supplier?->name ?? 'Fornecedor'),
+                        'amount'            => $total,
+                        'due_date'          => $order->expected_date ?? $order->order_date->addDays(30),
+                        'status'            => 'pendente',
+                    ]);
+                }
+            });
+            return redirect()->route('purchase-orders.index')->with('success', 'Ordem de compra criada com sucesso.');
+        } catch (\Exception $e) {
+            return back()->withInput()->with('error', $e->getMessage());
+        }
     }
 
     public function show(PurchaseOrder $purchaseOrder)
     {
-        abort_if($purchaseOrder->company_id !== auth()->user()->company_id, 403);
-        $purchaseOrder->load('supplier', 'user', 'items.product');
-        return view('purchase_orders.show', compact('purchaseOrder'));
+        $purchaseOrder->load(['supplier','items.product','bill']);
+        return view('purchase-orders.show', compact('purchaseOrder'));
     }
 
-    /** Exibe formulário de recebimento */
-    public function receiveForm(PurchaseOrder $purchaseOrder)
+    public function edit(PurchaseOrder $purchaseOrder)
     {
-        abort_if($purchaseOrder->company_id !== auth()->user()->company_id, 403);
-        abort_if(! $purchaseOrder->canReceive(), 422);
-        $purchaseOrder->load('supplier', 'items.product');
-        return view('purchase_orders.receive', compact('purchaseOrder'));
+        $companyId = auth()->user()->company_id;
+        $suppliers = Supplier::where('company_id', $companyId)->orderBy('name')->get();
+        $products  = Product::where('company_id', $companyId)->where('active', true)->orderBy('name')->get(['id','name','price']);
+        $purchaseOrder->load('items.product');
+        return view('purchase-orders.edit', compact('purchaseOrder','suppliers','products'));
     }
 
-    /** Processa recebimento e dá entrada no estoque */
-    public function receive(Request $request, PurchaseOrder $purchaseOrder)
+    public function update(Request $request, PurchaseOrder $purchaseOrder)
     {
-        abort_if($purchaseOrder->company_id !== auth()->user()->company_id, 403);
-        abort_if(! $purchaseOrder->canReceive(), 422);
-
-        $request->validate([
-            'items'                     => ['required', 'array'],
-            'items.*.quantity_received' => ['required', 'integer', 'min:0'],
+        $companyId = auth()->user()->company_id;
+        $validated = $request->validate([
+            'supplier_id'        => ['required','exists:suppliers,id'],
+            'order_date'         => ['required','date'],
+            'expected_date'      => ['nullable','date'],
+            'status'             => ['required','in:pendente,recebida,cancelada'],
+            'notes'              => ['nullable','string'],
+            'items'              => ['required','array','min:1'],
+            'items.*.product_id' => ['required','exists:products,id'],
+            'items.*.quantity'   => ['required','integer','min:1'],
+            'items.*.price'      => ['required','numeric','min:0'],
         ]);
-
-        DB::transaction(function () use ($request, $purchaseOrder) {
-            $allReceived = true;
-
-            foreach ($purchaseOrder->items as $item) {
-                $received = (int) ($request->items[$item->id]['quantity_received'] ?? 0);
-
-                if ($received <= 0) {
-                    // Se nenhuma quantidade recebida neste item, ainda pode estar pendente
-                    if ($item->quantity_received < $item->quantity) {
-                        $allReceived = false;
-                    }
-                    continue;
-                }
-
-                // Captura estoque ANTES de alterar
-                $quantityBefore = (int) $item->product->quantity;
-                $quantityAfter  = $quantityBefore + $received;
-
-                // Atualiza quantidade recebida no item da OC
-                $newTotal = $item->quantity_received + $received;
-                $item->update(['quantity_received' => $newTotal]);
-
-                // Incrementa estoque do produto
-                $item->product->increment('quantity', $received);
-
-                // Registra movimentação de estoque com snapshot completo
-                StockMovement::create([
-                    'company_id'      => $purchaseOrder->company_id,
-                    'product_id'      => $item->product_id,
-                    'user_id'         => auth()->id(),
-                    'type'            => 'entrada',
-                    'quantity'        => $received,
-                    'quantity_before' => $quantityBefore,
-                    'quantity_after'  => $quantityAfter,
-                    'reason'          => 'Recebimento OC ' . $purchaseOrder->number,
-                    'notes'           => 'Ordem de Compra #' . $purchaseOrder->number,
+        try {
+            DB::transaction(function () use ($purchaseOrder, $validated, $companyId) {
+                $total = collect($validated['items'])->sum(fn($i) => $i['quantity'] * $i['price']);
+                $purchaseOrder->items()->delete();
+                $purchaseOrder->update([
+                    'supplier_id'   => $validated['supplier_id'],
+                    'order_date'    => Carbon::parse($validated['order_date']),
+                    'expected_date' => isset($validated['expected_date']) ? Carbon::parse($validated['expected_date']) : null,
+                    'status'        => $validated['status'],
+                    'notes'         => $validated['notes'] ?? null,
+                    'total'         => $total,
                 ]);
-
-                if ($newTotal < $item->quantity) {
-                    $allReceived = false;
+                foreach ($validated['items'] as $item) {
+                    PurchaseOrderItem::create([
+                        'purchase_order_id' => $purchaseOrder->id,
+                        'product_id' => $item['product_id'],
+                        'quantity'   => $item['quantity'],
+                        'price'      => $item['price'],
+                        'subtotal'   => $item['quantity'] * $item['price'],
+                    ]);
                 }
+            });
+            return redirect()->route('purchase-orders.index')->with('success', 'Ordem de compra atualizada.');
+        } catch (\Exception $e) {
+            return back()->withInput()->with('error', $e->getMessage());
+        }
+    }
+
+    public function destroy(PurchaseOrder $purchaseOrder)
+    {
+        $purchaseOrder->delete();
+        return redirect()->route('purchase-orders.index')->with('success', 'Ordem de compra excluída.');
+    }
+
+    public function receive(PurchaseOrder $purchaseOrder)
+    {
+        if ($purchaseOrder->status === 'recebida') {
+            return back()->with('error', 'Esta OC já foi recebida.');
+        }
+        $companyId = auth()->user()->company_id;
+        DB::transaction(function () use ($purchaseOrder, $companyId) {
+            $purchaseOrder->load('items.product');
+            foreach ($purchaseOrder->items as $item) {
+                $product = Product::lockForUpdate()->find($item->product_id);
+                if (!$product) continue;
+                $before = $product->quantity;
+                $after  = $before + $item->quantity;
+                $product->update(['quantity' => $after]);
+                StockMovement::create([
+                    'product_id' => $product->id, 'company_id' => $companyId,
+                    'user_id' => auth()->id(), 'type' => 'entrada',
+                    'quantity' => $item->quantity, 'quantity_before' => $before, 'quantity_after' => $after,
+                    'reason' => 'compra', 'notes' => "Recebimento OC #{$purchaseOrder->id}",
+                    'source_type' => PurchaseOrder::class, 'source_id' => $purchaseOrder->id,
+                ]);
             }
-
-            $purchaseOrder->update([
-                'status'      => $allReceived ? 'recebida' : 'recebida_parcial',
-                'received_at' => now()->toDateString(),
-            ]);
+            $purchaseOrder->update(['status' => 'recebida']);
         });
-
-        return redirect()->route('purchase-orders.show', $purchaseOrder)
-            ->with('success', 'Recebimento registrado e estoque atualizado.');
-    }
-
-    /** Envia a OC (rascunho → enviada) */
-    public function send(PurchaseOrder $purchaseOrder)
-    {
-        abort_if($purchaseOrder->company_id !== auth()->user()->company_id, 403);
-        abort_if(! $purchaseOrder->canSend(), 422);
-        $purchaseOrder->update(['status' => 'enviada']);
-        return back()->with('success', 'Ordem de compra enviada ao fornecedor.');
-    }
-
-    /** Cancela a OC */
-    public function cancel(PurchaseOrder $purchaseOrder)
-    {
-        abort_if($purchaseOrder->company_id !== auth()->user()->company_id, 403);
-        abort_if(! $purchaseOrder->canCancel(), 422);
-        $purchaseOrder->update(['status' => 'cancelada']);
-        return back()->with('success', 'Ordem de compra cancelada.');
+        return back()->with('success', 'OC marcada como recebida e estoque atualizado.');
     }
 }

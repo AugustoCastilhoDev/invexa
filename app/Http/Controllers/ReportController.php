@@ -2,277 +2,91 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Bill;
 use App\Models\PurchaseOrder;
-use App\Models\SaleItem;
-use App\Models\Supplier;
-use Barryvdh\DomPDF\Facade\Pdf;
+use App\Models\Receivable;
+use App\Models\Sale;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class ReportController extends Controller
 {
-    // ── index = página principal (produtos mais vendidos) ──
-    public function index(Request $request)
+    public function index()
     {
-        return $this->topProducts($request);
+        return view('reports.index');
     }
 
-    public function export(Request $request)
-    {
-        return $this->topProductsCsv($request);
-    }
-
-    // ── Helpers compartilhados ────────────────────────
-
-    private function resolvePeriod(Request $request): array
-    {
-        $period = $request->get('period', '30');
-
-        $from = match ($period) {
-            '7'      => Carbon::now()->subDays(7)->startOfDay(),
-            '30'     => Carbon::now()->subDays(30)->startOfDay(),
-            '90'     => Carbon::now()->subDays(90)->startOfDay(),
-            '365'    => Carbon::now()->subDays(365)->startOfDay(),
-            'custom' => Carbon::parse($request->get('from'))->startOfDay(),
-            default  => Carbon::now()->subDays(30)->startOfDay(),
-        };
-
-        $to = $period === 'custom'
-            ? Carbon::parse($request->get('to'))->endOfDay()
-            : Carbon::now()->endOfDay();
-
-        return [$period, $from, $to];
-    }
-
-    private function getPurchasesData(Request $request, int $companyId): array
-    {
-        [$period, $from, $to] = $this->resolvePeriod($request);
-        $supplierId = $request->get('supplier_id');
-        $status     = $request->get('status');
-
-        $query = PurchaseOrder::with('supplier')
-            ->where('company_id', $companyId)
-            ->whereBetween('created_at', [$from, $to]);
-
-        if ($supplierId) $query->where('supplier_id', $supplierId);
-        if ($status)     $query->where('status', $status);
-
-        $orders = $query->orderByDesc('created_at')->get();
-
-        $totalOrders   = $orders->count();
-        $totalValue    = $orders->whereIn('status', ['enviada', 'recebida_parcial', 'recebida'])->sum('total');
-        $receivedValue = $orders->where('status', 'recebida')->sum('total');
-        $pendingValue  = $orders->whereIn('status', ['enviada', 'recebida_parcial'])->sum('total');
-
-        $bySupplier = $orders
-            ->whereIn('status', ['enviada', 'recebida_parcial', 'recebida'])
-            ->groupBy('supplier_id')
-            ->map(fn($group) => [
-                'name'  => optional($group->first()->supplier)->name ?? 'Desconhecido',
-                'total' => $group->sum('total'),
-                'count' => $group->count(),
-            ])
-            ->sortByDesc('total')
-            ->values();
-
-        $topItemsQuery = DB::table('purchase_order_items')
-            ->join('purchase_orders', 'purchase_order_items.purchase_order_id', '=', 'purchase_orders.id')
-            ->join('products', 'purchase_order_items.product_id', '=', 'products.id')
-            ->leftJoin('categories', 'products.category_id', '=', 'categories.id')
-            ->where('purchase_orders.company_id', $companyId)
-            ->whereIn('purchase_orders.status', ['enviada', 'recebida_parcial', 'recebida'])
-            ->whereBetween('purchase_orders.created_at', [$from, $to]);
-
-        if ($supplierId) $topItemsQuery->where('purchase_orders.supplier_id', $supplierId);
-
-        $topItems = $topItemsQuery
-            ->select(
-                'products.name as product_name',
-                'categories.name as category_name',
-                DB::raw('SUM(purchase_order_items.quantity) as total_qty'),
-                DB::raw('SUM(purchase_order_items.subtotal) as total_cost'),
-                DB::raw('COUNT(DISTINCT purchase_orders.id) as total_orders')
-            )
-            ->groupBy('products.id', 'products.name', 'categories.name')
-            ->orderByDesc('total_cost')
-            ->limit(15)
-            ->get();
-
-        $suppliers = Supplier::where('company_id', $companyId)->orderBy('name')->get();
-
-        $supplierName = $supplierId
-            ? optional(Supplier::find($supplierId))->name
-            : null;
-
-        return compact(
-            'orders', 'period', 'from', 'to',
-            'supplierId', 'status', 'supplierName',
-            'totalOrders', 'totalValue', 'receivedValue', 'pendingValue',
-            'bySupplier', 'topItems', 'suppliers'
-        );
-    }
-
-    // ── Produtos mais vendidos ────────────────────────
-
-    private function getProductsQuery(string $companyId, Carbon $from, Carbon $to)
-    {
-        // Subquery de devoluções: soma por produto, filtrada pela company e período
-        $returnedSub = DB::table('sale_return_items')
-            ->join('sale_returns', 'sale_return_items.sale_return_id', '=', 'sale_returns.id')
-            ->join('sales as s2', 'sale_returns.sale_id', '=', 's2.id')
-            ->where('s2.company_id', $companyId)
-            ->whereBetween('s2.sale_date', [$from, $to])
-            ->select(
-                'sale_return_items.product_id',
-                DB::raw('SUM(sale_return_items.quantity) as returned_qty'),
-                DB::raw('SUM(sale_return_items.subtotal) as returned_revenue')
-            )
-            ->groupBy('sale_return_items.product_id');
-
-        return DB::table('sale_items')
-            ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
-            ->join('products', 'sale_items.product_id', '=', 'products.id')
-            ->leftJoin('categories', 'products.category_id', '=', 'categories.id')
-            ->leftJoinSub($returnedSub, 'ret', 'ret.product_id', '=', 'sale_items.product_id')
-            ->where('sales.company_id', $companyId)
-            ->where('sales.status', 'concluida')
-            ->whereBetween('sales.sale_date', [$from, $to])
-            ->select(
-                'products.id',
-                'products.name as product_name',
-                'categories.name as category_name',
-                // COALESCE com SUM correto (não MAX) para não duplicar o desconto
-                DB::raw('GREATEST(0, SUM(sale_items.quantity) - COALESCE(SUM(ret.returned_qty), 0)) as total_qty'),
-                DB::raw('GREATEST(0, SUM(sale_items.subtotal) - COALESCE(SUM(ret.returned_revenue), 0)) as total_revenue'),
-                DB::raw('COUNT(DISTINCT sale_items.sale_id) as total_sales')
-            )
-            ->groupBy('products.id', 'products.name', 'categories.name')
-            ->orderByDesc('total_qty')
-            ->limit(20)
-            ->get();
-    }
-
-    public function topProducts(Request $request)
+    public function financial(Request $request)
     {
         $companyId = auth()->user()->company_id;
-        [$period, $from, $to] = $this->resolvePeriod($request);
+        $period    = $request->get('period', 'month');
+        $from      = match($period) {
+            'week'    => now()->startOfWeek(),
+            'month'   => now()->startOfMonth(),
+            'quarter' => now()->startOfQuarter(),
+            'year'    => now()->startOfYear(),
+            'custom'  => Carbon::parse($request->get('from', now()->startOfMonth())),
+            default   => now()->startOfMonth(),
+        };
+        $to = $period === 'custom'
+            ? Carbon::parse($request->get('to', now()))
+            : now();
 
-        $products = $this->getProductsQuery($companyId, $from, $to);
+        // Receitas (contas recebidas)
+        $revenues = Receivable::where('company_id', $companyId)
+            ->where('status', 'recebida')
+            ->whereBetween('payment_date', [$from, $to])
+            ->selectRaw('DATE(payment_date) as day, SUM(amount) as total')
+            ->groupBy('day')->orderBy('day')->get();
 
-        $chartLabels  = $products->take(8)->pluck('product_name');
-        $chartQty     = $products->take(8)->pluck('total_qty');
-        $chartRevenue = $products->take(8)->pluck('total_revenue');
+        // Despesas (contas pagas)
+        $expenses = Bill::where('company_id', $companyId)
+            ->where('status', 'paga')
+            ->whereBetween('payment_date', [$from, $to])
+            ->selectRaw('DATE(payment_date) as day, SUM(amount) as total')
+            ->groupBy('day')->orderBy('day')->get();
 
-        return view('reports.top-products', compact(
-            'products', 'period', 'from', 'to',
-            'chartLabels', 'chartQty', 'chartRevenue'
+        $totalRevenue = $revenues->sum('total');
+        $totalExpense = $expenses->sum('total');
+        $netBalance   = $totalRevenue - $totalExpense;
+
+        // Pendentes
+        $pendingReceivables = Receivable::where('company_id', $companyId)->where('status','pendente')->sum('amount');
+        $pendingBills       = Bill::where('company_id', $companyId)->where('status','pendente')->sum('amount');
+
+        // Vencidos
+        $overdueReceivables = Receivable::where('company_id', $companyId)->where('status','pendente')->whereDate('due_date','<', now())->sum('amount');
+        $overdueBills       = Bill::where('company_id', $companyId)->where('status','pendente')->whereDate('due_date','<', now())->sum('amount');
+
+        // Vendas do período
+        $salesTotal = Sale::where('company_id', $companyId)
+            ->where('status','concluida')
+            ->whereBetween('sale_date', [$from, $to])
+            ->sum('total');
+
+        // Compras do período
+        $purchasesTotal = PurchaseOrder::where('company_id', $companyId)
+            ->whereIn('status', ['recebida'])
+            ->whereBetween('order_date', [$from, $to])
+            ->sum('total');
+
+        return view('reports.financial', compact(
+            'revenues','expenses','totalRevenue','totalExpense','netBalance',
+            'pendingReceivables','pendingBills','overdueReceivables','overdueBills',
+            'salesTotal','purchasesTotal','period','from','to'
         ));
     }
-
-    public function topProductsCsv(Request $request)
-    {
-        $companyId = auth()->user()->company_id;
-        [, $from, $to] = $this->resolvePeriod($request);
-
-        $products = $this->getProductsQuery($companyId, $from, $to);
-
-        $filename = 'produtos_mais_vendidos_' . now()->format('Ymd_His') . '.csv';
-        $headers  = [
-            'Content-Type'        => 'text/csv; charset=UTF-8',
-            'Content-Disposition' => "attachment; filename=\"$filename\"",
-        ];
-
-        $callback = function () use ($products) {
-            $file = fopen('php://output', 'w');
-            fputs($file, "\xEF\xBB\xBF");
-            fputcsv($file, ['Produto', 'Categoria', 'Qtd. Líquida Vendida', 'Receita Líquida (R$)', 'Nº de Vendas'], ';');
-
-            foreach ($products as $row) {
-                fputcsv($file, [
-                    $row->product_name,
-                    $row->category_name ?? 'Sem categoria',
-                    $row->total_qty,
-                    number_format($row->total_revenue, 2, ',', '.'),
-                    $row->total_sales,
-                ], ';');
-            }
-
-            fclose($file);
-        };
-
-        return response()->stream($callback, 200, $headers);
-    }
-
-    public function topProductsPdf(Request $request)
-    {
-        $companyId = auth()->user()->company_id;
-        [$period, $from, $to] = $this->resolvePeriod($request);
-
-        $products = $this->getProductsQuery($companyId, $from, $to);
-
-        $pdf = Pdf::loadView('exports.top-products-pdf', compact('products', 'from', 'to', 'period'))
-            ->setPaper('a4', 'portrait');
-
-        return $pdf->download('produtos_mais_vendidos_' . now()->format('Ymd_His') . '.pdf');
-    }
-
-    // ── Relatório de Compras ────────────────────────
 
     public function purchases(Request $request)
     {
         $companyId = auth()->user()->company_id;
-        $data = $this->getPurchasesData($request, $companyId);
-        return view('reports.purchases', $data);
-    }
-
-    public function purchasesCsv(Request $request)
-    {
-        $companyId = auth()->user()->company_id;
-        $data = $this->getPurchasesData($request, $companyId);
-        extract($data);
-
-        $filename = 'relatorio_compras_' . now()->format('Ymd_His') . '.csv';
-        $headers  = [
-            'Content-Type'        => 'text/csv; charset=UTF-8',
-            'Content-Disposition' => "attachment; filename=\"$filename\"",
-        ];
-
-        $callback = function () use ($orders) {
-            $file = fopen('php://output', 'w');
-            fputs($file, "\xEF\xBB\xBF");
-            fputcsv($file, [
-                'Número OC', 'Fornecedor', 'Status', 'Data Criação',
-                'Previsão Entrega', 'Data Recebimento', 'Total (R$)', 'Observações',
-            ], ';');
-
-            foreach ($orders as $order) {
-                fputcsv($file, [
-                    $order->number,
-                    optional($order->supplier)->name ?? '',
-                    PurchaseOrder::STATUS_LABELS[$order->status] ?? $order->status,
-                    $order->created_at->format('d/m/Y'),
-                    $order->expected_date?->format('d/m/Y') ?? '',
-                    $order->received_at?->format('d/m/Y') ?? '',
-                    number_format($order->total, 2, ',', '.'),
-                    $order->notes ?? '',
-                ], ';');
-            }
-
-            fclose($file);
-        };
-
-        return response()->stream($callback, 200, $headers);
-    }
-
-    public function purchasesPdf(Request $request)
-    {
-        $companyId = auth()->user()->company_id;
-        $data = $this->getPurchasesData($request, $companyId);
-
-        $pdf = Pdf::loadView('exports.purchases-pdf', $data)
-            ->setPaper('a4', 'portrait');
-
-        return $pdf->download('relatorio_compras_' . now()->format('Ymd_His') . '.pdf');
+        $query = PurchaseOrder::with(['supplier','items.product'])->where('company_id', $companyId);
+        if ($request->filled('from')) { $query->whereDate('order_date', '>=', $request->from); }
+        if ($request->filled('to'))   { $query->whereDate('order_date', '<=', $request->to); }
+        if ($request->filled('status')) { $query->where('status', $request->status); }
+        $orders      = $query->orderByDesc('order_date')->paginate(15);
+        $totalOrders = (clone $query)->count();
+        $totalValue  = (clone $query)->sum('total');
+        return view('reports.purchases', compact('orders','totalOrders','totalValue'));
     }
 }
