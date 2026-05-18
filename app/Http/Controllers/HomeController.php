@@ -17,16 +17,16 @@ class HomeController extends Controller
         $today = Carbon::today();
         $user  = Auth::user();
 
-        $salesToday      = null;
-        $revenueToday    = null;
-        $billsDueToday   = null;
+        $salesToday       = null;
+        $revenueToday     = null;
+        $billsDueToday    = null;
         $receivablesToday = null;
-        $lowStockAlert   = 0;
+        $lowStockAlert    = 0;
 
         if ($user && $user->isGerente()) {
             $companyId = $user->company_id;
 
-            // Vendas do dia (status confirmada/pendente, excluindo canceladas)
+            // Vendas do dia (excluindo canceladas)
             $salesToday = Sale::where('company_id', $companyId)
                 ->whereDate('created_at', $today)
                 ->whereNotIn('status', ['cancelled'])
@@ -50,9 +50,11 @@ class HomeController extends Controller
                 ->whereDate('due_date', $today)
                 ->count();
 
-            // Produtos com estoque abaixo do mínimo
+            // Produtos ativos com estoque abaixo do mínimo definido
             $lowStockAlert = Product::where('company_id', $companyId)
-                ->whereColumn('stock_quantity', '<=', 'min_stock')
+                ->where('active', 1)
+                ->where('min_quantity', '>', 0)
+                ->whereColumn('quantity', '<=', 'min_quantity')
                 ->count();
         }
 
