@@ -54,8 +54,10 @@ body {
         <p class="text-soft mb-0">Visão geral profissional de estoque, vendas e desempenho comercial.</p>
     </div>
     <div class="d-flex flex-wrap gap-2">
-        <a href="{{ route('products.index') }}" class="btn btn-outline-light">Gerenciar Produtos</a>
-        <a href="{{ route('categories.index') }}" class="btn btn-outline-light">Gerenciar Categorias</a>
+        @if(Auth::user()->isGerente())
+            <a href="{{ route('products.index') }}" class="btn btn-outline-light">Gerenciar Produtos</a>
+            <a href="{{ route('categories.index') }}" class="btn btn-outline-light">Gerenciar Categorias</a>
+        @endif
         <a href="{{ route('sales.index') }}" class="btn btn-outline-light">Gerenciar Vendas</a>
     </div>
 </div>
@@ -128,7 +130,9 @@ body {
     </div>
 </div>
 
-{{-- PAINEL FINANCEIRO --}}
+{{-- PAINEL FINANCEIRO — somente Gerente e Admin --}}
+@if(Auth::user()->isGerente())
+
 <div class="mb-2 mt-2">
     <h5 class="text-white mb-1"><i class="bi bi-bank me-2 text-info"></i>Painel Financeiro</h5>
     <p class="text-soft mb-3" style="font-size:.82rem;">Contas a receber, a pagar, saldo previsto e vencimentos próximos.</p>
@@ -281,6 +285,8 @@ body {
     </div>
 </div>
 
+@endif {{-- fim isGerente --}}
+
 {{-- Gráfico de Vendas + Resumo rápido --}}
 <div class="row g-3 mb-4">
     <div class="col-12 col-xl-8">
@@ -346,7 +352,9 @@ body {
         <div class="card dashboard-card card-dark-bg shadow-sm h-100">
             <div class="card-header card-header-dark border-bottom d-flex justify-content-between align-items-center">
                 <div><h5 class="mb-0 text-white">Produtos em estoque baixo</h5><small class="text-soft">Itens próximos ao estoque mínimo</small></div>
-                <a href="{{ route('products.index') }}" class="btn btn-sm btn-outline-light flex-shrink-0">Ver produtos</a>
+                @if(Auth::user()->isGerente())
+                    <a href="{{ route('products.index') }}" class="btn btn-sm btn-outline-light flex-shrink-0">Ver produtos</a>
+                @endif
             </div>
             <div class="card-body p-0"><div class="table-responsive">
                 <table class="table table-dark table-hover mb-0 align-middle table-dark-custom">
@@ -405,8 +413,10 @@ body {
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-3">
             <div><h5 class="mb-1 text-white">Ações rápidas</h5><p class="text-soft mb-0">Exportações de relatórios e navegação direta.</p></div>
             <div class="d-flex flex-wrap gap-2">
-                <a href="{{ route('dashboard.export.csv', request()->all()) }}" class="btn btn-sm btn-outline-light"><i class="bi bi-file-earmark-spreadsheet me-1"></i>Exportar CSV</a>
-                <a href="{{ route('dashboard.export.pdf', request()->all()) }}" class="btn btn-sm btn-outline-light"><i class="bi bi-file-earmark-pdf me-1"></i>Exportar PDF</a>
+                @if(Auth::user()->isGerente())
+                    <a href="{{ route('dashboard.export.csv', request()->all()) }}" class="btn btn-sm btn-outline-light"><i class="bi bi-file-earmark-spreadsheet me-1"></i>Exportar CSV</a>
+                    <a href="{{ route('dashboard.export.pdf', request()->all()) }}" class="btn btn-sm btn-outline-light"><i class="bi bi-file-earmark-pdf me-1"></i>Exportar PDF</a>
+                @endif
                 <a href="{{ route('sales.index') }}" class="btn btn-sm btn-primary"><i class="bi bi-basket3 me-1"></i>Nova Venda</a>
                 <a href="{{ route('returns.create') }}" class="btn btn-sm btn-outline-danger"><i class="bi bi-arrow-return-left me-1"></i>Nova Devolução</a>
             </div>
@@ -459,7 +469,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // ── Gráfico de Fluxo de Caixa ────────────────────────────────────
+    // ── Gráfico de Fluxo de Caixa — apenas para Gerente/Admin ────────
     const cfCtx = document.getElementById('cashFlowChart');
     if (cfCtx) {
         const cfLabels      = {!! json_encode($cfLabels->values()) !!};
@@ -468,10 +478,9 @@ document.addEventListener('DOMContentLoaded', function () {
         const cfPay         = {!! json_encode($cfDataPay->values()) !!};
         const cfBalance     = {!! json_encode($cfDataBalance->values()) !!};
 
-        // Saldo positivo = amarelo-dourado | Saldo negativo = roxo/violeta (distinto do vermelho de A Pagar)
         const balanceColors = cfBalance.map(v => v >= 0
-            ? 'rgba(251,191,36,0.80)'   // amarelo dourado
-            : 'rgba(167,139,250,0.80)'  // roxo violeta
+            ? 'rgba(251,191,36,0.80)'
+            : 'rgba(167,139,250,0.80)'
         );
         const balanceBorder = cfBalance.map(v => v >= 0 ? '#fbbf24' : '#a78bfa');
 
