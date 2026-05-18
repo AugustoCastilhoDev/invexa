@@ -7,6 +7,7 @@ use App\Models\Product;
 use App\Models\PurchaseOrder;
 use App\Models\Receivable;
 use App\Models\Sale;
+use App\Models\SaleItem;
 use App\Models\Supplier;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -494,28 +495,40 @@ class ReportController extends Controller
         $period    = $request->get('period', '30');
         [$from, $to] = $this->resolvePurchasePeriod($period, $request);
 
-        $products = DB::table('sale_items as si')
-            ->join('sales as s', 's.id', '=', 'si.sale_id')
-            ->join('products as p', 'p.id', '=', 'si.product_id')
+        /*
+         * ATENÇÃO: usamos SaleItem::query() (Eloquent) em vez de DB::table()
+         * para que o scope de SoftDeletes na tabela `sales` seja respeitado
+         * via join condicional com deleted_at IS NULL.
+         *
+         * Também agrupamos por si.product_id para evitar duplicatas quando
+         * o mesmo produto tem nomes idênticos mas IDs diferentes.
+         */
+        $products = SaleItem::query()
+            ->join('sales as s', function ($join) {
+                $join->on('s.id', '=', 'sale_items.sale_id')
+                     ->whereNull('s.deleted_at');   // respeita SoftDeletes
+            })
+            ->join('products as p', 'p.id', '=', 'sale_items.product_id')
             ->leftJoin('categories as c', 'c.id', '=', 'p.category_id')
             ->where('s.company_id', $companyId)
-            ->where('s.status', '!=', 'cancelada')
+            ->whereNotIn('s.status', ['cancelada'])
             ->whereBetween('s.created_at', [$from, $to])
-            ->selectRaw('
-                p.name           as product_name,
-                c.name           as category_name,
-                SUM(si.quantity) as total_qty,
-                COUNT(DISTINCT s.id) as total_sales,
-                SUM(si.subtotal) as total_revenue
-            ')
-            ->groupBy('si.product_id', 'p.name', 'c.name')
+            ->groupBy('sale_items.product_id', 'p.name', 'c.name')
             ->orderByDesc('total_revenue')
             ->limit(20)
+            ->selectRaw('
+                sale_items.product_id,
+                p.name               AS product_name,
+                c.name               AS category_name,
+                SUM(sale_items.quantity)          AS total_qty,
+                COUNT(DISTINCT sale_items.sale_id) AS total_sales,
+                SUM(sale_items.subtotal)           AS total_revenue
+            ')
             ->get();
 
-        $top8         = $products->take(8);
-        $chartLabels  = $top8->pluck('product_name')->toArray();
-        $chartQty     = $top8->pluck('total_qty')->toArray();
+        $top8        = $products->take(8);
+        $chartLabels = $top8->pluck('product_name')->toArray();
+        $chartQty    = $top8->pluck('total_qty')->toArray();
 
         return [$companyId, $period, $from, $to, $products, $chartLabels, $chartQty];
     }
@@ -591,7 +604,7 @@ class ReportController extends Controller
                 Carbon::parse($request->get('to', now()->endOfMonth()))->endOfDay(),
             ],
             default   => [now()->startOfMonth(), now()->endOfMonth()],
-        };
+        ];
     }
 
     private function csvResponse(string $content, string $filename): Response
