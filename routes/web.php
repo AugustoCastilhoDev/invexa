@@ -19,7 +19,7 @@ use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
-// ── Autenticação (pública) ────────────────────────────────────────
+// ── Autenticação (pública) ────────────────────────────────────
 Route::get('/login',  [AuthenticatedSessionController::class, 'create'])->name('login');
 Route::post('/login', [AuthenticatedSessionController::class, 'store'])->name('login.post');
 Route::post('/logout',[AuthenticatedSessionController::class, 'destroy'])->name('logout');
@@ -27,7 +27,7 @@ Route::post('/logout',[AuthenticatedSessionController::class, 'destroy'])->name(
 Route::get('/register',  [RegisteredUserController::class, 'create'])->name('register');
 Route::post('/register', [RegisteredUserController::class, 'store'])->name('register.store');
 
-// ── Rotas protegidas ────────────────────────────────────────────
+// ── Rotas protegidas ───────────────────────────────────────
 Route::middleware(['auth', 'company'])->group(function () {
 
     // Home
@@ -102,7 +102,7 @@ Route::middleware(['auth', 'company'])->group(function () {
     Route::post('/receivables/bulk-receive',          [ReceivableController::class, 'bulkReceive'])->name('receivables.bulk-receive');
     Route::patch('/receivables/{receivable}/cancel',  [ReceivableController::class, 'cancel'])->name('receivables.cancel');
 
-    // ── Relatórios ────────────────────────────────────────────────
+    // ── Relatórios ────────────────────────────────────────
     Route::prefix('reports')->name('reports.')->group(function () {
         Route::get('/',                  [ReportController::class, 'index'])->name('index');
 
@@ -135,6 +135,11 @@ Route::middleware(['auth', 'company'])->group(function () {
         Route::get('/suppliers',         [ReportController::class, 'suppliers'])->name('suppliers');
         Route::get('/suppliers/pdf',     [ReportController::class, 'suppliersPdf'])->name('suppliers.pdf');
         Route::get('/suppliers/csv',     [ReportController::class, 'suppliersCsv'])->name('suppliers.csv');
+
+        // Produtos Mais Vendidos
+        Route::get('/top-products',      [ReportController::class, 'topProducts'])->name('top-products');
+        Route::get('/top-products/pdf',  [ReportController::class, 'topProductsPdf'])->name('top-products.pdf');
+        Route::get('/top-products/csv',  [ReportController::class, 'topProductsCsv'])->name('top-products.csv');
     });
 
     // Usuários
