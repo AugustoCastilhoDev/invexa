@@ -328,6 +328,52 @@ class ReportController extends Controller
     }
 
     // ---------------------------------------------------------------
+    // Relatório de Produtos Mais Vendidos
+    // ---------------------------------------------------------------
+    public function topProducts(Request $request)
+    {
+        [$companyId, $period, $from, $to, $products, $chartLabels, $chartQty] =
+            $this->topProductsData($request);
+
+        return view('reports.top-products', compact(
+            'period', 'from', 'to', 'products', 'chartLabels', 'chartQty'
+        ));
+    }
+
+    public function topProductsCsv(Request $request): Response
+    {
+        [, , $from, $to, $products] = $this->topProductsData($request);
+        $filename = 'produtos_mais_vendidos_' . $from->format('Ymd') . '_' . $to->format('Ymd') . '.csv';
+
+        $lines[] = implode(';', ['#', 'Produto', 'Categoria', 'Qtd. Vendida', 'Nº de Vendas', 'Receita Total', 'Ticket Médio']);
+        foreach ($products as $i => $p) {
+            $ticketMedio = $p->total_sales > 0
+                ? number_format($p->total_revenue / $p->total_sales, 2, ',', '.')
+                : '0,00';
+            $lines[] = implode(';', [
+                $i + 1,
+                $p->product_name,
+                $p->category_name ?? 'Sem categoria',
+                number_format($p->total_qty, 0, ',', '.'),
+                $p->total_sales,
+                number_format($p->total_revenue, 2, ',', '.'),
+                $ticketMedio,
+            ]);
+        }
+
+        return $this->csvResponse("\xEF\xBB\xBF" . implode("\n", $lines), $filename);
+    }
+
+    public function topProductsPdf(Request $request): Response
+    {
+        [, , $from, $to, $products] = $this->topProductsData($request);
+
+        $html = view('reports.top-products-pdf', compact('from', 'to', 'products'))->render();
+
+        return response($html, 200, ['Content-Type' => 'text/html; charset=UTF-8']);
+    }
+
+    // ---------------------------------------------------------------
     // Helpers de dados
     // ---------------------------------------------------------------
     private function financialData(Request $request): array
@@ -409,7 +455,7 @@ class ReportController extends Controller
             $query->whereColumn('quantity', '<=', 'min_quantity')->where('min_quantity', '>', 0);
         }
 
-        $products   = $query->get();
+        $products    = $query->get();
         $totalActive = $products->count();
         $totalLow    = $products->filter(fn($p) => $p->min_quantity > 0 && $p->quantity <= $p->min_quantity)->count();
         $totalValue  = $products->sum(fn($p) => ($p->cost_price ?? $p->price) * $p->quantity);
@@ -428,6 +474,38 @@ class ReportController extends Controller
         $total = $suppliers->count();
 
         return [$companyId, $suppliers, $total];
+    }
+
+    private function topProductsData(Request $request): array
+    {
+        $companyId = auth()->user()->company_id;
+        $period    = $request->get('period', '30');
+        [$from, $to] = $this->resolvePurchasePeriod($period, $request);
+
+        $products = DB::table('sale_items as si')
+            ->join('sales as s', 's.id', '=', 'si.sale_id')
+            ->join('products as p', 'p.id', '=', 'si.product_id')
+            ->leftJoin('categories as c', 'c.id', '=', 'p.category_id')
+            ->where('s.company_id', $companyId)
+            ->where('s.status', '!=', 'cancelada')
+            ->whereBetween('s.created_at', [$from, $to])
+            ->selectRaw('
+                p.name           as product_name,
+                c.name           as category_name,
+                SUM(si.quantity) as total_qty,
+                COUNT(DISTINCT s.id) as total_sales,
+                SUM(si.subtotal) as total_revenue
+            ')
+            ->groupBy('si.product_id', 'p.name', 'c.name')
+            ->orderByDesc('total_revenue')
+            ->limit(20)
+            ->get();
+
+        $top8         = $products->take(8);
+        $chartLabels  = $top8->pluck('product_name')->toArray();
+        $chartQty     = $top8->pluck('total_qty')->toArray();
+
+        return [$companyId, $period, $from, $to, $products, $chartLabels, $chartQty];
     }
 
     // ---------------------------------------------------------------
