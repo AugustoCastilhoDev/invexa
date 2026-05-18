@@ -9,28 +9,29 @@
         <p class="text-soft mb-0">{{ $purchaseOrder->supplier->name }}</p>
     </div>
     <div class="d-flex flex-wrap gap-2">
-        @if($purchaseOrder->canSend() && auth()->user()->hasRole(['admin','gerente']))
-            <form action="{{ route('purchase-orders.send', $purchaseOrder) }}" method="POST">
+        @if($purchaseOrder->canReceive() && auth()->user()->isGerente())
+            <form action="{{ route('purchase-orders.receive', $purchaseOrder) }}" method="POST">
                 @csrf
-                <button type="submit" class="btn btn-primary btn-sm">
-                    <i class="bi bi-send me-1"></i>Enviar ao Fornecedor
+                @method('PATCH')
+                <button type="submit" class="btn btn-success btn-sm"
+                        onclick="return confirm('Confirmar o recebimento desta ordem de compra?')">
+                    <i class="bi bi-box-arrow-in-down me-1"></i>Registrar Recebimento
                 </button>
             </form>
         @endif
-        @if($purchaseOrder->canReceive() && auth()->user()->hasRole(['admin','gerente']))
-            <a href="{{ route('purchase-orders.receive-form', $purchaseOrder) }}" class="btn btn-success btn-sm">
-                <i class="bi bi-box-arrow-in-down me-1"></i>Registrar Recebimento
-            </a>
-        @endif
-        @if($purchaseOrder->canCancel() && auth()->user()->hasRole(['admin','gerente']))
-            <form action="{{ route('purchase-orders.cancel', $purchaseOrder) }}" method="POST"
+        @if($purchaseOrder->canCancel() && auth()->user()->isGerente())
+            <form action="{{ route('purchase-orders.destroy', $purchaseOrder) }}" method="POST"
                   onsubmit="return confirm('Cancelar esta ordem de compra?')">
                 @csrf
+                @method('DELETE')
                 <button type="submit" class="btn btn-outline-danger btn-sm">
                     <i class="bi bi-x-circle me-1"></i>Cancelar
                 </button>
             </form>
         @endif
+        <a href="{{ route('purchase-orders.edit', $purchaseOrder) }}" class="btn btn-outline-primary btn-sm">
+            <i class="bi bi-pencil me-1"></i>Editar
+        </a>
         <a href="{{ route('purchase-orders.index') }}" class="btn btn-outline-secondary btn-sm">Voltar</a>
     </div>
 </div>

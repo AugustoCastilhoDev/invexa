@@ -27,7 +27,7 @@ class PurchaseOrder extends Model
     protected $casts = [
         'order_date'    => 'date',
         'expected_date' => 'date',
-        'received_at'   => 'datetime',   // <-- fix: garante Carbon na view
+        'received_at'   => 'datetime',
         'total'         => 'decimal:2',
     ];
 
@@ -66,7 +66,24 @@ class PurchaseOrder extends Model
         };
     }
 
+    // ------------------------------------
+    // Status helpers
+    // ------------------------------------
+
+    /** Pode ser enviada ao fornecedor: apenas ordens pendentes. */
+    public function canSend(): bool
+    {
+        return $this->status === 'pendente';
+    }
+
+    /** Pode registrar recebimento: apenas ordens pendentes. */
     public function canReceive(): bool
+    {
+        return $this->status === 'pendente';
+    }
+
+    /** Pode ser cancelada: apenas ordens pendentes. */
+    public function canCancel(): bool
     {
         return $this->status === 'pendente';
     }
