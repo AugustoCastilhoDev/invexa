@@ -20,13 +20,14 @@ class PurchaseOrder extends Model
 
     protected $fillable = [
         'company_id', 'supplier_id', 'user_id',
-        'order_date', 'expected_date',
+        'order_date', 'expected_date', 'received_at',
         'status', 'total', 'notes', 'number',
     ];
 
     protected $casts = [
         'order_date'    => 'date',
         'expected_date' => 'date',
+        'received_at'   => 'datetime',   // <-- fix: garante Carbon na view
         'total'         => 'decimal:2',
     ];
 
