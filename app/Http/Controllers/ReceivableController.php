@@ -13,7 +13,6 @@ class ReceivableController extends Controller
     {
         $companyId = auth()->user()->company_id;
 
-        // Marca como vencida qualquer pendente com due_date < hoje
         Receivable::forCompany($companyId)
             ->where('status', 'pendente')
             ->where('due_date', '<', today())
@@ -55,6 +54,43 @@ class ReceivableController extends Controller
             'receivables', 'customers', 'categories', 'statuses',
             'totalPending', 'totalOverdue', 'totalReceived', 'countOverdue'
         ));
+    }
+
+    /**
+     * Baixa em lote: marca vários recebimentos como recebidos de uma vez.
+     */
+    public function bulkReceive(Request $request)
+    {
+        $companyId = auth()->user()->company_id;
+
+        $validated = $request->validate([
+            'ids'            => ['required', 'array', 'min:1'],
+            'ids.*'          => ['integer'],
+            'received_at'    => ['required', 'date'],
+            'payment_method' => ['required', 'in:' . implode(',', array_keys(Receivable::PAYMENT_METHODS))],
+        ], [
+            'ids.required'            => 'Selecione ao menos uma conta.',
+            'received_at.required'    => 'Informe a data de recebimento.',
+            'payment_method.required' => 'Selecione a forma de pagamento.',
+        ]);
+
+        $receivables = Receivable::forCompany($companyId)
+            ->whereIn('id', $validated['ids'])
+            ->whereIn('status', ['pendente', 'vencida'])
+            ->get();
+
+        foreach ($receivables as $rec) {
+            $rec->update([
+                'amount_received' => $rec->amount,
+                'received_at'     => $validated['received_at'],
+                'payment_method'  => $validated['payment_method'],
+                'status'          => 'recebida',
+            ]);
+        }
+
+        $count = $receivables->count();
+        return redirect()->route('receivables.index', $request->except(['ids', 'received_at', 'payment_method', '_token']))
+            ->with('success', $count > 0 ? "{$count} conta(s) marcada(s) como recebida(s)." : 'Nenhuma conta elegível selecionada.');
     }
 
     public function create()
@@ -127,9 +163,6 @@ class ReceivableController extends Controller
             ->with('success', 'Conta a receber atualizada com sucesso.');
     }
 
-    /**
-     * Registra recebimento total ou parcial.
-     */
     public function receive(Request $request, Receivable $receivable)
     {
         abort_if($receivable->company_id !== auth()->user()->company_id, 403);

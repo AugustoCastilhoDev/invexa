@@ -13,7 +13,6 @@ class BillController extends Controller
     {
         $companyId = auth()->user()->company_id;
 
-        // Atualiza para 'vencida' qualquer pendente com due_date < hoje
         Bill::forCompany($companyId)
             ->where('status', 'pendente')
             ->where('due_date', '<', today())
@@ -56,6 +55,43 @@ class BillController extends Controller
             'bills', 'suppliers', 'categories', 'statuses',
             'totalPending', 'totalOverdue', 'totalPaid', 'countOverdue'
         ));
+    }
+
+    /**
+     * Baixa em lote: marca várias contas como pagas de uma vez.
+     */
+    public function bulkPay(Request $request)
+    {
+        $companyId = auth()->user()->company_id;
+
+        $validated = $request->validate([
+            'ids'            => ['required', 'array', 'min:1'],
+            'ids.*'          => ['integer'],
+            'paid_at'        => ['required', 'date'],
+            'payment_method' => ['required', 'in:' . implode(',', array_keys(Bill::PAYMENT_METHODS))],
+        ], [
+            'ids.required'            => 'Selecione ao menos uma conta.',
+            'paid_at.required'        => 'Informe a data de pagamento.',
+            'payment_method.required' => 'Selecione a forma de pagamento.',
+        ]);
+
+        $bills = Bill::forCompany($companyId)
+            ->whereIn('id', $validated['ids'])
+            ->whereIn('status', ['pendente', 'vencida'])
+            ->get();
+
+        foreach ($bills as $bill) {
+            $bill->update([
+                'amount_paid'    => $bill->amount,
+                'paid_at'        => $validated['paid_at'],
+                'payment_method' => $validated['payment_method'],
+                'status'         => 'paga',
+            ]);
+        }
+
+        $count = $bills->count();
+        return redirect()->route('bills.index', $request->except(['ids', 'paid_at', 'payment_method', '_token']))
+            ->with('success', $count > 0 ? "{$count} conta(s) marcada(s) como paga(s)." : 'Nenhuma conta elegível selecionada.');
     }
 
     public function create()
@@ -127,9 +163,6 @@ class BillController extends Controller
             ->with('success', 'Conta atualizada com sucesso.');
     }
 
-    /**
-     * Registra pagamento (total ou parcial).
-     */
     public function pay(Request $request, Bill $bill)
     {
         abort_if($bill->company_id !== auth()->user()->company_id, 403);

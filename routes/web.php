@@ -108,26 +108,28 @@ Route::middleware(['auth', 'company'])->group(function () {
     });
 
     // Contas a Pagar
-    Route::get('/bills',                 [BillController::class, 'index'])->name('bills.index');
-    Route::get('/bills/create',          [BillController::class, 'create'])->name('bills.create');
-    Route::post('/bills',                [BillController::class, 'store'])->name('bills.store');
-    Route::get('/bills/{bill}',          [BillController::class, 'show'])->name('bills.show');
-    Route::get('/bills/{bill}/edit',     [BillController::class, 'edit'])->name('bills.edit');
-    Route::put('/bills/{bill}',          [BillController::class, 'update'])->name('bills.update');
-    Route::post('/bills/{bill}/pay',     [BillController::class, 'pay'])->name('bills.pay');
-    Route::patch('/bills/{bill}/cancel', [BillController::class, 'cancel'])->name('bills.cancel');
-    Route::delete('/bills/{bill}',       [BillController::class, 'destroy'])->name('bills.destroy');
+    Route::get('/bills',                   [BillController::class, 'index'])->name('bills.index');
+    Route::get('/bills/create',            [BillController::class, 'create'])->name('bills.create');
+    Route::post('/bills',                  [BillController::class, 'store'])->name('bills.store');
+    Route::post('/bills/bulk-pay',         [BillController::class, 'bulkPay'])->name('bills.bulk-pay');
+    Route::get('/bills/{bill}',            [BillController::class, 'show'])->name('bills.show');
+    Route::get('/bills/{bill}/edit',       [BillController::class, 'edit'])->name('bills.edit');
+    Route::put('/bills/{bill}',            [BillController::class, 'update'])->name('bills.update');
+    Route::post('/bills/{bill}/pay',       [BillController::class, 'pay'])->name('bills.pay');
+    Route::patch('/bills/{bill}/cancel',   [BillController::class, 'cancel'])->name('bills.cancel');
+    Route::delete('/bills/{bill}',         [BillController::class, 'destroy'])->name('bills.destroy');
 
     // Contas a Receber
-    Route::get('/receivables',                       [ReceivableController::class, 'index'])->name('receivables.index');
-    Route::get('/receivables/create',                [ReceivableController::class, 'create'])->name('receivables.create');
-    Route::post('/receivables',                      [ReceivableController::class, 'store'])->name('receivables.store');
-    Route::get('/receivables/{receivable}',          [ReceivableController::class, 'show'])->name('receivables.show');
-    Route::get('/receivables/{receivable}/edit',     [ReceivableController::class, 'edit'])->name('receivables.edit');
-    Route::put('/receivables/{receivable}',          [ReceivableController::class, 'update'])->name('receivables.update');
-    Route::post('/receivables/{receivable}/receive', [ReceivableController::class, 'receive'])->name('receivables.receive');
-    Route::patch('/receivables/{receivable}/cancel', [ReceivableController::class, 'cancel'])->name('receivables.cancel');
-    Route::delete('/receivables/{receivable}',       [ReceivableController::class, 'destroy'])->name('receivables.destroy');
+    Route::get('/receivables',                          [ReceivableController::class, 'index'])->name('receivables.index');
+    Route::get('/receivables/create',                   [ReceivableController::class, 'create'])->name('receivables.create');
+    Route::post('/receivables',                         [ReceivableController::class, 'store'])->name('receivables.store');
+    Route::post('/receivables/bulk-receive',            [ReceivableController::class, 'bulkReceive'])->name('receivables.bulk-receive');
+    Route::get('/receivables/{receivable}',             [ReceivableController::class, 'show'])->name('receivables.show');
+    Route::get('/receivables/{receivable}/edit',        [ReceivableController::class, 'edit'])->name('receivables.edit');
+    Route::put('/receivables/{receivable}',             [ReceivableController::class, 'update'])->name('receivables.update');
+    Route::post('/receivables/{receivable}/receive',    [ReceivableController::class, 'receive'])->name('receivables.receive');
+    Route::patch('/receivables/{receivable}/cancel',    [ReceivableController::class, 'cancel'])->name('receivables.cancel');
+    Route::delete('/receivables/{receivable}',          [ReceivableController::class, 'destroy'])->name('receivables.destroy');
 
     // Produtos e Categorias
     Route::middleware('role:admin,gerente')->group(function () {
