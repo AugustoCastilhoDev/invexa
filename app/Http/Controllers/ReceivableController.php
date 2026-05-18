@@ -14,18 +14,36 @@ class ReceivableController extends Controller
     {
         $companyId = auth()->user()->company_id;
         $query = Receivable::with('customer')->where('company_id', $companyId);
-        if ($request->filled('search'))  { $query->where('description','like','%'.$request->search.'%'); }
-        if ($request->filled('status'))  { $query->where('status', $request->status); }
-        if ($request->filled('from'))    { $query->whereDate('due_date','>=', $request->from); }
-        if ($request->filled('to'))      { $query->whereDate('due_date','<=', $request->to); }
+        if ($request->filled('search'))   { $query->where('description','like','%'.$request->search.'%'); }
+        if ($request->filled('status'))   { $query->where('status', $request->status); }
+        if ($request->filled('category')) { $query->where('category', $request->category); }
+        if ($request->filled('from'))     { $query->whereDate('due_date','>=', $request->from); }
+        if ($request->filled('to'))       { $query->whereDate('due_date','<=', $request->to); }
         if ($request->boolean('trashed') && auth()->user()->hasRole(['admin','gerente'])) {
             $query->onlyTrashed();
         }
-        $total    = (clone $query)->sum('amount');
-        $received = (clone $query)->where('status','recebida')->sum('amount');
-        $pending  = (clone $query)->where('status','pendente')->sum('amount');
-        $receivables = $query->orderBy('due_date')->paginate(15);
-        return view('receivables.index', compact('receivables','total','received','pending'));
+
+        $totalAmount    = (clone $query)->sum('amount');
+        $totalReceived  = (clone $query)->where('status','recebida')->sum('amount');
+        $totalPending   = (clone $query)->where('status','pendente')->sum('amount');
+        $totalOverdue   = (clone $query)->where('status','vencida')->sum('amount');
+        $countOverdue   = (clone $query)->where('status','vencida')->count();
+
+        $statuses   = Receivable::STATUSES ?? ['pendente'=>'Pendente','recebida'=>'Recebida','vencida'=>'Vencida','cancelada'=>'Cancelada'];
+        $categories = Receivable::CATEGORIES ?? [];
+
+        $receivables = $query->orderBy('due_date')->paginate(15)->withQueryString();
+
+        return view('receivables.index', compact(
+            'receivables',
+            'totalAmount',
+            'totalReceived',
+            'totalPending',
+            'totalOverdue',
+            'countOverdue',
+            'statuses',
+            'categories'
+        ));
     }
 
     public function create()
