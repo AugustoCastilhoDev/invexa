@@ -13,6 +13,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class DashboardController extends Controller
 {
@@ -224,7 +225,6 @@ class DashboardController extends Controller
         $today   = now($this->tz)->startOfDay();
         $in7days = now($this->tz)->addDays(7)->endOfDay();
 
-        // KPIs — sempre totais gerais (sem filtro de período)
         $finReceivablePending = (float) Receivable::where('company_id', $companyId)
             ->whereIn('status', ['pendente', 'vencida'])
             ->sum('amount');
@@ -241,7 +241,6 @@ class DashboardController extends Controller
 
         $finCashBalance = $finReceivablePending - $finPayablePending;
 
-        // Vencimentos próximos 7 dias
         $upcomingPayables = Bill::where('company_id', $companyId)
             ->whereIn('status', ['pendente', 'vencida'])
             ->whereBetween('due_date', [$today, $in7days])
@@ -260,7 +259,10 @@ class DashboardController extends Controller
         $cfFrom = $chartFrom ?? now($this->tz)->startOfMonth()->toDateString();
         $cfTo   = $chartTo   ?? now($this->tz)->endOfMonth()->toDateString();
 
-        // Série 1: Recebíveis PENDENTES/VENCIDOS → agrupados por due_date
+        // Detecta se a coluna paid_at já existe (após migrate)
+        $hasPaidAt = Schema::hasColumn('bills', 'paid_at');
+
+        // Série 1: Recebíveis PENDENTES/VENCIDOS → por due_date
         $cfRecPendente = Receivable::where('company_id', $companyId)
             ->whereIn('status', ['pendente', 'vencida'])
             ->whereBetween('due_date', [$cfFrom, $cfTo])
@@ -269,23 +271,34 @@ class DashboardController extends Controller
             ->pluck('total', 'day')
             ->map(fn($v) => (float) $v);
 
-        // Série 2: Recebíveis JA RECEBIDOS → agrupados por paid_at (data real),
-        //           com fallback para due_date quando paid_at é nulo
-        $cfRecRecebida = Receivable::where('company_id', $companyId)
-            ->where('status', 'recebida')
-            ->where(function ($q) use ($cfFrom, $cfTo) {
-                $q->whereBetween('paid_at', [$cfFrom, $cfTo])
-                  ->orWhere(function ($q2) use ($cfFrom, $cfTo) {
-                      $q2->whereNull('paid_at')
-                         ->whereBetween('due_date', [$cfFrom, $cfTo]);
-                  });
-            })
-            ->selectRaw('DATE(COALESCE(paid_at, due_date)) as day, SUM(amount) as total')
-            ->groupBy(DB::raw('DATE(COALESCE(paid_at, due_date))'))
-            ->pluck('total', 'day')
-            ->map(fn($v) => (float) $v);
+        // Série 2: Recebíveis JA RECEBIDOS
+        // Se paid_at existir: filtra por paid_at (data real do recebimento)
+        // Se não existir ainda: filtra por due_date (comportamento anterior seguro)
+        if ($hasPaidAt) {
+            $cfRecRecebida = Receivable::where('company_id', $companyId)
+                ->where('status', 'recebida')
+                ->where(function ($q) use ($cfFrom, $cfTo) {
+                    $q->whereBetween('paid_at', [$cfFrom, $cfTo])
+                      ->orWhere(function ($q2) use ($cfFrom, $cfTo) {
+                          $q2->whereNull('paid_at')
+                             ->whereBetween('due_date', [$cfFrom, $cfTo]);
+                      });
+                })
+                ->selectRaw('DATE(COALESCE(paid_at, due_date)) as day, SUM(amount) as total')
+                ->groupBy(DB::raw('DATE(COALESCE(paid_at, due_date))'))
+                ->pluck('total', 'day')
+                ->map(fn($v) => (float) $v);
+        } else {
+            $cfRecRecebida = Receivable::where('company_id', $companyId)
+                ->where('status', 'recebida')
+                ->whereBetween('due_date', [$cfFrom, $cfTo])
+                ->selectRaw('DATE(due_date) as day, SUM(amount) as total')
+                ->groupBy(DB::raw('DATE(due_date)'))
+                ->pluck('total', 'day')
+                ->map(fn($v) => (float) $v);
+        }
 
-        // Série 3a: Contas a pagar PENDENTES/VENCIDAS → agrupadas por due_date
+        // Série 3a: Contas a pagar PENDENTES/VENCIDAS → por due_date
         $cfPayPendente = Bill::where('company_id', $companyId)
             ->whereIn('status', ['pendente', 'vencida'])
             ->whereBetween('due_date', [$cfFrom, $cfTo])
@@ -294,23 +307,33 @@ class DashboardController extends Controller
             ->pluck('total', 'day')
             ->map(fn($v) => (float) $v);
 
-        // Série 3b: Contas a pagar PAGAS → agrupadas por paid_at (data real),
-        //            com fallback para due_date quando paid_at é nulo
-        $cfPayPaga = Bill::where('company_id', $companyId)
-            ->where('status', 'paga')
-            ->where(function ($q) use ($cfFrom, $cfTo) {
-                $q->whereBetween('paid_at', [$cfFrom, $cfTo])
-                  ->orWhere(function ($q2) use ($cfFrom, $cfTo) {
-                      $q2->whereNull('paid_at')
-                         ->whereBetween('due_date', [$cfFrom, $cfTo]);
-                  });
-            })
-            ->selectRaw('DATE(COALESCE(paid_at, due_date)) as day, SUM(amount) as total')
-            ->groupBy(DB::raw('DATE(COALESCE(paid_at, due_date))'))
-            ->pluck('total', 'day')
-            ->map(fn($v) => (float) $v);
+        // Série 3b: Contas a pagar PAGAS
+        // Se paid_at existir: filtra por paid_at (data real do pagamento)
+        // Se não existir ainda: filtra por due_date (comportamento anterior seguro)
+        if ($hasPaidAt) {
+            $cfPayPaga = Bill::where('company_id', $companyId)
+                ->where('status', 'paga')
+                ->where(function ($q) use ($cfFrom, $cfTo) {
+                    $q->whereBetween('paid_at', [$cfFrom, $cfTo])
+                      ->orWhere(function ($q2) use ($cfFrom, $cfTo) {
+                          $q2->whereNull('paid_at')
+                             ->whereBetween('due_date', [$cfFrom, $cfTo]);
+                      });
+                })
+                ->selectRaw('DATE(COALESCE(paid_at, due_date)) as day, SUM(amount) as total')
+                ->groupBy(DB::raw('DATE(COALESCE(paid_at, due_date))'))
+                ->pluck('total', 'day')
+                ->map(fn($v) => (float) $v);
+        } else {
+            $cfPayPaga = Bill::where('company_id', $companyId)
+                ->where('status', 'paga')
+                ->whereBetween('due_date', [$cfFrom, $cfTo])
+                ->selectRaw('DATE(due_date) as day, SUM(amount) as total')
+                ->groupBy(DB::raw('DATE(due_date)'))
+                ->pluck('total', 'day')
+                ->map(fn($v) => (float) $v);
+        }
 
-        // Unifica os dias de todas as séries
         $cfAllDays = collect($cfRecPendente->keys())
             ->merge($cfRecRecebida->keys())
             ->merge($cfPayPendente->keys())
@@ -320,15 +343,12 @@ class DashboardController extends Controller
         $cfLabels       = $cfAllDays->map(fn($d) => date('d/m', strtotime($d)));
         $cfDataRecPend  = $cfAllDays->map(fn($d) => (float)($cfRecPendente[$d] ?? 0));
         $cfDataRecReceb = $cfAllDays->map(fn($d) => (float)($cfRecRecebida[$d] ?? 0));
-        // Saídas = pendente + paga (mescladas na mesma barra)
         $cfDataPay      = $cfAllDays->map(
             fn($d) => round((float)($cfPayPendente[$d] ?? 0) + (float)($cfPayPaga[$d] ?? 0), 2)
         );
-        // Saídas separadas para o tooltip
         $cfDataPayPend  = $cfAllDays->map(fn($d) => (float)($cfPayPendente[$d] ?? 0));
         $cfDataPayPaga  = $cfAllDays->map(fn($d) => (float)($cfPayPaga[$d] ?? 0));
 
-        // Saldo acumulado diário (linha sobreposta)
         $cfDataBalance  = collect();
         $runningBalance = 0.0;
         foreach ($cfAllDays as $d) {
@@ -339,7 +359,6 @@ class DashboardController extends Controller
             $cfDataBalance->push(round($runningBalance, 2));
         }
 
-        // Rótulo de período para o título do gráfico
         $mesesPt = ['janeiro','fevereiro','março','abril','maio','junho',
                     'julho','agosto','setembro','outubro','novembro','dezembro'];
         if ($interval === 'today') {
@@ -366,7 +385,6 @@ class DashboardController extends Controller
             'previousRevenue', 'revenueChange', 'revenueChangePercent',
             'periodReturnsTotal', 'periodReturnsCount', 'periodNetRevenue',
             'latestReturns',
-            // 3.5 financeiro
             'finReceivablePending', 'finReceivableOverdue',
             'finPayablePending', 'finPayableOverdue', 'finCashBalance',
             'upcomingPayables', 'upcomingReceivables',
