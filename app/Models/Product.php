@@ -2,67 +2,31 @@
 
 namespace App\Models;
 
-use App\Traits\BelongsToCompany;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Product extends Model
 {
-    use HasFactory, BelongsToCompany;
+    use SoftDeletes;
 
     protected $fillable = [
-        'name',
-        'sku',
-        'barcode',
-        'description',
-        'price',
-        'cost',
-        'quantity',
-        'min_quantity',
-        'unit',
-        'category_id',
-        'supplier_id',
-        'active',
-        'company_id',
+        'company_id','category_id','supplier_id',
+        'name','description','sku','price',
+        'quantity','min_quantity','active',
     ];
 
-    protected $casts = [
-        'price'        => 'decimal:2',
-        'cost'         => 'decimal:2',
-        'quantity'     => 'integer',
-        'min_quantity' => 'integer',
-        'active'       => 'boolean',
-    ];
+    protected $casts = ['active' => 'boolean', 'price' => 'decimal:2'];
 
-    // ── Relacionamentos ──────────────────────────────────────
+    public function company(): BelongsTo    { return $this->belongsTo(Company::class); }
+    public function category(): BelongsTo   { return $this->belongsTo(Category::class); }
+    public function supplier(): BelongsTo   { return $this->belongsTo(Supplier::class); }
+    public function stockMovements(): HasMany { return $this->hasMany(StockMovement::class); }
+    public function saleItems(): HasMany    { return $this->hasMany(SaleItem::class); }
 
-    public function category()
-    {
-        return $this->belongsTo(Category::class);
-    }
-
-    public function supplier()
-    {
-        return $this->belongsTo(Supplier::class);
-    }
-
-    public function saleItems()
-    {
-        return $this->hasMany(SaleItem::class);
-    }
-
-    // ── Helpers ───────────────────────────────────────────
-
-    /** Verifica se o estoque está abaixo do mínimo */
     public function isLowStock(): bool
     {
-        return $this->quantity <= $this->min_quantity;
-    }
-
-    /** Margem de lucro em percentual */
-    public function getMarginAttribute(): float
-    {
-        if (! $this->cost || $this->cost == 0) return 0;
-        return round((($this->price - $this->cost) / $this->price) * 100, 2);
+        return $this->min_quantity !== null && $this->quantity <= $this->min_quantity;
     }
 }

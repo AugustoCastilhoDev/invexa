@@ -2,127 +2,41 @@
 
 namespace App\Models;
 
-use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Bill extends Model
 {
-    use HasFactory;
+    use SoftDeletes;
 
     protected $fillable = [
-        'company_id', 'supplier_id', 'description', 'amount', 'amount_paid',
-        'due_date', 'paid_at', 'status', 'category', 'payment_method', 'notes',
+        'company_id','supplier_id','purchase_order_id','description',
+        'amount','due_date','status','payment_date','payment_method',
+        'notes','installment_number','installments_total',
+        'recurrence','parent_bill_id',
     ];
 
     protected $casts = [
-        'amount'      => 'decimal:2',
-        'amount_paid' => 'decimal:2',
-        'due_date'    => 'date',
-        'paid_at'     => 'date',
+        'due_date'     => 'date',
+        'payment_date' => 'date',
+        'amount'       => 'decimal:2',
     ];
 
-    // ── Relacionamentos ───────────────────────────────────────
+    public function company(): BelongsTo      { return $this->belongsTo(Company::class); }
+    public function supplier(): BelongsTo     { return $this->belongsTo(Supplier::class); }
+    public function purchaseOrder(): BelongsTo { return $this->belongsTo(PurchaseOrder::class); }
+    public function parent(): BelongsTo        { return $this->belongsTo(Bill::class, 'parent_bill_id'); }
 
-    public function company()
+    public function isOverdue(): bool
     {
-        return $this->belongsTo(Company::class);
+        return $this->status === 'pendente' && $this->due_date->isPast();
     }
 
-    public function supplier()
+    public function isDueSoon(int $days = 3): bool
     {
-        return $this->belongsTo(Supplier::class);
-    }
-
-    // ── Labels ────────────────────────────────────────────────
-
-    const STATUS_LABELS = [
-        'pendente'  => 'Pendente',
-        'paga'      => 'Paga',
-        'vencida'   => 'Vencida',
-        'cancelada' => 'Cancelada',
-    ];
-
-    const STATUS_COLORS = [
-        'pendente'  => 'warning',
-        'paga'      => 'success',
-        'vencida'   => 'danger',
-        'cancelada' => 'secondary',
-    ];
-
-    const CATEGORY_LABELS = [
-        'fornecedor' => 'Fornecedor',
-        'aluguel'    => 'Aluguel',
-        'energia'    => 'Energia',
-        'agua'       => 'Água',
-        'internet'   => 'Internet',
-        'folha'      => 'Folha de Pagamento',
-        'imposto'    => 'Imposto / Tributo',
-        'servico'    => 'Serviço',
-        'outro'      => 'Outro',
-    ];
-
-    const PAYMENT_METHODS = [
-        'pix'            => 'PIX',
-        'boleto'         => 'Boleto',
-        'transferencia'  => 'Transferência',
-        'cartao_debito'  => 'Cartão de Débito',
-        'cartao_credito' => 'Cartão de Crédito',
-        'dinheiro'       => 'Dinheiro',
-        'outro'          => 'Outro',
-    ];
-
-    public function getStatusLabelAttribute(): string
-    {
-        return self::STATUS_LABELS[$this->status] ?? ucfirst($this->status);
-    }
-
-    public function getStatusColorAttribute(): string
-    {
-        return self::STATUS_COLORS[$this->status] ?? 'secondary';
-    }
-
-    public function getCategoryLabelAttribute(): string
-    {
-        return self::CATEGORY_LABELS[$this->category] ?? ucfirst($this->category);
-    }
-
-    public function getPaymentMethodLabelAttribute(): string
-    {
-        return self::PAYMENT_METHODS[$this->payment_method] ?? ($this->payment_method ?? '-');
-    }
-
-    public function getBalanceAttribute(): float
-    {
-        return max(0, (float) $this->amount - (float) $this->amount_paid);
-    }
-
-    // ── Verifica vencimento e sincroniza status ──────────────
-
-    public function syncStatus(): void
-    {
-        if (in_array($this->status, ['paga', 'cancelada'])) {
-            return;
-        }
-        if ($this->due_date->isPast() && $this->status === 'pendente') {
-            $this->update(['status' => 'vencida']);
-        }
-    }
-
-    // ── Scopes ────────────────────────────────────────────────
-
-    public function scopeForCompany($query, int $companyId)
-    {
-        return $query->where('company_id', $companyId);
-    }
-
-    public function scopePending($query)
-    {
-        return $query->whereIn('status', ['pendente', 'vencida']);
-    }
-
-    public function scopeOverdue($query)
-    {
-        return $query->where('status', 'vencida');
+        return $this->status === 'pendente'
+            && $this->due_date->isFuture()
+            && $this->due_date->diffInDays(now()) <= $days;
     }
 }

@@ -2,55 +2,26 @@
 
 namespace App\Models;
 
-use App\Traits\BelongsToCompany;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Sale extends Model
 {
-    use HasFactory, BelongsToCompany, SoftDeletes;
+    use SoftDeletes;
 
     protected $fillable = [
-        'company_id',
-        'customer_id',
-        'customer_name',
-        'sale_date',
-        'status',
-        'notes',
-        'total',
+        'company_id','customer_id','customer_name',
+        'sale_date','status','notes','total',
     ];
 
-    protected $casts = [
-        'sale_date'  => 'datetime',
-        'total'      => 'decimal:2',
-        'deleted_at' => 'datetime',
-    ];
+    protected $casts = ['sale_date' => 'date'];
 
-    public function items()
-    {
-        return $this->hasMany(SaleItem::class);
-    }
-
-    public function customer()
-    {
-        return $this->belongsTo(Customer::class);
-    }
-
-    public function saleReturns()
-    {
-        return $this->hasMany(SaleReturn::class);
-    }
-
-    // Valor total já devolvido nesta venda
-    public function getTotalReturnedAttribute(): float
-    {
-        return (float) $this->saleReturns()->sum('total');
-    }
-
-    // Valor líquido (total - devoluções)
-    public function getNetTotalAttribute(): float
-    {
-        return max(0, (float) $this->total - $this->total_returned);
-    }
+    public function company(): BelongsTo   { return $this->belongsTo(Company::class); }
+    public function customer(): BelongsTo  { return $this->belongsTo(Customer::class); }
+    public function items(): HasMany       { return $this->hasMany(SaleItem::class); }
+    public function saleReturns(): HasMany { return $this->hasMany(SaleReturn::class); }
+    public function receivable(): HasOne   { return $this->hasOne(Receivable::class); }
 }
