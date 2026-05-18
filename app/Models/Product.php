@@ -53,8 +53,7 @@ class Product extends Model
     // ------------------------------------
 
     /**
-     * Retorna true somente quando a quantidade em estoque for
-     * estritamente menor que o mínimo definido.
+     * Alerta de estoque baixo quando quantidade <= mínimo definido.
      * Se min_quantity for null ou 0, não dispara alerta.
      */
     public function isLowStock(): bool
@@ -63,7 +62,7 @@ class Product extends Model
             return false;
         }
 
-        return $this->quantity < $this->min_quantity;
+        return $this->quantity <= $this->min_quantity;
     }
 
     // ------------------------------------
