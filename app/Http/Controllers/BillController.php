@@ -29,8 +29,21 @@ class BillController extends Controller
         $totalOverdue  = (clone $query)->where('status','vencida')->sum('amount');
         $countOverdue  = (clone $query)->where('status','vencida')->count();
 
-        $statuses   = Bill::STATUSES ?? ['pendente'=>'Pendente','paga'=>'Paga','vencida'=>'Vencida','cancelada'=>'Cancelada'];
-        $categories = Bill::CATEGORIES ?? [];
+        $statuses = [
+            'pendente'  => 'Pendente',
+            'paga'      => 'Paga',
+            'vencida'   => 'Vencida',
+            'cancelada' => 'Cancelada',
+        ];
+
+        $categories = [
+            'fornecedores' => 'Fornecedores',
+            'impostos'     => 'Impostos',
+            'folha'        => 'Folha',
+            'aluguel'      => 'Aluguel',
+            'servicos'     => 'Serviços',
+            'outros'       => 'Outros',
+        ];
 
         $bills = $query->orderBy('due_date')->paginate(15)->withQueryString();
 
