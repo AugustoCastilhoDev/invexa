@@ -294,15 +294,33 @@
                         </a>
                         <ul class="dropdown-menu">
                             <li>
-                                <a class="dropdown-item {{ request()->routeIs('reports.index') ? 'active' : '' }}"
-                                   href="{{ route('reports.index') }}">
-                                    <i class="bi bi-trophy me-2"></i>Produtos mais vendidos
+                                <a class="dropdown-item {{ request()->routeIs('reports.top-products*') ? 'active' : '' }}"
+                                   href="{{ route('reports.top-products') }}">
+                                    <i class="bi bi-trophy me-2"></i>Produtos Mais Vendidos
                                 </a>
                             </li>
                             <li>
                                 <a class="dropdown-item {{ request()->routeIs('reports.purchases*') ? 'active' : '' }}"
                                    href="{{ route('reports.purchases') }}">
-                                    <i class="bi bi-graph-up me-2"></i>Relatório de Compras
+                                    <i class="bi bi-cart-check me-2"></i>Relatório de Compras
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item {{ request()->routeIs('reports.sales*') ? 'active' : '' }}"
+                                   href="{{ route('reports.sales') }}">
+                                    <i class="bi bi-graph-up me-2"></i>Relatório de Vendas
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item {{ request()->routeIs('reports.financial*') ? 'active' : '' }}"
+                                   href="{{ route('reports.financial') }}">
+                                    <i class="bi bi-wallet2 me-2"></i>Relatório Financeiro
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item {{ request()->routeIs('reports.stock*') ? 'active' : '' }}"
+                                   href="{{ route('reports.stock') }}">
+                                    <i class="bi bi-boxes me-2"></i>Relatório de Estoque
                                 </a>
                             </li>
                         </ul>
