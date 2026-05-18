@@ -19,18 +19,15 @@
             <p class="text-soft mb-0">Receitas, despesas e saldo líquido por período.</p>
         </div>
         <div class="d-flex flex-wrap gap-2">
-            {{-- Exportar PDF --}}
-            <a href="{{ route('reports.financial.pdf', request()->only(['period','from','to'])) }}"
-               target="_blank"
+            <a href="{{ route('reports.financial.pdf', request()->only(['period','from','to'])) }}" target="_blank"
                class="btn btn-sm btn-outline-danger">
-                <i class="bi bi-file-earmark-pdf me-1"></i>PDF
+                <i class="bi bi-filetype-pdf me-1"></i>PDF
             </a>
-            {{-- Exportar CSV --}}
             <a href="{{ route('reports.financial.csv', request()->only(['period','from','to'])) }}"
                class="btn btn-sm btn-outline-success">
                 <i class="bi bi-filetype-csv me-1"></i>CSV
             </a>
-            <a href="{{ route('reports.index') }}" class="btn btn-outline-light btn-sm">
+            <a href="{{ route('reports.index') }}" class="btn btn-sm btn-outline-light">
                 <i class="bi bi-arrow-left me-1"></i>Voltar
             </a>
         </div>

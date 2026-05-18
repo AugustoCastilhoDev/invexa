@@ -6,25 +6,23 @@
 <div class="card dashboard-card card-dark-bg shadow-sm border-0">
 
     {{-- Header --}}
-    <div class="card-header card-header-dark border-bottom">
-        <div class="d-flex justify-content-between align-items-center gap-3 flex-wrap">
-            <div>
-                <h4 class="mb-1 text-white">Produtos Mais Vendidos</h4>
-                <p class="text-soft mb-0">
-                    Período: {{ $from->format('d/m/Y') }} até {{ $to->format('d/m/Y') }}
-                </p>
-            </div>
-            <div class="d-flex gap-2 flex-wrap">
-                <a href="{{ route('reports.top-products.csv', request()->query()) }}"
-                   class="btn btn-success btn-sm">
-                    <i class="bi bi-filetype-csv me-1"></i>Exportar CSV
-                </a>
-                <a href="{{ route('reports.top-products.pdf', request()->query()) }}"
-                   class="btn btn-danger btn-sm">
-                    <i class="bi bi-filetype-pdf me-1"></i>Exportar PDF
-                </a>
-                <a href="{{ route('dashboard') }}" class="btn btn-outline-light btn-sm">Voltar</a>
-            </div>
+    <div class="card-header card-header-dark border-bottom d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+        <div>
+            <h4 class="mb-1 text-white"><i class="bi bi-bar-chart-line me-2"></i>Produtos Mais Vendidos</h4>
+            <p class="text-soft mb-0">Período: {{ $from->format('d/m/Y') }} até {{ $to->format('d/m/Y') }}</p>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            <a href="{{ route('reports.top-products.pdf', request()->query()) }}" target="_blank"
+               class="btn btn-sm btn-outline-danger">
+                <i class="bi bi-filetype-pdf me-1"></i>PDF
+            </a>
+            <a href="{{ route('reports.top-products.csv', request()->query()) }}"
+               class="btn btn-sm btn-outline-success">
+                <i class="bi bi-filetype-csv me-1"></i>CSV
+            </a>
+            <a href="{{ route('reports.index') }}" class="btn btn-sm btn-outline-light">
+                <i class="bi bi-arrow-left me-1"></i>Voltar
+            </a>
         </div>
     </div>
 

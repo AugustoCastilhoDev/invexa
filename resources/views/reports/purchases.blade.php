@@ -19,15 +19,17 @@
             <p class="text-soft mb-0">Análise de ordens de compra por período, fornecedor e status.</p>
         </div>
         <div class="d-flex flex-wrap gap-2">
-            <a href="{{ route('reports.purchases.pdf', request()->query()) }}"
-               class="btn btn-outline-danger btn-sm">
-                <i class="bi bi-filetype-pdf me-1"></i>Exportar PDF
+            <a href="{{ route('reports.purchases.pdf', request()->query()) }}" target="_blank"
+               class="btn btn-sm btn-outline-danger">
+                <i class="bi bi-filetype-pdf me-1"></i>PDF
             </a>
             <a href="{{ route('reports.purchases.csv', request()->query()) }}"
-               class="btn btn-outline-success btn-sm">
-                <i class="bi bi-filetype-csv me-1"></i>Exportar CSV
+               class="btn btn-sm btn-outline-success">
+                <i class="bi bi-filetype-csv me-1"></i>CSV
             </a>
-            <a href="{{ route('reports.index') }}" class="btn btn-outline-light btn-sm">Vendas</a>
+            <a href="{{ route('reports.index') }}" class="btn btn-sm btn-outline-light">
+                <i class="bi bi-arrow-left me-1"></i>Voltar
+            </a>
         </div>
     </div>
 
@@ -177,8 +179,7 @@
                                            color:rgba(148,163,184,.8);border-bottom:1px solid rgba(148,163,184,.15);">
                                     <th class="ps-3 py-2">Produto</th>
                                     <th class="py-2">Categoria</th>
-                                    <th class="py-2 text-center">Qtd</th>
-                                    <th class="py-2 text-center">OCs</th>
+                                    <th class="py-2 text-center">Qtd.</th>
                                     <th class="py-2 text-end pe-3">Custo Total</th>
                                 </tr>
                             </thead>
@@ -186,13 +187,12 @@
                                 @forelse($topItems as $item)
                                     <tr style="border-color:rgba(148,163,184,.07);">
                                         <td class="ps-3 py-2 text-white" style="font-size:.85rem;">{{ $item->product_name }}</td>
-                                        <td class="py-2 text-soft" style="font-size:.8rem;">{{ $item->category_name ?? '—' }}</td>
-                                        <td class="py-2 text-center text-white">{{ $item->total_qty }}</td>
-                                        <td class="py-2 text-center text-soft">{{ $item->total_orders }}</td>
+                                        <td class="py-2 text-soft" style="font-size:.82rem;">{{ $item->category_name ?? '—' }}</td>
+                                        <td class="py-2 text-center text-soft">{{ $item->total_qty }}</td>
                                         <td class="py-2 text-end pe-3 fw-semibold text-white">R$ {{ number_format($item->total_cost, 2, ',', '.') }}</td>
                                     </tr>
                                 @empty
-                                    <tr><td colspan="5" class="text-center py-3 text-soft">Sem dados</td></tr>
+                                    <tr><td colspan="4" class="text-center py-3 text-soft">Sem itens</td></tr>
                                 @endforelse
                             </tbody>
                         </table>
@@ -201,10 +201,11 @@
             </div>
         </div>
 
+        {{-- Lista de OCs --}}
         <div class="card card-dark-bg shadow-sm">
             <div class="card-header card-header-dark border-bottom">
                 <span class="text-soft text-uppercase fw-semibold" style="font-size:.72rem;letter-spacing:.08em;">
-                    <i class="bi bi-list-ul me-1"></i>Ordens de Compra no Período
+                    <i class="bi bi-list-ul me-1"></i>Ordens de Compra
                 </span>
             </div>
             <div class="card-body p-0">
@@ -213,51 +214,46 @@
                         <thead>
                             <tr style="font-size:.68rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
                                        color:rgba(148,163,184,.8);border-bottom:1px solid rgba(148,163,184,.15);">
-                                <th class="ps-3 py-3">Número</th>
-                                <th class="py-3">Fornecedor</th>
-                                <th class="py-3">Status</th>
-                                <th class="py-3">Emissão</th>
-                                <th class="py-3">Recebimento</th>
-                                <th class="py-3 text-end pe-3">Total</th>
+                                <th class="ps-3 py-2">Número</th>
+                                <th class="py-2">Fornecedor</th>
+                                <th class="py-2">Emissão</th>
+                                <th class="py-2">Recebimento</th>
+                                <th class="py-2 text-center">Status</th>
+                                <th class="py-2 text-end pe-3">Total</th>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach($orders as $order)
-                                <tr style="border-color:rgba(148,163,184,.07);cursor:pointer;"
-                                    onclick="window.location='{{ route('purchase-orders.show', $order) }}'">
-                                    <td class="ps-3 py-3">
-                                        <span class="fw-semibold text-white" style="font-family:monospace;">{{ $order->number }}</span>
-                                    </td>
-                                    <td class="py-3" style="font-size:.875rem;">{{ optional($order->supplier)->name }}</td>
-                                    <td class="py-3">
-                                        @php $color = $order->status_color; @endphp
-                                        <span class="badge bg-{{ $color }} bg-opacity-25 text-{{ $color }} border border-{{ $color }} border-opacity-25"
-                                              style="font-size:.72rem;">
-                                            {{ $order->status_label }}
-                                        </span>
-                                    </td>
-                                    <td class="py-3 text-soft" style="font-size:.85rem;">{{ $order->created_at->format('d/m/Y') }}</td>
-                                    <td class="py-3 text-soft" style="font-size:.85rem;">
-                                        {{ $order->received_at ? $order->received_at->format('d/m/Y') : '—' }}
-                                    </td>
-                                    <td class="py-3 text-end pe-3 fw-semibold text-white">R$ {{ number_format($order->total, 2, ',', '.') }}</td>
-                                </tr>
+                            <tr style="border-color:rgba(148,163,184,.07);">
+                                <td class="ps-3 py-2 text-white fw-semibold" style="font-size:.85rem;">#{{ $order->number }}</td>
+                                <td class="py-2 text-soft" style="font-size:.82rem;">{{ optional($order->supplier)->name ?? '—' }}</td>
+                                <td class="py-2 text-soft" style="font-size:.82rem;">{{ $order->created_at->format('d/m/Y') }}</td>
+                                <td class="py-2 text-soft" style="font-size:.82rem;">
+                                    {{ $order->received_at ? \Carbon\Carbon::parse($order->received_at)->format('d/m/Y') : '—' }}
+                                </td>
+                                <td class="py-2 text-center">
+                                    @php
+                                        $sc = ['recebida'=>'success','pendente'=>'warning','cancelada'=>'danger','em_transito'=>'info'];
+                                    @endphp
+                                    <span class="badge bg-{{ $sc[$order->status] ?? 'secondary' }} bg-opacity-25
+                                                 text-{{ $sc[$order->status] ?? 'secondary' }}
+                                                 border border-{{ $sc[$order->status] ?? 'secondary' }} border-opacity-25"
+                                          style="font-size:.72rem;">
+                                        {{ $order->status_label ?? ucfirst($order->status) }}
+                                    </span>
+                                </td>
+                                <td class="py-2 text-end pe-3 fw-semibold text-white">R$ {{ number_format($order->total, 2, ',', '.') }}</td>
+                            </tr>
                             @endforeach
                         </tbody>
-                        <tfoot>
-                            <tr style="border-top:1px solid rgba(148,163,184,.2);">
-                                <td colspan="5" class="text-end pe-3 py-3 text-soft fw-semibold">Total do período:</td>
-                                <td class="py-3 text-end pe-3 fw-bold text-white">R$ {{ number_format($totalValue, 2, ',', '.') }}</td>
-                            </tr>
-                        </tfoot>
                     </table>
                 </div>
             </div>
         </div>
 
         @endif
-    </div>
-</div>
+    </div>{{-- /card-body --}}
+</div>{{-- /card --}}
 
 @push('scripts')
 <script>
