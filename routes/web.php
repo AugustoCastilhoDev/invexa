@@ -144,4 +144,5 @@ Route::middleware(['auth', 'company'])->group(function () {
 
     // Usuários
     Route::resource('users', UserController::class);
+    Route::patch('/users/{user}/toggle', [UserController::class, 'toggleActive'])->name('users.toggle-active');
 });

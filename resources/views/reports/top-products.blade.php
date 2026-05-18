@@ -15,11 +15,11 @@
                 </p>
             </div>
             <div class="d-flex gap-2 flex-wrap">
-                <a href="{{ route('reports.export.csv', request()->query()) }}"
+                <a href="{{ route('reports.top-products.csv', request()->query()) }}"
                    class="btn btn-success btn-sm">
                     <i class="bi bi-filetype-csv me-1"></i>Exportar CSV
                 </a>
-                <a href="{{ route('reports.export.pdf', request()->query()) }}"
+                <a href="{{ route('reports.top-products.pdf', request()->query()) }}"
                    class="btn btn-danger btn-sm">
                     <i class="bi bi-filetype-pdf me-1"></i>Exportar PDF
                 </a>
@@ -31,7 +31,7 @@
     <div class="card-body">
 
         {{-- Filtros --}}
-        <form method="GET" action="{{ route('reports.index') }}" class="mb-4">
+        <form method="GET" action="{{ route('reports.top-products') }}" class="mb-4">
             <div class="row g-2 align-items-end">
                 <div class="col-12 col-md-auto">
                     <label class="form-label text-soft" style="font-size:.78rem;">Período</label>
@@ -144,7 +144,6 @@
                                     <span class="badge" style="background:#cd7f32;color:#fff;">🥉 3</span>
                                 @else
                                     <span class="text-soft">{{ $i + 1 }}</span>
-
                                 @endif
                             </td>
                             <td class="py-3 text-white fw-semibold">{{ $product->product_name }}</td>
@@ -170,38 +169,43 @@
 @endsection
 
 @push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+@if($products->isNotEmpty())
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
-    function toggleCustomDates(val) {
-        document.getElementById('customDates').style.display = val === 'custom' ? '' : 'none';
-    }
+(function () {
+    const top8   = @json($products->take(8));
+    const labels = top8.map(p => p.product_name);
+    const data   = top8.map(p => p.total_qty);
 
-    @if($products->isNotEmpty())
-    const ctx = document.getElementById('topProductsChart').getContext('2d');
-    new Chart(ctx, {
+    new Chart(document.getElementById('topProductsChart'), {
         type: 'bar',
         data: {
-            labels: {!! json_encode($chartLabels) !!},
+            labels,
             datasets: [{
-                label: 'Unidades vendidas',
-                data: {!! json_encode($chartQty) !!},
-                backgroundColor: 'rgba(99,102,241,0.75)',
-                borderColor: 'rgba(129,140,248,1)',
+                label: 'Unidades Vendidas',
+                data,
+                backgroundColor: 'rgba(14,165,233,.65)',
+                borderColor: 'rgba(14,165,233,1)',
                 borderWidth: 1,
-                borderRadius: 6,
+                borderRadius: 4,
             }]
         },
         options: {
             responsive: true,
-            plugins: {
-                legend: { labels: { color: '#94a3b8' } }
-            },
+            plugins: { legend: { labels: { color: '#94a3b8' } } },
             scales: {
                 x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148,163,184,.08)' } },
-                y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148,163,184,.08)' }, beginAtZero: true }
+                y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148,163,184,.08)' } }
             }
         }
     });
-    @endif
+})();
+</script>
+@endif
+
+<script>
+function toggleCustomDates(val) {
+    document.getElementById('customDates').style.display = val === 'custom' ? '' : 'none';
+}
 </script>
 @endpush
