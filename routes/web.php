@@ -19,7 +19,7 @@ use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
-// ── Autenticação (pública) ──────────────────────────────────────────
+// ── Autenticação (pública) ────────────────────────────────────────
 Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
 Route::post('/login', [AuthenticatedSessionController::class, 'store'])->name('login.post');
 Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
@@ -27,7 +27,7 @@ Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name
 Route::get('/register', [RegisteredUserController::class, 'create'])->name('register');
 Route::post('/register', [RegisteredUserController::class, 'store'])->name('register.store');
 
-// ── Rotas protegidas ────────────────────────────────────────────────
+// ── Rotas protegidas ────────────────────────────────────────────
 Route::middleware(['auth', 'company'])->group(function () {
 
     // ── Home (página inicial pós-login) ──
@@ -103,8 +103,11 @@ Route::middleware(['auth', 'company'])->group(function () {
     Route::patch('/receivables/{receivable}/cancel',    [ReceivableController::class, 'cancel'])->name('receivables.cancel');
 
     // Relatórios
-    Route::get('/reports',           [ReportController::class, 'index'])->name('reports.index');
-    Route::get('/reports/purchases', [ReportController::class, 'purchases'])->name('reports.purchases');
+    Route::get('/reports',                [ReportController::class, 'index'])->name('reports.index');
+    Route::get('/reports/financial',      [ReportController::class, 'financial'])->name('reports.financial');
+    Route::get('/reports/purchases',      [ReportController::class, 'purchases'])->name('reports.purchases');
+    Route::get('/reports/purchases/pdf',  [ReportController::class, 'purchasesPdf'])->name('reports.purchases.pdf');
+    Route::get('/reports/purchases/csv',  [ReportController::class, 'purchasesCsv'])->name('reports.purchases.csv');
 
     // Usuários
     Route::resource('users', UserController::class);
