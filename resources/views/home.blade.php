@@ -196,7 +196,7 @@
 
     @if(!empty($lowStockAlert) && $lowStockAlert > 0)
     <div class="mt-3">
-        <a href="{{ route('stock.index') }}" class="stock-pill text-decoration-none">
+        <a href="{{ route('products.index', ['low_stock' => 1]) }}" class="stock-pill text-decoration-none">
             <i class="bi bi-exclamation-triangle-fill"></i>
             {{ $lowStockAlert }} produto(s) com estoque abaixo do mínimo — clique para ver
         </a>
