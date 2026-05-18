@@ -29,8 +29,19 @@ class ReceivableController extends Controller
         $totalOverdue   = (clone $query)->where('status','vencida')->sum('amount');
         $countOverdue   = (clone $query)->where('status','vencida')->count();
 
-        $statuses   = Receivable::STATUSES ?? ['pendente'=>'Pendente','recebida'=>'Recebida','vencida'=>'Vencida','cancelada'=>'Cancelada'];
-        $categories = Receivable::CATEGORIES ?? [];
+        $statuses = [
+            'pendente'  => 'Pendente',
+            'recebida'  => 'Recebida',
+            'vencida'   => 'Vencida',
+            'cancelada' => 'Cancelada',
+        ];
+
+        $categories = [
+            'vendas'       => 'Vendas',
+            'servicos'     => 'Serviços',
+            'assinaturas'  => 'Assinaturas',
+            'outros'       => 'Outros',
+        ];
 
         $receivables = $query->orderBy('due_date')->paginate(15)->withQueryString();
 
