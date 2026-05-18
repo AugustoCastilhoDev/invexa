@@ -14,18 +14,36 @@ class BillController extends Controller
     {
         $companyId = auth()->user()->company_id;
         $query = Bill::with('supplier')->where('company_id', $companyId);
-        if ($request->filled('search'))  { $query->where('description','like','%'.$request->search.'%'); }
-        if ($request->filled('status'))  { $query->where('status', $request->status); }
-        if ($request->filled('from'))    { $query->whereDate('due_date','>=', $request->from); }
-        if ($request->filled('to'))      { $query->whereDate('due_date','<=', $request->to); }
+        if ($request->filled('search'))   { $query->where('description','like','%'.$request->search.'%'); }
+        if ($request->filled('status'))   { $query->where('status', $request->status); }
+        if ($request->filled('category')) { $query->where('category', $request->category); }
+        if ($request->filled('from'))     { $query->whereDate('due_date','>=', $request->from); }
+        if ($request->filled('to'))       { $query->whereDate('due_date','<=', $request->to); }
         if ($request->boolean('trashed') && auth()->user()->hasRole(['admin','gerente'])) {
             $query->onlyTrashed();
         }
-        $total   = (clone $query)->sum('amount');
-        $paid    = (clone $query)->where('status','paga')->sum('amount');
-        $pending = (clone $query)->where('status','pendente')->sum('amount');
-        $bills   = $query->orderBy('due_date')->paginate(15);
-        return view('bills.index', compact('bills','total','paid','pending'));
+
+        $totalAmount   = (clone $query)->sum('amount');
+        $totalPaid     = (clone $query)->where('status','paga')->sum('amount');
+        $totalPending  = (clone $query)->where('status','pendente')->sum('amount');
+        $totalOverdue  = (clone $query)->where('status','vencida')->sum('amount');
+        $countOverdue  = (clone $query)->where('status','vencida')->count();
+
+        $statuses   = Bill::STATUSES ?? ['pendente'=>'Pendente','paga'=>'Paga','vencida'=>'Vencida','cancelada'=>'Cancelada'];
+        $categories = Bill::CATEGORIES ?? [];
+
+        $bills = $query->orderBy('due_date')->paginate(15)->withQueryString();
+
+        return view('bills.index', compact(
+            'bills',
+            'totalAmount',
+            'totalPaid',
+            'totalPending',
+            'totalOverdue',
+            'countOverdue',
+            'statuses',
+            'categories'
+        ));
     }
 
     public function create()
