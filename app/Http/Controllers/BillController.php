@@ -160,13 +160,19 @@ class BillController extends Controller
         return back()->with('success', 'Conta cancelada.');
     }
 
-    // ── Dados comuns para os formulários ──────────────────────────────
+    // ── Dados comuns para views ─────────────────────────────────────
 
     private function formData(): array
     {
         return [
             'categories'     => Bill::CATEGORIES,
             'paymentMethods' => Bill::PAYMENT_METHODS,
+            'statuses'       => [
+                'pendente'  => 'Pendente',
+                'paga'      => 'Paga',
+                'vencida'   => 'Vencida',
+                'cancelada' => 'Cancelada',
+            ],
         ];
     }
 }
