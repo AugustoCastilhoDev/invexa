@@ -15,6 +15,7 @@ use App\Observers\SaleObserver;
 use App\Policies\BillPolicy;
 use App\Policies\ReceivablePolicy;
 use App\Policies\SalePolicy;
+use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
@@ -27,6 +28,9 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // Paginação: usa tema Bootstrap 5 (compatível com o layout do Invexa)
+        Paginator::useBootstrapFive();
+
         // Observers — Audit Log ativo em todos os modelos principais
         Sale::observe(SaleObserver::class);
         Bill::observe(BillObserver::class);

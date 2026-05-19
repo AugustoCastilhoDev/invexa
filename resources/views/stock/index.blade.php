@@ -20,9 +20,10 @@
     <div class="card-body">
 
         @if(session('success'))
-            <div class="alert alert-success alert-dismissible fade show mb-3" role="alert">
-                {{ session('success') }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            <div class="alert alert-success alert-dismissible fade show mb-3" role="alert"
+                 style="background:rgba(34,197,94,.15);border-color:rgba(34,197,94,.3);color:#4ade80;">
+                <i class="bi bi-check-circle-fill me-2"></i>{{ session('success') }}
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert"></button>
             </div>
         @endif
 
@@ -169,8 +170,49 @@
 
         {{-- Paginação --}}
         @if($movements->hasPages())
-            <div class="mt-3">
-                {{ $movements->links() }}
+            <div class="mt-3 d-flex justify-content-center">
+                <nav>
+                    <ul class="pagination pagination-sm mb-0">
+                        {{-- Anterior --}}
+                        @if($movements->onFirstPage())
+                            <li class="page-item disabled">
+                                <span class="page-link" style="background:rgba(15,23,42,.8);border-color:rgba(148,163,184,.2);color:rgba(148,163,184,.4);">«</span>
+                            </li>
+                        @else
+                            <li class="page-item">
+                                <a class="page-link" href="{{ $movements->previousPageUrl() }}"
+                                   style="background:rgba(15,23,42,.8);border-color:rgba(148,163,184,.2);color:#94a3b8;">«</a>
+                            </li>
+                        @endif
+
+                        {{-- Páginas --}}
+                        @foreach($movements->getUrlRange(1, $movements->lastPage()) as $page => $url)
+                            @if($page == $movements->currentPage())
+                                <li class="page-item active">
+                                    <span class="page-link"
+                                          style="background:rgba(99,102,241,.8);border-color:rgba(99,102,241,.5);color:#fff;">{{ $page }}</span>
+                                </li>
+                            @else
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ $url }}"
+                                       style="background:rgba(15,23,42,.8);border-color:rgba(148,163,184,.2);color:#94a3b8;">{{ $page }}</a>
+                                </li>
+                            @endif
+                        @endforeach
+
+                        {{-- Próxima --}}
+                        @if($movements->hasMorePages())
+                            <li class="page-item">
+                                <a class="page-link" href="{{ $movements->nextPageUrl() }}"
+                                   style="background:rgba(15,23,42,.8);border-color:rgba(148,163,184,.2);color:#94a3b8;">»</a>
+                            </li>
+                        @else
+                            <li class="page-item disabled">
+                                <span class="page-link" style="background:rgba(15,23,42,.8);border-color:rgba(148,163,184,.2);color:rgba(148,163,184,.4);">»</span>
+                            </li>
+                        @endif
+                    </ul>
+                </nav>
             </div>
         @endif
 
