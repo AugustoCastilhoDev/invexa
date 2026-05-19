@@ -23,11 +23,11 @@ class ReceivableController extends Controller
             $query->onlyTrashed();
         }
 
-        $totalAmount    = (clone $query)->sum('amount');
-        $totalReceived  = (clone $query)->where('status','recebida')->sum('amount');
-        $totalPending   = (clone $query)->where('status','pendente')->sum('amount');
-        $totalOverdue   = (clone $query)->where('status','vencida')->sum('amount');
-        $countOverdue   = (clone $query)->where('status','vencida')->count();
+        $totalAmount   = (clone $query)->sum('amount');
+        $totalReceived = (clone $query)->where('status','recebida')->sum('amount');
+        $totalPending  = (clone $query)->where('status','pendente')->sum('amount');
+        $totalOverdue  = (clone $query)->where('status','vencida')->sum('amount');
+        $countOverdue  = (clone $query)->where('status','vencida')->count();
 
         $statuses = [
             'pendente'  => 'Pendente',
@@ -37,23 +37,19 @@ class ReceivableController extends Controller
         ];
 
         $categories = [
-            'vendas'       => 'Vendas',
-            'servicos'     => 'Serviços',
-            'assinaturas'  => 'Assinaturas',
-            'outros'       => 'Outros',
+            'vendas'      => 'Vendas',
+            'servicos'    => 'Serviços',
+            'assinaturas' => 'Assinaturas',
+            'outros'      => 'Outros',
         ];
 
         $receivables = $query->orderBy('due_date')->paginate(15)->withQueryString();
 
         return view('receivables.index', compact(
             'receivables',
-            'totalAmount',
-            'totalReceived',
-            'totalPending',
-            'totalOverdue',
-            'countOverdue',
-            'statuses',
-            'categories'
+            'totalAmount', 'totalReceived', 'totalPending',
+            'totalOverdue', 'countOverdue',
+            'statuses', 'categories'
         ));
     }
 
@@ -67,15 +63,15 @@ class ReceivableController extends Controller
     {
         $companyId = auth()->user()->company_id;
         $validated = $request->validate([
-            'description'   => ['required','string','max:255'],
-            'customer_id'   => ['nullable','exists:customers,id'],
-            'amount'        => ['required','numeric','min:0.01'],
-            'due_date'      => ['required','date'],
-            'status'        => ['required','in:pendente,recebida,cancelada'],
-            'payment_method'=> ['nullable','string'],
-            'notes'         => ['nullable','string'],
-            'installments'  => ['nullable','integer','min:1','max:60'],
-            'recurrence'    => ['nullable','in:none,monthly,weekly'],
+            'description'    => ['required','string','max:255'],
+            'customer_id'    => ['nullable','exists:customers,id'],
+            'amount'         => ['required','numeric','min:0.01'],
+            'due_date'       => ['required','date'],
+            'status'         => ['required','in:pendente,recebida,cancelada'],
+            'payment_method' => ['nullable','string'],
+            'notes'          => ['nullable','string'],
+            'installments'   => ['nullable','integer','min:1','max:60'],
+            'recurrence'     => ['nullable','in:none,monthly,weekly'],
         ]);
 
         $installments = (int) ($validated['installments'] ?? 1);
@@ -86,20 +82,21 @@ class ReceivableController extends Controller
             for ($i = 1; $i <= $installments; $i++) {
                 $due = Carbon::parse($validated['due_date'])->addMonths($i - 1);
                 $r = Receivable::create([
-                    'company_id'              => $companyId,
-                    'customer_id'             => $validated['customer_id'] ?? null,
-                    'description'             => $installments > 1
+                    'company_id'           => $companyId,
+                    'customer_id'          => $validated['customer_id'] ?? null,
+                    'description'          => $installments > 1
                         ? $validated['description'] . " ({$i}/{$installments})"
                         : $validated['description'],
-                    'amount'                  => round((float)$validated['amount'] / $installments, 2),
-                    'due_date'                => $due,
-                    'status'                  => $validated['status'],
-                    'payment_method'          => $validated['payment_method'] ?? null,
-                    'notes'                   => $validated['notes'] ?? null,
-                    'installment_number'      => $installments > 1 ? $i : null,
-                    'installments_total'      => $installments > 1 ? $installments : null,
-                    'recurrence'              => $recurrence !== 'none' ? $recurrence : null,
-                    'parent_receivable_id'    => $i > 1 ? $parentId : null,
+                    'amount'               => round((float) $validated['amount'] / $installments, 2),
+                    'due_date'             => $due,
+                    'status'               => $validated['status'],
+                    'payment_method'       => $validated['payment_method'] ?? null,
+                    'notes'                => $validated['notes'] ?? null,
+                    'installments'         => $installments > 1 ? $installments : null,
+                    'installment_number'   => $installments > 1 ? $i : null,
+                    'installments_total'   => $installments > 1 ? $installments : null,
+                    'recurrence'           => $recurrence !== 'none' ? $recurrence : null,
+                    'parent_receivable_id' => $i > 1 ? $parentId : null,
                 ]);
                 if ($i === 1) { $parentId = $r->id; }
             }
@@ -143,17 +140,29 @@ class ReceivableController extends Controller
 
     public function receive(Receivable $receivable)
     {
-        if ($receivable->status === 'recebida') { return back()->with('error', 'Já recebida.'); }
-        $receivable->update(['status' => 'recebida', 'payment_date' => now()]);
+        if ($receivable->status === 'recebida') {
+            return back()->with('error', 'Já recebida.');
+        }
+        $receivable->update([
+            'status'      => 'recebida',
+            'received_at' => now(),
+        ]);
         return back()->with('success', 'Conta marcada como recebida.');
     }
 
     public function bulkReceive(Request $request)
     {
-        $ids = $request->input('ids', []);
+        $ids       = $request->input('ids', []);
         $companyId = auth()->user()->company_id;
-        Receivable::whereIn('id', $ids)->where('company_id', $companyId)->where('status','pendente')
-            ->update(['status' => 'recebida', 'payment_date' => now()]);
+
+        Receivable::whereIn('id', $ids)
+            ->where('company_id', $companyId)
+            ->where('status', 'pendente')
+            ->update([
+                'status'      => 'recebida',
+                'received_at' => now(),
+            ]);
+
         return back()->with('success', count($ids) . ' conta(s) marcada(s) como recebida(s).');
     }
 
