@@ -29,36 +29,19 @@ class BillController extends Controller
         $totalOverdue  = (clone $query)->where('status','vencida')->sum('amount');
         $countOverdue  = (clone $query)->where('status','vencida')->count();
 
-        $statuses = [
-            'pendente'  => 'Pendente',
-            'paga'      => 'Paga',
-            'vencida'   => 'Vencida',
-            'cancelada' => 'Cancelada',
-        ];
-
-        $categories = [
-            'fornecedores' => 'Fornecedores',
-            'impostos'     => 'Impostos',
-            'folha'        => 'Folha',
-            'aluguel'      => 'Aluguel',
-            'servicos'     => 'Serviços',
-            'outros'       => 'Outros',
-        ];
-
         $bills = $query->orderBy('due_date')->paginate(15)->withQueryString();
 
         return view('bills.index', compact(
             'bills',
             'totalAmount', 'totalPaid', 'totalPending',
-            'totalOverdue', 'countOverdue',
-            'statuses', 'categories'
-        ));
+            'totalOverdue', 'countOverdue'
+        ) + $this->formData());
     }
 
     public function create()
     {
         $suppliers = Supplier::where('company_id', auth()->user()->company_id)->orderBy('name')->get();
-        return view('bills.create', compact('suppliers'));
+        return view('bills.create', compact('suppliers') + $this->formData());
     }
 
     public function store(Request $request)
@@ -67,6 +50,7 @@ class BillController extends Controller
         $validated = $request->validate([
             'description'    => ['required','string','max:255'],
             'supplier_id'    => ['nullable','exists:suppliers,id'],
+            'category'       => ['nullable','string'],
             'amount'         => ['required','numeric','min:0.01'],
             'due_date'       => ['required','date'],
             'status'         => ['required','in:pendente,paga,cancelada'],
@@ -86,6 +70,7 @@ class BillController extends Controller
                 $bill = Bill::create([
                     'company_id'         => $companyId,
                     'supplier_id'        => $validated['supplier_id'] ?? null,
+                    'category'           => $validated['category'] ?? 'outros',
                     'description'        => $installments > 1
                         ? $validated['description'] . " ({$i}/{$installments})"
                         : $validated['description'],
@@ -94,6 +79,7 @@ class BillController extends Controller
                     'status'             => $validated['status'],
                     'payment_method'     => $validated['payment_method'] ?? null,
                     'notes'              => $validated['notes'] ?? null,
+                    'installments'       => $installments > 1 ? $installments : null,
                     'installment_number' => $installments > 1 ? $i : null,
                     'installments_total' => $installments > 1 ? $installments : null,
                     'recurrence'         => $recurrence !== 'none' ? $recurrence : null,
@@ -115,7 +101,7 @@ class BillController extends Controller
     public function edit(Bill $bill)
     {
         $suppliers = Supplier::where('company_id', auth()->user()->company_id)->orderBy('name')->get();
-        return view('bills.edit', compact('bill','suppliers'));
+        return view('bills.edit', compact('bill', 'suppliers') + $this->formData());
     }
 
     public function update(Request $request, Bill $bill)
@@ -123,6 +109,7 @@ class BillController extends Controller
         $validated = $request->validate([
             'description'    => ['required','string','max:255'],
             'supplier_id'    => ['nullable','exists:suppliers,id'],
+            'category'       => ['nullable','string'],
             'amount'         => ['required','numeric','min:0.01'],
             'due_date'       => ['required','date'],
             'status'         => ['required','in:pendente,paga,cancelada'],
@@ -171,5 +158,15 @@ class BillController extends Controller
     {
         $bill->update(['status' => 'cancelada']);
         return back()->with('success', 'Conta cancelada.');
+    }
+
+    // ── Dados comuns para os formulários ──────────────────────────────
+
+    private function formData(): array
+    {
+        return [
+            'categories'     => Bill::CATEGORIES,
+            'paymentMethods' => Bill::PAYMENT_METHODS,
+        ];
     }
 }
