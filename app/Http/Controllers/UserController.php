@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\WelcomeMail;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
 
 class UserController extends Controller
@@ -47,7 +49,7 @@ class UserController extends Controller
             'password' => ['required', 'string', 'min:6'],
         ]);
 
-        User::create([
+        $user = User::create([
             'name'       => $request->name,
             'email'      => $request->email,
             'role'       => $request->role,
@@ -55,6 +57,9 @@ class UserController extends Controller
             'company_id' => auth()->user()->company_id,
             'active'     => $request->boolean('active', true),
         ]);
+
+        // Envia e-mail de boas-vindas ao novo usuário
+        Mail::to($user->email)->send(new WelcomeMail($user));
 
         return redirect()
             ->route('users.index')
