@@ -389,18 +389,56 @@ class ReportController extends Controller
         $period    = $request->get('period', 'month');
         [$from, $to] = $this->resolvePeriod($period, $request);
 
-        $receivablesPaid    = Receivable::where('company_id', $companyId)->where('status', 'recebido')->whereBetween('paid_at', [$from, $to])->sum('amount');
-        $receivablesPending = Receivable::where('company_id', $companyId)->where('status', 'pendente')->whereBetween('due_date', [$from, $to])->sum('amount');
-        $receivablesOverdue = Receivable::where('company_id', $companyId)->where('status', 'pendente')->where('due_date', '<', now())->sum('amount');
-        $billsPaid          = Bill::where('company_id', $companyId)->where('status', 'pago')->whereBetween('paid_at', [$from, $to])->sum('amount');
-        $billsPending       = Bill::where('company_id', $companyId)->where('status', 'pendente')->whereBetween('due_date', [$from, $to])->sum('amount');
-        $billsOverdue       = Bill::where('company_id', $companyId)->where('status', 'pendente')->where('due_date', '<', now())->sum('amount');
+        // RECEITAS RECEBIDAS: status 'recebida' e received_at dentro do período
+        $receivablesPaid    = Receivable::where('company_id', $companyId)
+                                ->where('status', 'recebida')
+                                ->whereBetween('received_at', [$from, $to])
+                                ->sum('amount_received');
+
+        // RECEITAS PENDENTES: status 'pendente' e due_date dentro do período
+        $receivablesPending = Receivable::where('company_id', $companyId)
+                                ->where('status', 'pendente')
+                                ->whereBetween('due_date', [$from, $to])
+                                ->sum('amount');
+
+        // RECEITAS VENCIDAS: pendente e vencimento antes de hoje
+        $receivablesOverdue = Receivable::where('company_id', $companyId)
+                                ->where('status', 'pendente')
+                                ->where('due_date', '<', now()->startOfDay())
+                                ->sum('amount');
+
+        // DESPESAS PAGAS: status 'paga' e paid_at dentro do período
+        $billsPaid          = Bill::where('company_id', $companyId)
+                                ->where('status', 'paga')
+                                ->whereBetween('paid_at', [$from, $to])
+                                ->sum('amount_paid');
+
+        // DESPESAS PENDENTES: status 'pendente' e due_date dentro do período
+        $billsPending       = Bill::where('company_id', $companyId)
+                                ->where('status', 'pendente')
+                                ->whereBetween('due_date', [$from, $to])
+                                ->sum('amount');
+
+        // DESPESAS VENCIDAS: pendente e vencimento antes de hoje
+        $billsOverdue       = Bill::where('company_id', $companyId)
+                                ->where('status', 'pendente')
+                                ->where('due_date', '<', now()->startOfDay())
+                                ->sum('amount');
 
         $netBalance       = $receivablesPaid - $billsPaid;
         $projectedBalance = ($receivablesPaid + $receivablesPending) - ($billsPaid + $billsPending);
 
-        $receivables = Receivable::with('customer')->where('company_id', $companyId)->whereBetween('due_date', [$from, $to])->orderBy('due_date')->get();
-        $bills       = Bill::with('supplier')->where('company_id', $companyId)->whereBetween('due_date', [$from, $to])->orderBy('due_date')->get();
+        $receivables = Receivable::with('customer')
+                        ->where('company_id', $companyId)
+                        ->whereBetween('due_date', [$from, $to])
+                        ->orderBy('due_date')
+                        ->get();
+
+        $bills = Bill::with('supplier')
+                    ->where('company_id', $companyId)
+                    ->whereBetween('due_date', [$from, $to])
+                    ->orderBy('due_date')
+                    ->get();
 
         return [
             $companyId, $period, $from, $to, $receivables, $bills,
@@ -441,9 +479,9 @@ class ReportController extends Controller
             ->orderBy('due_date')
             ->get();
 
-        $totalPaid    = $bills->where('status', 'pago')->sum('amount');
+        $totalPaid    = $bills->where('status', 'paga')->sum('amount');
         $totalPending = $bills->where('status', 'pendente')->sum('amount');
-        $totalOverdue = $bills->where('status', 'pendente')->where('due_date', '<', now()->format('Y-m-d'))->sum('amount');
+        $totalOverdue = $bills->filter(fn($b) => $b->status === 'pendente' && $b->due_date < now()->format('Y-m-d'))->sum('amount');
 
         return [$companyId, $period, $from, $to, $bills, $totalPaid, $totalPending, $totalOverdue];
     }
