@@ -18,9 +18,19 @@
     <a href="{{ route('purchase-orders.show', $purchaseOrder) }}" class="btn btn-outline-light">Voltar</a>
 </div>
 
+@if($purchaseOrder->status === 'recebida')
+    <div class="alert alert-warning d-flex align-items-center gap-2 mb-4">
+        <i class="bi bi-lock-fill fs-5"></i>
+        <span>Esta Ordem de Compra já foi <strong>recebida</strong> e o estoque foi atualizado. Nenhuma alteração é permitida.</span>
+        <a href="{{ route('purchase-orders.show', $purchaseOrder) }}" class="btn btn-sm btn-outline-warning ms-auto">Ver Detalhes</a>
+    </div>
+@endif
+
 <form method="POST" action="{{ route('purchase-orders.update', $purchaseOrder) }}" id="ocForm">
     @csrf
     @method('PUT')
+
+    <fieldset @if($purchaseOrder->status === 'recebida') disabled @endif>
 
     <div class="card card-dark-bg shadow-sm mb-4">
         <div class="card-header card-header-dark border-bottom">
@@ -54,10 +64,10 @@
                 <div class="col-12 col-md-2">
                     <label class="form-label text-soft">Status <span class="text-danger">*</span></label>
                     <select name="status" class="form-select @error('status') is-invalid @enderror" required>
-                        <option value="pendente"   @selected(old('status', $purchaseOrder->status) === 'pendente')>Pendente</option>
-                        <option value="enviada"    @selected(old('status', $purchaseOrder->status) === 'enviada')>Enviada</option>
-                        <option value="recebida"   @selected(old('status', $purchaseOrder->status) === 'recebida')>Recebida</option>
-                        <option value="cancelada"  @selected(old('status', $purchaseOrder->status) === 'cancelada')>Cancelada</option>
+                        <option value="pendente"  @selected(old('status', $purchaseOrder->status) === 'pendente')>Pendente</option>
+                        <option value="enviada"   @selected(old('status', $purchaseOrder->status) === 'enviada')>Enviada</option>
+                        <option value="recebida"  @selected(old('status', $purchaseOrder->status) === 'recebida')>Recebida</option>
+                        <option value="cancelada" @selected(old('status', $purchaseOrder->status) === 'cancelada')>Cancelada</option>
                     </select>
                     @error('status')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
@@ -139,12 +149,16 @@
         <div class="alert alert-danger">{{ $errors->first('items') }}</div>
     @endif
 
+    @if($purchaseOrder->status !== 'recebida')
     <div class="d-flex gap-2">
         <button type="submit" class="btn btn-primary">
             <i class="bi bi-floppy me-1"></i>Salvar Alterações
         </button>
         <a href="{{ route('purchase-orders.show', $purchaseOrder) }}" class="btn btn-outline-secondary ms-auto">Cancelar</a>
     </div>
+    @endif
+
+    </fieldset>
 
 </form>
 

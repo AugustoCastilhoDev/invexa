@@ -59,15 +59,15 @@ class PurchaseOrderController extends Controller
     {
         $companyId = auth()->user()->company_id;
         $validated = $request->validate([
-            'supplier_id'            => ['required', 'exists:suppliers,id'],
-            'order_date'             => ['required', 'date'],
-            'expected_date'          => ['nullable', 'date', 'after_or_equal:order_date'],
-            'status'                 => ['required', 'in:pendente,enviada,recebida,cancelada'],
-            'notes'                  => ['nullable', 'string'],
-            'items'                  => ['required', 'array', 'min:1'],
-            'items.*.product_id'     => ['required', 'exists:products,id'],
-            'items.*.quantity'       => ['required', 'integer', 'min:1'],
-            'items.*.unit_cost'      => ['required', 'numeric', 'min:0'],
+            'supplier_id'        => ['required', 'exists:suppliers,id'],
+            'order_date'         => ['required', 'date'],
+            'expected_date'      => ['nullable', 'date', 'after_or_equal:order_date'],
+            'status'             => ['required', 'in:pendente,enviada,recebida,cancelada'],
+            'notes'              => ['nullable', 'string'],
+            'items'              => ['required', 'array', 'min:1'],
+            'items.*.product_id' => ['required', 'exists:products,id'],
+            'items.*.quantity'   => ['required', 'integer', 'min:1'],
+            'items.*.unit_cost'  => ['required', 'numeric', 'min:0'],
         ]);
         try {
             DB::transaction(function () use ($validated, $companyId) {
@@ -90,6 +90,7 @@ class PurchaseOrderController extends Controller
                         'subtotal'          => $item['quantity'] * $item['unit_cost'],
                     ]);
                 }
+                // Cria conta a pagar
                 if (in_array($validated['status'], ['pendente', 'enviada', 'recebida'])) {
                     $supplier = Supplier::find($validated['supplier_id']);
                     Bill::create([
@@ -101,6 +102,11 @@ class PurchaseOrderController extends Controller
                         'due_date'          => $order->expected_date ?? $order->order_date->addDays(30),
                         'status'            => 'pendente',
                     ]);
+                }
+                // Se criada já como recebida, dar entrada no estoque imediatamente
+                if ($validated['status'] === 'recebida') {
+                    $order->load('items');
+                    $this->processStockReceipt($order, $companyId);
                 }
             });
             return redirect()->route('purchase-orders.index')->with('success', 'Ordem de compra criada com sucesso.');
@@ -126,21 +132,25 @@ class PurchaseOrderController extends Controller
 
     public function update(Request $request, PurchaseOrder $purchaseOrder)
     {
-        $companyId = auth()->user()->company_id;
+        $companyId     = auth()->user()->company_id;
+        $previousStatus = $purchaseOrder->status; // guarda antes de alterar
+
         $validated = $request->validate([
-            'supplier_id'            => ['required', 'exists:suppliers,id'],
-            'order_date'             => ['required', 'date'],
-            'expected_date'          => ['nullable', 'date'],
-            'status'                 => ['required', 'in:pendente,enviada,recebida,cancelada'],
-            'notes'                  => ['nullable', 'string'],
-            'items'                  => ['required', 'array', 'min:1'],
-            'items.*.product_id'     => ['required', 'exists:products,id'],
-            'items.*.quantity'       => ['required', 'integer', 'min:1'],
-            'items.*.unit_cost'      => ['required', 'numeric', 'min:0'],
+            'supplier_id'        => ['required', 'exists:suppliers,id'],
+            'order_date'         => ['required', 'date'],
+            'expected_date'      => ['nullable', 'date'],
+            'status'             => ['required', 'in:pendente,enviada,recebida,cancelada'],
+            'notes'              => ['nullable', 'string'],
+            'items'              => ['required', 'array', 'min:1'],
+            'items.*.product_id' => ['required', 'exists:products,id'],
+            'items.*.quantity'   => ['required', 'integer', 'min:1'],
+            'items.*.unit_cost'  => ['required', 'numeric', 'min:0'],
         ]);
+
         try {
-            DB::transaction(function () use ($purchaseOrder, $validated, $companyId) {
+            DB::transaction(function () use ($purchaseOrder, $validated, $companyId, $previousStatus) {
                 $total = collect($validated['items'])->sum(fn($i) => $i['quantity'] * $i['unit_cost']);
+
                 $purchaseOrder->items()->delete();
                 $purchaseOrder->update([
                     'supplier_id'   => $validated['supplier_id'],
@@ -150,6 +160,7 @@ class PurchaseOrderController extends Controller
                     'notes'         => $validated['notes'] ?? null,
                     'total'         => $total,
                 ]);
+
                 foreach ($validated['items'] as $item) {
                     PurchaseOrderItem::create([
                         'purchase_order_id' => $purchaseOrder->id,
@@ -159,8 +170,16 @@ class PurchaseOrderController extends Controller
                         'subtotal'          => $item['quantity'] * $item['unit_cost'],
                     ]);
                 }
+
+                // Detecta transição para 'recebida' e processa estoque (apenas uma vez)
+                if ($validated['status'] === 'recebida' && $previousStatus !== 'recebida') {
+                    $purchaseOrder->load('items');
+                    $this->processStockReceipt($purchaseOrder, $companyId);
+                }
             });
-            return redirect()->route('purchase-orders.index')->with('success', 'Ordem de compra atualizada.');
+
+            return redirect()->route('purchase-orders.show', $purchaseOrder)
+                ->with('success', 'Ordem de compra atualizada com sucesso.');
         } catch (\Exception $e) {
             return back()->withInput()->with('error', $e->getMessage());
         }
@@ -169,39 +188,57 @@ class PurchaseOrderController extends Controller
     public function destroy(PurchaseOrder $purchaseOrder)
     {
         $purchaseOrder->delete();
-        return redirect()->route('purchase-orders.index')->with('success', 'Ordem de compra exclu\u00edda.');
+        return redirect()->route('purchase-orders.index')
+            ->with('success', 'Ordem de compra excluída.');
     }
 
     public function receive(PurchaseOrder $purchaseOrder)
     {
         if ($purchaseOrder->status === 'recebida') {
-            return back()->with('error', 'Esta OC j\u00e1 foi recebida.');
+            return back()->with('error', 'Esta OC já foi recebida.');
         }
+
         $companyId = auth()->user()->company_id;
+
         DB::transaction(function () use ($purchaseOrder, $companyId) {
-            $purchaseOrder->load('items.product');
-            foreach ($purchaseOrder->items as $item) {
-                $product = Product::lockForUpdate()->find($item->product_id);
-                if (!$product) continue;
-                $before = $product->quantity;
-                $after  = $before + $item->quantity;
-                $product->update(['quantity' => $after]);
-                StockMovement::create([
-                    'product_id'      => $product->id,
-                    'company_id'      => $companyId,
-                    'user_id'         => auth()->id(),
-                    'type'            => 'entrada',
-                    'quantity'        => $item->quantity,
-                    'quantity_before' => $before,
-                    'quantity_after'  => $after,
-                    'reason'          => 'compra',
-                    'notes'           => "Recebimento OC #{$purchaseOrder->id}",
-                    'source_type'     => PurchaseOrder::class,
-                    'source_id'       => $purchaseOrder->id,
-                ]);
-            }
+            $purchaseOrder->load('items');
+            $this->processStockReceipt($purchaseOrder, $companyId);
             $purchaseOrder->update(['status' => 'recebida']);
         });
+
         return back()->with('success', 'OC marcada como recebida e estoque atualizado.');
+    }
+
+    // ── Método privado: processa entrada de estoque para todos os itens da OC ─────
+
+    private function processStockReceipt(PurchaseOrder $purchaseOrder, int $companyId): void
+    {
+        foreach ($purchaseOrder->items as $item) {
+            $product = Product::lockForUpdate()->find($item->product_id);
+            if (! $product) continue;
+
+            $before = $product->quantity;
+            $after  = $before + $item->quantity;
+
+            // Atualiza quantidade e custo do produto
+            $product->update([
+                'quantity' => $after,
+                'cost'     => $item->unit_cost,
+            ]);
+
+            StockMovement::create([
+                'product_id'      => $product->id,
+                'company_id'      => $companyId,
+                'user_id'         => auth()->id(),
+                'type'            => 'entrada',
+                'quantity'        => $item->quantity,
+                'quantity_before' => $before,
+                'quantity_after'  => $after,
+                'reason'          => 'compra',
+                'notes'           => "Recebimento OC #{$purchaseOrder->number}",
+                'source_type'     => PurchaseOrder::class,
+                'source_id'       => $purchaseOrder->id,
+            ]);
+        }
     }
 }
