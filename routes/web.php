@@ -21,10 +21,10 @@ use App\Http\Controllers\UpgradeController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
-// ── Landing Page (pública) ──────────────────────────────────
+// ── Landing Page (pública) ─────────────────────────────────
 Route::get('/', [LandingController::class, 'index'])->name('landing');
 
-// ── Autenticação (pública) ──────────────────────────────────
+// ── Autenticação (pública) ────────────────────────────────
 Route::get('/login',  [AuthenticatedSessionController::class, 'create'])->name('login');
 Route::post('/login', [AuthenticatedSessionController::class, 'store'])->name('login.post');
 Route::post('/logout',[AuthenticatedSessionController::class, 'destroy'])->name('logout');
@@ -41,7 +41,6 @@ Route::middleware(['auth', 'company'])->group(function () {
 Route::middleware(['auth', 'company', 'trial'])->group(function () {
 
     Route::get('/home', [HomeController::class, 'index'])->name('home');
-    Route::get('/home', [HomeController::class, 'index'])->name('home.alias');
 
     Route::get('/dashboard',            [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/dashboard/export/csv', [DashboardController::class, 'exportCsv'])->name('dashboard.export.csv');
