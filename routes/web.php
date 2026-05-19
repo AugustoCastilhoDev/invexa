@@ -17,27 +17,33 @@ use App\Http\Controllers\SaleController;
 use App\Http\Controllers\SaleReturnController;
 use App\Http\Controllers\StockMovementController;
 use App\Http\Controllers\SupplierController;
+use App\Http\Controllers\SuperAdmin\SuperAdminController;
 use App\Http\Controllers\UpgradeController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
-// ── Landing Page (pública) ─────────────────────────────────
+// ── Landing Page (pública)
 Route::get('/', [LandingController::class, 'index'])->name('landing');
 
-// ── Autenticação (pública) ────────────────────────────────
+// ── Autenticação (pública)
 Route::get('/login',  [AuthenticatedSessionController::class, 'create'])->name('login');
 Route::post('/login', [AuthenticatedSessionController::class, 'store'])->name('login.post');
 Route::post('/logout',[AuthenticatedSessionController::class, 'destroy'])->name('logout');
-
 Route::get('/register',  [RegisteredUserController::class, 'create'])->name('register');
 Route::post('/register', [RegisteredUserController::class, 'store'])->name('register.store');
 
-// ── Upgrade (autenticado, fora do trial check) ─────────────────
+// ── Super-Admin (só superadmin, sem company/trial check)
+Route::middleware(['auth', 'superadmin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/',                              [SuperAdminController::class, 'index'])->name('index');
+    Route::patch('/companies/{company}/toggle', [SuperAdminController::class, 'toggleCompany'])->name('companies.toggle');
+});
+
+// ── Upgrade (autenticado, fora do trial check)
 Route::middleware(['auth', 'company'])->group(function () {
     Route::get('/upgrade', [UpgradeController::class, 'index'])->name('upgrade');
 });
 
-// ── Protegidas (requer trial/plano ativo) ───────────────────────
+// ── Protegidas (requer trial/plano ativo)
 Route::middleware(['auth', 'company', 'trial'])->group(function () {
 
     Route::get('/home', [HomeController::class, 'index'])->name('home');

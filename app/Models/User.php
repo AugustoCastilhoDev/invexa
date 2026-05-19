@@ -30,7 +30,7 @@ class User extends Authenticatable
         'active'            => 'boolean',
     ];
 
-    // ── Relacionamentos ──────────────────────────────────────
+    // ── Relacionamentos
 
     public function company()
     {
@@ -42,7 +42,12 @@ class User extends Authenticatable
         return $this->hasMany(AuditLog::class);
     }
 
-    // ── Helpers de papel (role) ──────────────────────────────
+    // ── Helpers de papel (role)
+
+    public function isSuperAdmin(): bool
+    {
+        return $this->role === 'superadmin';
+    }
 
     public function isAdmin(): bool
     {
@@ -61,31 +66,30 @@ class User extends Authenticatable
 
     public function hasRole(string|array $roles): bool
     {
-        $roles = (array) $roles;
-        return in_array($this->role, $roles);
+        return in_array($this->role, (array) $roles);
     }
 
     public function getRoleLabelAttribute(): string
     {
         return match ($this->role) {
-            'admin'    => 'Administrador',
-            'gerente'  => 'Gerente',
-            'vendedor' => 'Vendedor',
-            default    => 'Sem perfil',
+            'superadmin' => 'Super Admin',
+            'admin'      => 'Administrador',
+            'gerente'    => 'Gerente',
+            'vendedor'   => 'Vendedor',
+            default      => 'Sem perfil',
         };
     }
 
     public function getRoleBadgeAttribute(): string
     {
         return match ($this->role) {
-            'admin'    => 'primary',
-            'gerente'  => 'info',
-            'vendedor' => 'secondary',
-            default    => 'secondary',
+            'superadmin' => 'danger',
+            'admin'      => 'primary',
+            'gerente'    => 'info',
+            'vendedor'   => 'secondary',
+            default      => 'secondary',
         };
     }
-
-    // ── Inicial para avatar ──────────────────────────────────
 
     public function getInitialsAttribute(): string
     {
