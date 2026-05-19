@@ -90,20 +90,18 @@ class PurchaseOrderController extends Controller
                         'subtotal'          => $item['quantity'] * $item['unit_cost'],
                     ]);
                 }
-                // Cria conta a pagar
                 if (in_array($validated['status'], ['pendente', 'enviada', 'recebida'])) {
                     $supplier = Supplier::find($validated['supplier_id']);
                     Bill::create([
                         'company_id'        => $companyId,
                         'supplier_id'       => $validated['supplier_id'],
                         'purchase_order_id' => $order->id,
-                        'description'       => "OC #{$order->id} \u2014 " . ($supplier?->name ?? 'Fornecedor'),
+                        'description'       => "OC #{$order->number} — " . ($supplier?->name ?? 'Fornecedor'),
                         'amount'            => $total,
                         'due_date'          => $order->expected_date ?? $order->order_date->addDays(30),
                         'status'            => 'pendente',
                     ]);
                 }
-                // Se criada já como recebida, dar entrada no estoque imediatamente
                 if ($validated['status'] === 'recebida') {
                     $order->load('items');
                     $this->processStockReceipt($order, $companyId);
@@ -132,8 +130,8 @@ class PurchaseOrderController extends Controller
 
     public function update(Request $request, PurchaseOrder $purchaseOrder)
     {
-        $companyId     = auth()->user()->company_id;
-        $previousStatus = $purchaseOrder->status; // guarda antes de alterar
+        $companyId      = auth()->user()->company_id;
+        $previousStatus = $purchaseOrder->status;
 
         $validated = $request->validate([
             'supplier_id'        => ['required', 'exists:suppliers,id'],
@@ -171,7 +169,6 @@ class PurchaseOrderController extends Controller
                     ]);
                 }
 
-                // Detecta transição para 'recebida' e processa estoque (apenas uma vez)
                 if ($validated['status'] === 'recebida' && $previousStatus !== 'recebida') {
                     $purchaseOrder->load('items');
                     $this->processStockReceipt($purchaseOrder, $companyId);
@@ -192,16 +189,23 @@ class PurchaseOrderController extends Controller
             ->with('success', 'Ordem de compra excluída.');
     }
 
+    /**
+     * Botão "Receber" na view show.
+     * Processa apenas itens ainda pendentes (idempotente).
+     */
     public function receive(PurchaseOrder $purchaseOrder)
     {
-        if ($purchaseOrder->status === 'recebida') {
-            return back()->with('error', 'Esta OC já foi recebida.');
+        // Verifica se ainda há itens pendentes de recebimento
+        $purchaseOrder->load('items');
+        $pendingItems = $purchaseOrder->items->filter(fn($i) => $i->quantity_received < $i->quantity);
+
+        if ($pendingItems->isEmpty() && $purchaseOrder->status === 'recebida') {
+            return back()->with('info', 'Todos os itens desta OC já foram recebidos.');
         }
 
         $companyId = auth()->user()->company_id;
 
         DB::transaction(function () use ($purchaseOrder, $companyId) {
-            $purchaseOrder->load('items');
             $this->processStockReceipt($purchaseOrder, $companyId);
             $purchaseOrder->update(['status' => 'recebida']);
         });
@@ -209,16 +213,23 @@ class PurchaseOrderController extends Controller
         return back()->with('success', 'OC marcada como recebida e estoque atualizado.');
     }
 
-    // ── Método privado: processa entrada de estoque para todos os itens da OC ─────
+    // ── Método privado central ─────────────────────────────────────────────
 
-    private function processStockReceipt(PurchaseOrder $purchaseOrder, int $companyId): void
+    /**
+     * Processa entrada de estoque para itens ainda pendentes da OC.
+     * Idempotente: pula itens já totalmente recebidos.
+     */
+    public function processStockReceipt(PurchaseOrder $purchaseOrder, int $companyId): void
     {
         foreach ($purchaseOrder->items as $item) {
+            $pending = $item->quantity - $item->quantity_received;
+            if ($pending <= 0) continue; // já recebido, pula
+
             $product = Product::lockForUpdate()->find($item->product_id);
             if (! $product) continue;
 
             $before = $product->quantity;
-            $after  = $before + $item->quantity;
+            $after  = $before + $pending;
 
             // Atualiza quantidade e custo do produto
             $product->update([
@@ -226,12 +237,15 @@ class PurchaseOrderController extends Controller
                 'cost'     => $item->unit_cost,
             ]);
 
+            // Marca o item como totalmente recebido
+            $item->update(['quantity_received' => $item->quantity]);
+
             StockMovement::create([
                 'product_id'      => $product->id,
                 'company_id'      => $companyId,
                 'user_id'         => auth()->id(),
                 'type'            => 'entrada',
-                'quantity'        => $item->quantity,
+                'quantity'        => $pending,
                 'quantity_before' => $before,
                 'quantity_after'  => $after,
                 'reason'          => 'compra',
