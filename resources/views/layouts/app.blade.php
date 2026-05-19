@@ -19,21 +19,18 @@
             --brand-ice:      #F0F9FF;
             --brand-glow:     rgba(14,165,233,.35);
         }
-
         body {
             background: radial-gradient(circle at top left,  rgba(14,165,233,.07), transparent 22%),
                         radial-gradient(circle at bottom right, rgba(56,189,248,.05), transparent 20%),
                         var(--brand-abyss);
             color: #e2e8f0;
         }
-
         .navbar-main {
             background: rgba(8,13,26,.93);
             border-bottom: 1px solid rgba(14,165,233,.12);
             backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
             padding-top:.6rem; padding-bottom:.6rem;
         }
-
         .navbar-brand-custom {
             display:flex; align-items:center; gap:.55rem;
             font-size:1rem; font-weight:700; color:#F0F9FF !important;
@@ -41,12 +38,7 @@
             transition:opacity .2s ease;
         }
         .navbar-brand-custom:hover { opacity:.82; }
-
-        .brand-icon-svg {
-            width:2rem; height:2rem; flex-shrink:0;
-            filter: drop-shadow(0 0 6px var(--brand-glow));
-        }
-
+        .brand-icon-svg { width:2rem; height:2rem; flex-shrink:0; filter: drop-shadow(0 0 6px var(--brand-glow)); }
         .navbar-main .nav-link {
             color:rgba(226,232,240,.65) !important; font-size:.875rem; font-weight:500;
             padding:.35rem .7rem !important; border-radius:.4rem;
@@ -55,19 +47,14 @@
         .navbar-main .nav-link:hover  { color:#F0F9FF !important; background:rgba(14,165,233,.08); }
         .navbar-main .nav-link.active { color:#38BDF8 !important; background:rgba(14,165,233,.12); }
         .nav-divider { width:1px; height:1.25rem; background:rgba(14,165,233,.18); align-self:center; margin:0 .25rem; }
-
         .nav-home-btn {
             display: inline-flex; align-items: center; justify-content: center;
-            width: 2rem; height: 2rem;
-            border-radius: .4rem;
-            color: rgba(226,232,240,.65) !important;
-            font-size: 1rem;
-            transition: color .2s ease, background .2s ease;
-            text-decoration: none;
+            width: 2rem; height: 2rem; border-radius: .4rem;
+            color: rgba(226,232,240,.65) !important; font-size: 1rem;
+            transition: color .2s ease, background .2s ease; text-decoration: none;
         }
-        .nav-home-btn:hover { color: #F0F9FF !important; background: rgba(14,165,233,.08); }
+        .nav-home-btn:hover  { color: #F0F9FF !important; background: rgba(14,165,233,.08); }
         .nav-home-btn.active { color: #38BDF8 !important; background: rgba(14,165,233,.12); }
-
         .navbar-main .dropdown-menu {
             background:rgba(10,18,35,.97); border:1px solid rgba(14,165,233,.14);
             border-radius:.6rem; box-shadow:0 16px 32px rgba(0,0,0,.45);
@@ -82,14 +69,12 @@
         .navbar-main .dropdown-item.active { background:rgba(14,165,233,.18); color:#38BDF8; }
         .navbar-main .dropdown-item-text   { font-size:.78rem; color:rgba(148,163,184,.7); padding:.4rem .75rem; }
         .navbar-main .dropdown-divider     { border-color:rgba(14,165,233,.12); margin:.3rem 0; }
-
         .user-avatar {
             width:1.75rem; height:1.75rem; border-radius:50%;
             background:linear-gradient(135deg,var(--brand-sky),var(--brand-electric));
             display:inline-flex; align-items:center; justify-content:center;
             font-size:.72rem; font-weight:700; color:var(--brand-abyss); flex-shrink:0;
         }
-
         .form-control, .form-select {
             background-color:rgba(13,25,41,.7) !important;
             border-color:rgba(14,165,233,.2) !important;
@@ -100,42 +85,29 @@
             border-color:var(--brand-sky) !important;
             box-shadow:0 0 0 0.2rem rgba(14,165,233,.25) !important;
         }
-
         .card-dark-bg  { background:rgba(13,25,41,.88); border:1px solid rgba(14,165,233,.1); color:#e2e8f0; }
         .card-header-dark { background:rgba(13,25,41,.95); border-color:rgba(14,165,233,.1); }
         .table-dark-custom { background:rgba(13,25,41,.82); }
         .text-soft { color:rgba(226,232,240,.72) !important; }
-
         .alert-success { --bs-alert-bg:rgba(34,197,94,.10); --bs-alert-border-color:rgba(34,197,94,.2); color:#4ade80; }
         .alert-danger  { --bs-alert-bg:rgba(239,68,68,.10);  --bs-alert-border-color:rgba(239,68,68,.2);  color:#f87171; }
-
         .trial-banner {
             background: linear-gradient(90deg, rgba(234,179,8,.12), rgba(234,179,8,.06));
             border-bottom: 1px solid rgba(234,179,8,.25);
-            font-size: .82rem;
-            padding: .45rem 1rem;
+            font-size: .82rem; padding: .45rem 1rem;
         }
         .trial-banner.urgent {
             background: linear-gradient(90deg, rgba(239,68,68,.15), rgba(239,68,68,.07));
             border-bottom-color: rgba(239,68,68,.3);
         }
-
-        /* ── BANNER IMPERSONATE ── */
         .impersonate-banner {
             background: linear-gradient(90deg, rgba(168,85,247,.18), rgba(139,92,246,.08));
             border-bottom: 2px solid rgba(168,85,247,.4);
-            padding: .5rem 1rem;
-            font-size: .82rem;
-            position: sticky;
-            top: 57px; /* altura da navbar */
-            z-index: 999;
+            padding: .5rem 1rem; font-size: .82rem;
+            position: sticky; top: 57px; z-index: 999;
             backdrop-filter: blur(8px);
         }
-
-        .footer-main {
-            background: rgba(8,13,26,.8);
-            border-top: 1px solid rgba(14,165,233,.09);
-        }
+        .footer-main { background: rgba(8,13,26,.8); border-top: 1px solid rgba(14,165,233,.09); }
         .footer-dev-link {
             display: inline-flex; align-items: center; gap: .35rem;
             color: #38BDF8; text-decoration: none; font-weight: 600;
@@ -143,7 +115,6 @@
         }
         .footer-dev-link:hover { color: #7DD3FC; opacity: .9; }
         .footer-dev-link .bi-instagram { font-size: .85rem; opacity: .85; }
-
         .stock-alert-badge {
             display:inline-flex; align-items:center; justify-content:center;
             min-width:1.1rem; height:1.1rem;
@@ -165,9 +136,8 @@
 
 <nav class="navbar navbar-expand-lg navbar-main sticky-top">
     <div class="container-fluid px-4">
-
         <a class="navbar-brand-custom" href="{{ Auth::check() ? route('home') : route('landing') }}">
-            <svg class="brand-icon-svg" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Invexa">
+            <svg class="brand-icon-svg" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <rect width="32" height="32" rx="7" fill="#080D1A"/>
                 <path d="M7 10h5.5L16 16l3.5-6H25L18 22h-4L7 10Z" fill="#0EA5E9"/>
                 <circle cx="24" cy="10" r="2.2" fill="#38BDF8"/>
@@ -186,108 +156,105 @@
 
                 <li class="nav-item">
                     <a class="nav-home-btn {{ request()->routeIs('home') ? 'active' : '' }}"
-                       href="{{ route('home') }}"
-                       title="Início" data-bs-toggle="tooltip" data-bs-placement="bottom">
+                       href="{{ route('home') }}" title="Início"
+                       data-bs-toggle="tooltip" data-bs-placement="bottom">
                         <i class="bi bi-house-fill"></i>
                     </a>
                 </li>
 
                 <li class="nav-item">
-                    <a class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}"
-                       href="{{ route('dashboard') }}">
+                    <a class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}">
                         <i class="bi bi-speedometer2 me-1 opacity-75"></i>Dashboard
                     </a>
                 </li>
 
                 <li class="nav-item">
-                    <a class="nav-link {{ request()->routeIs('sales.*') ? 'active' : '' }}"
-                       href="{{ route('sales.index') }}">
+                    <a class="nav-link {{ request()->routeIs('sales.*') ? 'active' : '' }}" href="{{ route('sales.index') }}">
                         <i class="bi bi-basket3 me-1 opacity-75"></i>Vendas
                     </a>
                 </li>
 
                 <li class="nav-item">
-                    <a class="nav-link {{ request()->routeIs('customers.*') ? 'active' : '' }}"
-                       href="{{ route('customers.index') }}">
+                    <a class="nav-link {{ request()->routeIs('customers.*') ? 'active' : '' }}" href="{{ route('customers.index') }}">
                         <i class="bi bi-people me-1 opacity-75"></i>Clientes
                     </a>
                 </li>
 
                 <li class="nav-item">
-                    <a class="nav-link {{ request()->routeIs('returns.*') ? 'active' : '' }}"
-                       href="{{ route('returns.index') }}">
+                    <a class="nav-link {{ request()->routeIs('returns.*') ? 'active' : '' }}" href="{{ route('returns.index') }}">
                         <i class="bi bi-arrow-return-left me-1 opacity-75"></i>Devoluções
                     </a>
                 </li>
 
                 @if(Auth::check() && Auth::user()->isGerente())
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle {{ request()->routeIs('stock.*','products.*','categories.*') ? 'active' : '' }}"
-                           href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="bi bi-boxes me-1 opacity-75"></i>Estoque
-                            @if(!empty($lowStockAlert) && $lowStockAlert > 0)
-                                <span class="stock-alert-badge">{{ $lowStockAlert > 99 ? '99+' : $lowStockAlert }}</span>
-                            @endif
-                        </a>
-                        <ul class="dropdown-menu">
-                            <li><span class="dropdown-item-text">ESTOQUE</span></li>
-                            <li><a class="dropdown-item {{ request()->routeIs('stock.*') ? 'active' : '' }}" href="{{ route('stock.index') }}"><i class="bi bi-arrow-left-right me-2"></i>Movimentações</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><span class="dropdown-item-text">CADASTROS</span></li>
-                            <li><a class="dropdown-item {{ request()->routeIs('products.*') ? 'active' : '' }}" href="{{ route('products.index') }}"><i class="bi bi-box-seam me-2"></i>Produtos</a></li>
-                            <li><a class="dropdown-item {{ request()->routeIs('categories.*') ? 'active' : '' }}" href="{{ route('categories.index') }}"><i class="bi bi-tag me-2"></i>Categorias</a></li>
-                        </ul>
-                    </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle {{ request()->routeIs('stock.*','products.*','categories.*') ? 'active' : '' }}"
+                       href="#" role="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-boxes me-1 opacity-75"></i>Estoque
+                        @if(!empty($lowStockAlert) && $lowStockAlert > 0)
+                            <span class="stock-alert-badge">{{ $lowStockAlert > 99 ? '99+' : $lowStockAlert }}</span>
+                        @endif
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><span class="dropdown-item-text">ESTOQUE</span></li>
+                        <li><a class="dropdown-item {{ request()->routeIs('stock.*') ? 'active' : '' }}" href="{{ route('stock.index') }}"><i class="bi bi-arrow-left-right me-2"></i>Movimentações</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><span class="dropdown-item-text">CADASTROS</span></li>
+                        <li><a class="dropdown-item {{ request()->routeIs('products.*') ? 'active' : '' }}" href="{{ route('products.index') }}"><i class="bi bi-box-seam me-2"></i>Produtos</a></li>
+                        <li><a class="dropdown-item {{ request()->routeIs('categories.*') ? 'active' : '' }}" href="{{ route('categories.index') }}"><i class="bi bi-tag me-2"></i>Categorias</a></li>
+                    </ul>
+                </li>
 
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle {{ request()->routeIs('suppliers.*','purchase-orders.*') ? 'active' : '' }}"
-                           href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="bi bi-truck me-1 opacity-75"></i>Compras
-                        </a>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item {{ request()->routeIs('suppliers.*') ? 'active' : '' }}" href="{{ route('suppliers.index') }}"><i class="bi bi-building me-2"></i>Fornecedores</a></li>
-                            <li><a class="dropdown-item {{ request()->routeIs('purchase-orders.*') ? 'active' : '' }}" href="{{ route('purchase-orders.index') }}"><i class="bi bi-cart-check me-2"></i>Ordens de Compra</a></li>
-                        </ul>
-                    </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle {{ request()->routeIs('suppliers.*','purchase-orders.*') ? 'active' : '' }}"
+                       href="#" role="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-truck me-1 opacity-75"></i>Compras
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item {{ request()->routeIs('suppliers.*') ? 'active' : '' }}" href="{{ route('suppliers.index') }}"><i class="bi bi-building me-2"></i>Fornecedores</a></li>
+                        <li><a class="dropdown-item {{ request()->routeIs('purchase-orders.*') ? 'active' : '' }}" href="{{ route('purchase-orders.index') }}"><i class="bi bi-cart-check me-2"></i>Ordens de Compra</a></li>
+                    </ul>
+                </li>
 
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle {{ request()->routeIs('bills.*','receivables.*') ? 'active' : '' }}"
-                           href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="bi bi-wallet2 me-1 opacity-75"></i>Financeiro
-                        </a>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item {{ request()->routeIs('bills.*') ? 'active' : '' }}" href="{{ route('bills.index') }}"><i class="bi bi-credit-card-2-front me-2"></i>Contas a Pagar</a></li>
-                            <li><a class="dropdown-item {{ request()->routeIs('receivables.*') ? 'active' : '' }}" href="{{ route('receivables.index') }}"><i class="bi bi-cash-coin me-2"></i>Contas a Receber</a></li>
-                        </ul>
-                    </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle {{ request()->routeIs('bills.*','receivables.*') ? 'active' : '' }}"
+                       href="#" role="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-wallet2 me-1 opacity-75"></i>Financeiro
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item {{ request()->routeIs('bills.*') ? 'active' : '' }}" href="{{ route('bills.index') }}"><i class="bi bi-credit-card-2-front me-2"></i>Contas a Pagar</a></li>
+                        <li><a class="dropdown-item {{ request()->routeIs('receivables.*') ? 'active' : '' }}" href="{{ route('receivables.index') }}"><i class="bi bi-cash-coin me-2"></i>Contas a Receber</a></li>
+                    </ul>
+                </li>
 
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle {{ request()->routeIs('reports.*') ? 'active' : '' }}"
-                           href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="bi bi-bar-chart-line me-1 opacity-75"></i>Relatórios
-                        </a>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="{{ route('reports.top-products') }}"><i class="bi bi-trophy me-2"></i>Produtos Mais Vendidos</a></li>
-                            <li><a class="dropdown-item" href="{{ route('reports.purchases') }}"><i class="bi bi-cart-check me-2"></i>Relatório de Compras</a></li>
-                            <li><a class="dropdown-item" href="{{ route('reports.sales') }}"><i class="bi bi-graph-up me-2"></i>Relatório de Vendas</a></li>
-                            <li><a class="dropdown-item" href="{{ route('reports.financial') }}"><i class="bi bi-wallet2 me-2"></i>Relatório Financeiro</a></li>
-                            <li><a class="dropdown-item" href="{{ route('reports.stock') }}"><i class="bi bi-boxes me-2"></i>Relatório de Estoque</a></li>
-                        </ul>
-                    </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle {{ request()->routeIs('reports.*') ? 'active' : '' }}"
+                       href="#" role="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-bar-chart-line me-1 opacity-75"></i>Relatórios
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{{ route('reports.top-products') }}"><i class="bi bi-trophy me-2"></i>Produtos Mais Vendidos</a></li>
+                        <li><a class="dropdown-item" href="{{ route('reports.purchases') }}"><i class="bi bi-cart-check me-2"></i>Relatório de Compras</a></li>
+                        <li><a class="dropdown-item" href="{{ route('reports.sales') }}"><i class="bi bi-graph-up me-2"></i>Relatório de Vendas</a></li>
+                        <li><a class="dropdown-item" href="{{ route('reports.financial') }}"><i class="bi bi-wallet2 me-2"></i>Relatório Financeiro</a></li>
+                        <li><a class="dropdown-item" href="{{ route('reports.stock') }}"><i class="bi bi-boxes me-2"></i>Relatório de Estoque</a></li>
+                    </ul>
+                </li>
                 @endif
 
                 @if(Auth::check() && Auth::user()->isAdmin())
-                    <li class="nav-item">
-                        <a class="nav-link {{ request()->routeIs('users.*') ? 'active' : '' }}" href="{{ route('users.index') }}">
-                            <i class="bi bi-shield-person me-1 opacity-75"></i>Usuários
-                        </a>
-                    </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('users.*') ? 'active' : '' }}" href="{{ route('users.index') }}">
+                        <i class="bi bi-shield-person me-1 opacity-75"></i>Usuários
+                    </a>
+                </li>
                 @endif
 
                 <li class="nav-item d-none d-lg-flex"><div class="nav-divider"></div></li>
 
+                {{-- DROPDOWN USUÁRIO --}}
                 <li class="nav-item dropdown">
-                    <a class="nav-link d-flex align-items-center gap-2 pe-1 {{ request()->routeIs('profile.*') ? 'active' : '' }}"
+                    <a class="nav-link d-flex align-items-center gap-2 pe-1"
                        href="#" id="userDropdown" role="button"
                        data-bs-toggle="dropdown" aria-expanded="false">
                         <div class="user-avatar">{{ strtoupper(substr(Auth::user()->name ?? 'U', 0, 1)) }}</div>
@@ -303,6 +270,15 @@
                                     <span class="badge mt-1 bg-opacity-25 bg-{{ Auth::user()->role_badge }} text-{{ Auth::user()->role_badge }}" style="font-size:.65rem;">
                                         {{ Auth::user()->role_label }}
                                     </span>
+                                    @if(!Auth::user()->isSuperAdmin() && Auth::user()->company)
+                                        @php
+                                            $planColors = ['free'=>'#94a3b8','pro'=>'#38BDF8','business'=>'#c084fc'];
+                                            $pc = $planColors[Auth::user()->company->plan] ?? '#94a3b8';
+                                        @endphp
+                                        <span class="badge mt-1" style="background:rgba(14,165,233,.1); color:{{ $pc }}; font-size:.65rem; border:1px solid {{ $pc }}33;">
+                                            Plano {{ strtoupper(Auth::user()->company->plan) }}
+                                        </span>
+                                    @endif
                                 @endif
                             </div>
                         </li>
@@ -312,12 +288,22 @@
                                 <i class="bi bi-person-gear me-2"></i>Editar Perfil
                             </a>
                         </li>
+                        @if(Auth::check() && !Auth::user()->isSuperAdmin())
+                        <li>
+                            <a class="dropdown-item {{ request()->routeIs('upgrade') ? 'active' : '' }}" href="{{ route('upgrade') }}">
+                                <i class="bi bi-rocket-takeoff me-2"></i>Meu Plano
+                                @if(Auth::user()->company?->plan === 'free')
+                                    <span class="badge ms-1" style="background:rgba(14,165,233,.15); color:#38BDF8; font-size:.6rem;">Upgrade</span>
+                                @endif
+                            </a>
+                        </li>
+                        @endif
                         @if(Auth::check() && Auth::user()->isAdmin() && !Auth::user()->isSuperAdmin())
-                            <li>
-                                <a class="dropdown-item" href="{{ route('users.index') }}">
-                                    <i class="bi bi-people me-2"></i>Gerenciar Usuários
-                                </a>
-                            </li>
+                        <li>
+                            <a class="dropdown-item" href="{{ route('users.index') }}">
+                                <i class="bi bi-people me-2"></i>Gerenciar Usuários
+                            </a>
+                        </li>
                         @endif
                         <li><hr class="dropdown-divider"></li>
                         <li>
@@ -336,7 +322,7 @@
     </div>
 </nav>
 
-{{-- ★ BANNER IMPERSONATE — aparece quando superadmin está em modo suporte --}}
+{{-- BANNER IMPERSONATE --}}
 @if(!empty($isImpersonating) && $isImpersonating)
 <div class="impersonate-banner">
     <div class="container d-flex align-items-center justify-content-between flex-wrap gap-2">
@@ -350,7 +336,7 @@
         <form action="{{ route('admin.leave-impersonate') }}" method="POST" class="m-0">
             @csrf
             <button type="submit"
-                style="background:rgba(168,85,247,.2); border:1px solid rgba(168,85,247,.4); color:#c084fc; font-size:.78rem; padding:.25rem .85rem; border-radius:.4rem; cursor:pointer; transition:background .2s;">
+                style="background:rgba(168,85,247,.2); border:1px solid rgba(168,85,247,.4); color:#c084fc; font-size:.78rem; padding:.25rem .85rem; border-radius:.4rem; cursor:pointer;">
                 <i class="bi bi-box-arrow-left me-1"></i>Sair do Modo Suporte
             </button>
         </form>
@@ -361,7 +347,7 @@
 {{-- BANNER TRIAL --}}
 @auth
     @php
-        $company = auth()->user()->company;
+        $company   = auth()->user()->company;
         $trialDays = $company?->trialDaysLeft() ?? 0;
         $isOnTrial = $company?->isOnTrial() ?? false;
         $isUrgent  = $isOnTrial && $trialDays <= 3;
@@ -376,7 +362,7 @@
                     @elseif($trialDays === 1)
                         <span class="{{ $isUrgent ? 'text-danger' : 'text-warning' }} fw-semibold">Seu período de teste encerra <strong>amanhã</strong>!</span>
                     @else
-                        <span style="color:rgba(226,232,240,.8);">Período de teste gratuito: <strong class="{{ $isUrgent ? 'text-danger' : 'text-warning' }}">{{ $trialDays }} {{ $trialDays === 1 ? 'dia restante' : 'dias restantes' }}</strong></span>
+                        <span style="color:rgba(226,232,240,.8);">Trial gratuito: <strong class="{{ $isUrgent ? 'text-danger' : 'text-warning' }}">{{ $trialDays }} dias restantes</strong></span>
                     @endif
                 </div>
                 <a href="{{ route('upgrade') }}" class="btn btn-sm {{ $isUrgent ? 'btn-danger' : 'btn-warning' }} fw-semibold py-0 px-3" style="font-size:.78rem; height:1.75rem; line-height:1.75rem;">
@@ -392,13 +378,13 @@
         @if(session('success'))
             <div class="alert alert-success alert-dismissible fade show" role="alert">
                 <i class="bi bi-check-circle me-2"></i>{{ session('success') }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
         @endif
         @if(session('error'))
             <div class="alert alert-danger alert-dismissible fade show" role="alert">
                 <i class="bi bi-exclamation-circle me-2"></i>{{ session('error') }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
         @endif
         @yield('content')
@@ -430,9 +416,7 @@
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el))
-</script>
+<script>document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el))</script>
 @stack('scripts')
 </body>
 </html>
