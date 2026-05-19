@@ -13,9 +13,10 @@ class PurchaseOrder extends Model
     use SoftDeletes;
 
     const STATUS_LABELS = [
-        'pendente'   => 'Pendente',
-        'recebida'   => 'Recebida',
-        'cancelada'  => 'Cancelada',
+        'pendente'  => 'Pendente',
+        'enviada'   => 'Enviada',
+        'recebida'  => 'Recebida',
+        'cancelada' => 'Cancelada',
     ];
 
     protected $fillable = [
@@ -60,6 +61,7 @@ class PurchaseOrder extends Model
     {
         return match ($this->status) {
             'pendente'  => 'warning',
+            'enviada'   => 'info',
             'recebida'  => 'success',
             'cancelada' => 'danger',
             default     => 'secondary',
@@ -76,16 +78,16 @@ class PurchaseOrder extends Model
         return $this->status === 'pendente';
     }
 
-    /** Pode registrar recebimento: apenas ordens pendentes. */
+    /** Pode registrar recebimento: ordens pendentes ou enviadas. */
     public function canReceive(): bool
     {
-        return $this->status === 'pendente';
+        return in_array($this->status, ['pendente', 'enviada']);
     }
 
-    /** Pode ser cancelada: apenas ordens pendentes. */
+    /** Pode ser cancelada: ordens pendentes ou enviadas. */
     public function canCancel(): bool
     {
-        return $this->status === 'pendente';
+        return in_array($this->status, ['pendente', 'enviada']);
     }
 
     // ------------------------------------
