@@ -38,11 +38,25 @@ class UserController extends Controller
 
     public function create()
     {
+        $company = auth()->user()->company;
+
+        if ($company && ! $company->canAddUser()) {
+            return redirect()->route('users.index')
+                ->with('error', 'Limite de usuários do seu plano atingido. Faça upgrade para continuar.');
+        }
+
         return view('users.create');
     }
 
     public function store(Request $request)
     {
+        $company = auth()->user()->company;
+
+        if ($company && ! $company->canAddUser()) {
+            return redirect()->route('users.index')
+                ->with('error', 'Limite de usuários do seu plano atingido. Faça upgrade para continuar.');
+        }
+
         $request->validate([
             'name'     => ['required', 'string', 'max:255'],
             'email'    => ['required', 'email', 'max:255', 'unique:users,email'],

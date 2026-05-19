@@ -36,12 +36,25 @@ class SupplierController extends Controller
 
     public function create()
     {
+        $company = auth()->user()->company;
+
+        if ($company && ! $company->canAddSupplier()) {
+            return redirect()->route('suppliers.index')
+                ->with('error', 'Limite de fornecedores do seu plano atingido. Faça upgrade para continuar.');
+        }
+
         return view('suppliers.create');
     }
 
     public function store(Request $request)
     {
+        $company   = auth()->user()->company;
         $companyId = auth()->user()->company_id;
+
+        if ($company && ! $company->canAddSupplier()) {
+            return redirect()->route('suppliers.index')
+                ->with('error', 'Limite de fornecedores do seu plano atingido. Faça upgrade para continuar.');
+        }
 
         $validated = $request->validate([
             'name'           => ['required', 'string', 'max:200'],

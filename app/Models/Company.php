@@ -42,6 +42,16 @@ class Company extends Model
         return $this->hasMany(Category::class);
     }
 
+    public function customers()
+    {
+        return $this->hasMany(Customer::class);
+    }
+
+    public function suppliers()
+    {
+        return $this->hasMany(Supplier::class);
+    }
+
     public function sales()
     {
         return $this->hasMany(Sale::class);
@@ -57,7 +67,7 @@ class Company extends Model
     /** Gera slug único a partir do nome da empresa */
     public static function generateSlug(string $name): string
     {
-        $slug = Str::slug($name);
+        $slug  = Str::slug($name);
         $count = static::where('slug', 'like', "{$slug}%")->count();
         return $count ? "{$slug}-{$count}" : $slug;
     }
@@ -66,10 +76,10 @@ class Company extends Model
     public function limits(): array
     {
         return match ($this->plan) {
-            'free'     => ['users' => 1,   'products' => 50],
-            'pro'      => ['users' => 5,   'products' => 500],
-            'business' => ['users' => 999, 'products' => 999999],
-            default    => ['users' => 1,   'products' => 50],
+            'free'     => ['users' => 1,   'products' => 50,     'customers' => 100,    'suppliers' => 20],
+            'pro'      => ['users' => 5,   'products' => 500,    'customers' => 2000,   'suppliers' => 200],
+            'business' => ['users' => 999, 'products' => 999999, 'customers' => 999999, 'suppliers' => 999999],
+            default    => ['users' => 1,   'products' => 50,     'customers' => 100,    'suppliers' => 20],
         };
     }
 
@@ -81,6 +91,16 @@ class Company extends Model
     public function canAddProduct(): bool
     {
         return $this->products()->count() < $this->limits()['products'];
+    }
+
+    public function canAddCustomer(): bool
+    {
+        return $this->customers()->count() < $this->limits()['customers'];
+    }
+
+    public function canAddSupplier(): bool
+    {
+        return $this->suppliers()->count() < $this->limits()['suppliers'];
     }
 
     public function getPlanLabelAttribute(): string

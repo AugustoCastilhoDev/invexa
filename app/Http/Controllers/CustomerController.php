@@ -15,7 +15,6 @@ class CustomerController extends Controller
     {
         $companyId = auth()->user()->company_id;
 
-        // Ordena por ID decrescente = ordem de cadastro (mais recente primeiro)
         $query = Customer::forCompany($companyId)->orderByDesc('id');
 
         if ($request->filled('search')) {
@@ -42,11 +41,25 @@ class CustomerController extends Controller
 
     public function create()
     {
+        $company = auth()->user()->company;
+
+        if ($company && ! $company->canAddCustomer()) {
+            return redirect()->route('customers.index')
+                ->with('error', 'Limite de clientes do seu plano atingido. Faça upgrade para continuar.');
+        }
+
         return view('customers.create');
     }
 
     public function store(Request $request)
     {
+        $company = auth()->user()->company;
+
+        if ($company && ! $company->canAddCustomer()) {
+            return redirect()->route('customers.index')
+                ->with('error', 'Limite de clientes do seu plano atingido. Faça upgrade para continuar.');
+        }
+
         $validated = $request->validate([
             'name'     => ['required', 'string', 'max:255'],
             'document' => ['nullable', 'string', 'max:20'],
@@ -152,7 +165,6 @@ class CustomerController extends Controller
             ->with('success', 'Cliente excluído com sucesso.');
     }
 
-    // ── API rápida para selects (usada no formulário de venda) ──
     public function search(Request $request)
     {
         $companyId = auth()->user()->company_id;
