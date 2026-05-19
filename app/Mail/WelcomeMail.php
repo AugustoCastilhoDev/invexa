@@ -18,15 +18,14 @@ class WelcomeMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: '🎉 Bem-vindo ao Invexa!',
+            subject: '🎉 Bem-vindo ao Invexa, ' . $this->user->name . '!',
         );
     }
 
     public function content(): Content
     {
         return new Content(
-            markdown: 'emails.welcome',
-            with: ['user' => $this->user],
+            view: 'emails.welcome',
         );
     }
 }
