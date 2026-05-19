@@ -339,17 +339,17 @@ class ReportController extends Controller
     // ---------------------------------------------------------------
     public function topProducts(Request $request)
     {
-        [$companyId, $period, $from, $to, $products, $chartLabels, $chartQty] =
+        [$companyId, $period, $from, $to, $sortBy, $products, $chartLabels, $chartData, $chartLabel] =
             $this->topProductsData($request);
 
         return view('reports.top-products', compact(
-            'period', 'from', 'to', 'products', 'chartLabels', 'chartQty'
+            'period', 'from', 'to', 'sortBy', 'products', 'chartLabels', 'chartData', 'chartLabel'
         ));
     }
 
     public function topProductsCsv(Request $request): Response
     {
-        [, , $from, $to, $products] = $this->topProductsData($request);
+        [, , $from, $to, , $products] = $this->topProductsData($request);
         $filename = 'produtos_mais_vendidos_' . $from->format('Ymd') . '_' . $to->format('Ymd') . '.csv';
 
         $lines[] = implode(';', ['#', 'Produto', 'Categoria', 'Qtd. Vendida', 'No de Vendas', 'Receita Total', 'Ticket Medio']);
@@ -373,7 +373,7 @@ class ReportController extends Controller
 
     public function topProductsPdf(Request $request): Response
     {
-        [, , $from, $to, $products] = $this->topProductsData($request);
+        [, , $from, $to, , $products] = $this->topProductsData($request);
 
         $html = view('reports.top-products-pdf', compact('from', 'to', 'products'))->render();
 
@@ -492,6 +492,13 @@ class ReportController extends Controller
     {
         $companyId = auth()->user()->company_id;
         $period    = $request->get('period', '30');
+        $sortBy    = $request->get('sort_by', 'total_qty');
+
+        $allowedSorts = ['total_qty', 'total_revenue', 'total_sales'];
+        if (!in_array($sortBy, $allowedSorts)) {
+            $sortBy = 'total_qty';
+        }
+
         [$from, $to] = $this->resolvePurchasePeriod($period, $request);
 
         $products = SaleItem::query()
@@ -505,7 +512,7 @@ class ReportController extends Controller
             ->whereNotIn('s.status', ['cancelada'])
             ->whereBetween('s.created_at', [$from, $to])
             ->groupBy('sale_items.product_id', 'p.name', 'c.name')
-            ->orderByDesc('total_revenue')
+            ->orderByDesc($sortBy)
             ->limit(20)
             ->selectRaw(
                 'sale_items.product_id,' .
@@ -517,11 +524,21 @@ class ReportController extends Controller
             )
             ->get();
 
-        $top8        = $products->take(8);
+        $top8 = $products->take(8);
         $chartLabels = $top8->pluck('product_name')->toArray();
-        $chartQty    = $top8->pluck('total_qty')->toArray();
 
-        return [$companyId, $period, $from, $to, $products, $chartLabels, $chartQty];
+        if ($sortBy === 'total_revenue') {
+            $chartData  = $top8->pluck('total_revenue')->toArray();
+            $chartLabel = 'Receita (R$)';
+        } elseif ($sortBy === 'total_sales') {
+            $chartData  = $top8->pluck('total_sales')->toArray();
+            $chartLabel = 'No de Vendas';
+        } else {
+            $chartData  = $top8->pluck('total_qty')->toArray();
+            $chartLabel = 'Unidades Vendidas';
+        }
+
+        return [$companyId, $period, $from, $to, $sortBy, $products, $chartLabels, $chartData, $chartLabel];
     }
 
     // ---------------------------------------------------------------

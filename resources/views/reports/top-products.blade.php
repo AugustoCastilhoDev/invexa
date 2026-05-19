@@ -31,6 +31,8 @@
         {{-- Filtros --}}
         <form method="GET" action="{{ route('reports.top-products') }}" class="mb-4">
             <div class="row g-2 align-items-end">
+
+                {{-- Período --}}
                 <div class="col-12 col-md-auto">
                     <label class="form-label text-soft" style="font-size:.78rem;">Período</label>
                     <select name="period" id="periodSelect" class="form-select form-select-sm"
@@ -43,6 +45,7 @@
                     </select>
                 </div>
 
+                {{-- Datas personalizadas --}}
                 <div class="col-12 col-md-auto" id="customDates"
                      style="{{ $period==='custom' ? '' : 'display:none;' }}">
                     <div class="d-flex gap-2">
@@ -57,6 +60,16 @@
                                    value="{{ request('to', $to->format('Y-m-d')) }}">
                         </div>
                     </div>
+                </div>
+
+                {{-- Ordenar por --}}
+                <div class="col-12 col-md-auto">
+                    <label class="form-label text-soft" style="font-size:.78rem;">Ordenar por</label>
+                    <select name="sort_by" class="form-select form-select-sm">
+                        <option value="total_qty"     {{ $sortBy==='total_qty'     ?'selected':'' }}>Quantidade vendida</option>
+                        <option value="total_revenue" {{ $sortBy==='total_revenue' ?'selected':'' }}>Receita</option>
+                        <option value="total_sales"   {{ $sortBy==='total_sales'   ?'selected':'' }}>Nº de vendas</option>
+                    </select>
                 </div>
 
                 <div class="col-12 col-md-auto">
@@ -97,7 +110,7 @@
         @if($products->isNotEmpty())
         <div class="card card-dark-bg border border-secondary mb-4">
             <div class="card-header card-header-dark">
-                <span class="text-white fw-semibold">Top 8 — Unidades Vendidas</span>
+                <span class="text-white fw-semibold">Top 8 — {{ $chartLabel }}</span>
             </div>
             <div class="card-body">
                 <canvas id="topProductsChart" height="100"></canvas>
@@ -171,17 +184,17 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
 (function () {
-    const top8   = @json($products->take(8));
-    const labels = top8.map(p => p.product_name);
-    const data   = top8.map(p => p.total_qty);
+    const chartLabels = @json($chartLabels);
+    const chartData   = @json($chartData);
+    const chartLabel  = @json($chartLabel);
 
     new Chart(document.getElementById('topProductsChart'), {
         type: 'bar',
         data: {
-            labels,
+            labels: chartLabels,
             datasets: [{
-                label: 'Unidades Vendidas',
-                data,
+                label: chartLabel,
+                data: chartData,
                 backgroundColor: 'rgba(14,165,233,.65)',
                 borderColor: 'rgba(14,165,233,1)',
                 borderWidth: 1,
