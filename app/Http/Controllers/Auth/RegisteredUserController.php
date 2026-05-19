@@ -11,6 +11,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rules;
 use Illuminate\View\View;
@@ -65,7 +66,11 @@ class RegisteredUserController extends Controller
         Auth::login($user);
 
         // 3. Envia e-mail de boas-vindas
-        Mail::to($user->email)->send(new WelcomeMail($user));
+        try {
+            Mail::to($user->email)->send(new WelcomeMail($user));
+        } catch (\Throwable $e) {
+            Log::warning('WelcomeMail não enviado para ' . $user->email . ': ' . $e->getMessage());
+        }
 
         return redirect(route('dashboard'));
     }

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Mail\WelcomeMail;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
 
@@ -58,8 +59,11 @@ class UserController extends Controller
             'active'     => $request->boolean('active', true),
         ]);
 
-        // Envia e-mail de boas-vindas ao novo usuário
-        Mail::to($user->email)->send(new WelcomeMail($user));
+        try {
+            Mail::to($user->email)->send(new WelcomeMail($user));
+        } catch (\Throwable $e) {
+            Log::warning('WelcomeMail não enviado para ' . $user->email . ': ' . $e->getMessage());
+        }
 
         return redirect()
             ->route('users.index')
