@@ -6,7 +6,6 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Invexa') — Invexa</title>
 
-    {{-- ✦ Favicon – ícone oficial Invexa (Sky #0EA5E9) --}}
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23080D1A'/%3E%3Cpath d='M7 10h5.5L16 16l3.5-6H25L18 22h-4L7 10Z' fill='%230EA5E9'/%3E%3Ccircle cx='24' cy='10' r='2.2' fill='%2338BDF8'/%3E%3C/svg%3E">
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -57,7 +56,6 @@
         .navbar-main .nav-link.active { color:#38BDF8 !important; background:rgba(14,165,233,.12); }
         .nav-divider { width:1px; height:1.25rem; background:rgba(14,165,233,.18); align-self:center; margin:0 .25rem; }
 
-        /* Botão Home — ícone de casa com tooltip */
         .nav-home-btn {
             display: inline-flex; align-items: center; justify-content: center;
             width: 2rem; height: 2rem;
@@ -122,6 +120,18 @@
             border-bottom-color: rgba(239,68,68,.3);
         }
 
+        /* ── BANNER IMPERSONATE ── */
+        .impersonate-banner {
+            background: linear-gradient(90deg, rgba(168,85,247,.18), rgba(139,92,246,.08));
+            border-bottom: 2px solid rgba(168,85,247,.4);
+            padding: .5rem 1rem;
+            font-size: .82rem;
+            position: sticky;
+            top: 57px; /* altura da navbar */
+            z-index: 999;
+            backdrop-filter: blur(8px);
+        }
+
         .footer-main {
             background: rgba(8,13,26,.8);
             border-top: 1px solid rgba(14,165,233,.09);
@@ -156,7 +166,6 @@
 <nav class="navbar navbar-expand-lg navbar-main sticky-top">
     <div class="container-fluid px-4">
 
-        {{-- Logo --}}
         <a class="navbar-brand-custom" href="{{ Auth::check() ? route('home') : route('landing') }}">
             <svg class="brand-icon-svg" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Invexa">
                 <rect width="32" height="32" rx="7" fill="#080D1A"/>
@@ -175,18 +184,14 @@
         <div class="collapse navbar-collapse" id="navbarMain">
             <ul class="navbar-nav ms-auto mb-2 mb-lg-0 align-items-lg-center gap-1">
 
-                {{-- ★ Botão Home --}}
                 <li class="nav-item">
                     <a class="nav-home-btn {{ request()->routeIs('home') ? 'active' : '' }}"
                        href="{{ route('home') }}"
-                       title="Início"
-                       data-bs-toggle="tooltip"
-                       data-bs-placement="bottom">
+                       title="Início" data-bs-toggle="tooltip" data-bs-placement="bottom">
                         <i class="bi bi-house-fill"></i>
                     </a>
                 </li>
 
-                {{-- Dashboard --}}
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}"
                        href="{{ route('dashboard') }}">
@@ -194,7 +199,6 @@
                     </a>
                 </li>
 
-                {{-- Vendas --}}
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('sales.*') ? 'active' : '' }}"
                        href="{{ route('sales.index') }}">
@@ -202,7 +206,6 @@
                     </a>
                 </li>
 
-                {{-- Clientes --}}
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('customers.*') ? 'active' : '' }}"
                        href="{{ route('customers.index') }}">
@@ -210,7 +213,6 @@
                     </a>
                 </li>
 
-                {{-- Devoluções --}}
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('returns.*') ? 'active' : '' }}"
                        href="{{ route('returns.index') }}">
@@ -219,134 +221,64 @@
                 </li>
 
                 @if(Auth::check() && Auth::user()->isGerente())
-
-                    {{-- Estoque --}}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle {{ request()->routeIs('stock.*','products.*','categories.*') ? 'active' : '' }}"
                            href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="bi bi-boxes me-1 opacity-75"></i>Estoque
                             @if(!empty($lowStockAlert) && $lowStockAlert > 0)
-                                <span class="stock-alert-badge" title="{{ $lowStockAlert }} produto(s) com estoque abaixo do mínimo">
-                                    {{ $lowStockAlert > 99 ? '99+' : $lowStockAlert }}
-                                </span>
+                                <span class="stock-alert-badge">{{ $lowStockAlert > 99 ? '99+' : $lowStockAlert }}</span>
                             @endif
                         </a>
                         <ul class="dropdown-menu">
                             <li><span class="dropdown-item-text">ESTOQUE</span></li>
-                            <li>
-                                <a class="dropdown-item {{ request()->routeIs('stock.*') ? 'active' : '' }}"
-                                   href="{{ route('stock.index') }}">
-                                    <i class="bi bi-arrow-left-right me-2"></i>Movimentações
-                                </a>
-                            </li>
+                            <li><a class="dropdown-item {{ request()->routeIs('stock.*') ? 'active' : '' }}" href="{{ route('stock.index') }}"><i class="bi bi-arrow-left-right me-2"></i>Movimentações</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><span class="dropdown-item-text">CADASTROS</span></li>
-                            <li>
-                                <a class="dropdown-item {{ request()->routeIs('products.*') ? 'active' : '' }}"
-                                   href="{{ route('products.index') }}">
-                                    <i class="bi bi-box-seam me-2"></i>Produtos
-                                </a>
-                            </li>
-                            <li>
-                                <a class="dropdown-item {{ request()->routeIs('categories.*') ? 'active' : '' }}"
-                                   href="{{ route('categories.index') }}">
-                                    <i class="bi bi-tag me-2"></i>Categorias
-                                </a>
-                            </li>
+                            <li><a class="dropdown-item {{ request()->routeIs('products.*') ? 'active' : '' }}" href="{{ route('products.index') }}"><i class="bi bi-box-seam me-2"></i>Produtos</a></li>
+                            <li><a class="dropdown-item {{ request()->routeIs('categories.*') ? 'active' : '' }}" href="{{ route('categories.index') }}"><i class="bi bi-tag me-2"></i>Categorias</a></li>
                         </ul>
                     </li>
 
-                    {{-- Compras --}}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle {{ request()->routeIs('suppliers.*','purchase-orders.*') ? 'active' : '' }}"
                            href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="bi bi-truck me-1 opacity-75"></i>Compras
                         </a>
                         <ul class="dropdown-menu">
-                            <li>
-                                <a class="dropdown-item {{ request()->routeIs('suppliers.*') ? 'active' : '' }}"
-                                   href="{{ route('suppliers.index') }}">
-                                    <i class="bi bi-building me-2"></i>Fornecedores
-                                </a>
-                            </li>
-                            <li>
-                                <a class="dropdown-item {{ request()->routeIs('purchase-orders.*') ? 'active' : '' }}"
-                                   href="{{ route('purchase-orders.index') }}">
-                                    <i class="bi bi-cart-check me-2"></i>Ordens de Compra
-                                </a>
-                            </li>
+                            <li><a class="dropdown-item {{ request()->routeIs('suppliers.*') ? 'active' : '' }}" href="{{ route('suppliers.index') }}"><i class="bi bi-building me-2"></i>Fornecedores</a></li>
+                            <li><a class="dropdown-item {{ request()->routeIs('purchase-orders.*') ? 'active' : '' }}" href="{{ route('purchase-orders.index') }}"><i class="bi bi-cart-check me-2"></i>Ordens de Compra</a></li>
                         </ul>
                     </li>
 
-                    {{-- Financeiro --}}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle {{ request()->routeIs('bills.*','receivables.*') ? 'active' : '' }}"
                            href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="bi bi-wallet2 me-1 opacity-75"></i>Financeiro
                         </a>
                         <ul class="dropdown-menu">
-                            <li>
-                                <a class="dropdown-item {{ request()->routeIs('bills.*') ? 'active' : '' }}"
-                                   href="{{ route('bills.index') }}">
-                                    <i class="bi bi-credit-card-2-front me-2"></i>Contas a Pagar
-                                </a>
-                            </li>
-                            <li>
-                                <a class="dropdown-item {{ request()->routeIs('receivables.*') ? 'active' : '' }}"
-                                   href="{{ route('receivables.index') }}">
-                                    <i class="bi bi-cash-coin me-2"></i>Contas a Receber
-                                </a>
-                            </li>
+                            <li><a class="dropdown-item {{ request()->routeIs('bills.*') ? 'active' : '' }}" href="{{ route('bills.index') }}"><i class="bi bi-credit-card-2-front me-2"></i>Contas a Pagar</a></li>
+                            <li><a class="dropdown-item {{ request()->routeIs('receivables.*') ? 'active' : '' }}" href="{{ route('receivables.index') }}"><i class="bi bi-cash-coin me-2"></i>Contas a Receber</a></li>
                         </ul>
                     </li>
 
-                    {{-- Relatórios --}}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle {{ request()->routeIs('reports.*') ? 'active' : '' }}"
                            href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="bi bi-bar-chart-line me-1 opacity-75"></i>Relatórios
                         </a>
                         <ul class="dropdown-menu">
-                            <li>
-                                <a class="dropdown-item {{ request()->routeIs('reports.top-products*') ? 'active' : '' }}"
-                                   href="{{ route('reports.top-products') }}">
-                                    <i class="bi bi-trophy me-2"></i>Produtos Mais Vendidos
-                                </a>
-                            </li>
-                            <li>
-                                <a class="dropdown-item {{ request()->routeIs('reports.purchases*') ? 'active' : '' }}"
-                                   href="{{ route('reports.purchases') }}">
-                                    <i class="bi bi-cart-check me-2"></i>Relatório de Compras
-                                </a>
-                            </li>
-                            <li>
-                                <a class="dropdown-item {{ request()->routeIs('reports.sales*') ? 'active' : '' }}"
-                                   href="{{ route('reports.sales') }}">
-                                    <i class="bi bi-graph-up me-2"></i>Relatório de Vendas
-                                </a>
-                            </li>
-                            <li>
-                                <a class="dropdown-item {{ request()->routeIs('reports.financial*') ? 'active' : '' }}"
-                                   href="{{ route('reports.financial') }}">
-                                    <i class="bi bi-wallet2 me-2"></i>Relatório Financeiro
-                                </a>
-                            </li>
-                            <li>
-                                <a class="dropdown-item {{ request()->routeIs('reports.stock*') ? 'active' : '' }}"
-                                   href="{{ route('reports.stock') }}">
-                                    <i class="bi bi-boxes me-2"></i>Relatório de Estoque
-                                </a>
-                            </li>
+                            <li><a class="dropdown-item" href="{{ route('reports.top-products') }}"><i class="bi bi-trophy me-2"></i>Produtos Mais Vendidos</a></li>
+                            <li><a class="dropdown-item" href="{{ route('reports.purchases') }}"><i class="bi bi-cart-check me-2"></i>Relatório de Compras</a></li>
+                            <li><a class="dropdown-item" href="{{ route('reports.sales') }}"><i class="bi bi-graph-up me-2"></i>Relatório de Vendas</a></li>
+                            <li><a class="dropdown-item" href="{{ route('reports.financial') }}"><i class="bi bi-wallet2 me-2"></i>Relatório Financeiro</a></li>
+                            <li><a class="dropdown-item" href="{{ route('reports.stock') }}"><i class="bi bi-boxes me-2"></i>Relatório de Estoque</a></li>
                         </ul>
                     </li>
-
                 @endif
 
-                {{-- Usuários (admin) --}}
                 @if(Auth::check() && Auth::user()->isAdmin())
                     <li class="nav-item">
-                        <a class="nav-link {{ request()->routeIs('users.*') ? 'active' : '' }}"
-                           href="{{ route('users.index') }}">
+                        <a class="nav-link {{ request()->routeIs('users.*') ? 'active' : '' }}" href="{{ route('users.index') }}">
                             <i class="bi bi-shield-person me-1 opacity-75"></i>Usuários
                         </a>
                     </li>
@@ -354,14 +286,11 @@
 
                 <li class="nav-item d-none d-lg-flex"><div class="nav-divider"></div></li>
 
-                {{-- Avatar / Perfil --}}
                 <li class="nav-item dropdown">
                     <a class="nav-link d-flex align-items-center gap-2 pe-1 {{ request()->routeIs('profile.*') ? 'active' : '' }}"
                        href="#" id="userDropdown" role="button"
                        data-bs-toggle="dropdown" aria-expanded="false">
-                        <div class="user-avatar">
-                            {{ strtoupper(substr(Auth::user()->name ?? 'U', 0, 1)) }}
-                        </div>
+                        <div class="user-avatar">{{ strtoupper(substr(Auth::user()->name ?? 'U', 0, 1)) }}</div>
                         <span class="d-none d-lg-inline">{{ Auth::user()->name ?? 'Usuário' }}</span>
                         <i class="bi bi-chevron-down" style="font-size:.65rem; opacity:.6;"></i>
                     </a>
@@ -379,12 +308,11 @@
                         </li>
                         <li><hr class="dropdown-divider"></li>
                         <li>
-                            <a class="dropdown-item {{ request()->routeIs('profile.*') ? 'active' : '' }}"
-                               href="{{ route('profile.edit') }}">
+                            <a class="dropdown-item {{ request()->routeIs('profile.*') ? 'active' : '' }}" href="{{ route('profile.edit') }}">
                                 <i class="bi bi-person-gear me-2"></i>Editar Perfil
                             </a>
                         </li>
-                        @if(Auth::check() && Auth::user()->isAdmin())
+                        @if(Auth::check() && Auth::user()->isAdmin() && !Auth::user()->isSuperAdmin())
                             <li>
                                 <a class="dropdown-item" href="{{ route('users.index') }}">
                                     <i class="bi bi-people me-2"></i>Gerenciar Usuários
@@ -408,6 +336,28 @@
     </div>
 </nav>
 
+{{-- ★ BANNER IMPERSONATE — aparece quando superadmin está em modo suporte --}}
+@if(!empty($isImpersonating) && $isImpersonating)
+<div class="impersonate-banner">
+    <div class="container d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-person-badge-fill" style="color:#c084fc;"></i>
+            <span style="color:rgba(226,232,240,.9);">
+                Modo Suporte ativo — você está visualizando como
+                <strong style="color:#c084fc;">{{ $impersonatedCompany }}</strong>
+            </span>
+        </div>
+        <form action="{{ route('admin.leave-impersonate') }}" method="POST" class="m-0">
+            @csrf
+            <button type="submit"
+                style="background:rgba(168,85,247,.2); border:1px solid rgba(168,85,247,.4); color:#c084fc; font-size:.78rem; padding:.25rem .85rem; border-radius:.4rem; cursor:pointer; transition:background .2s;">
+                <i class="bi bi-box-arrow-left me-1"></i>Sair do Modo Suporte
+            </button>
+        </form>
+    </div>
+</div>
+@endif
+
 {{-- BANNER TRIAL --}}
 @auth
     @php
@@ -416,32 +366,20 @@
         $isOnTrial = $company?->isOnTrial() ?? false;
         $isUrgent  = $isOnTrial && $trialDays <= 3;
     @endphp
-
     @if($isOnTrial)
         <div class="trial-banner {{ $isUrgent ? 'urgent' : '' }}">
             <div class="container d-flex align-items-center justify-content-between flex-wrap gap-2">
                 <div class="d-flex align-items-center gap-2">
                     <i class="bi bi-clock{{ $isUrgent ? '-fill text-danger' : ' text-warning' }}"></i>
                     @if($trialDays === 0)
-                        <span class="{{ $isUrgent ? 'text-danger' : 'text-warning' }} fw-semibold">
-                            Seu período de teste encerra <strong>hoje</strong>!
-                        </span>
+                        <span class="{{ $isUrgent ? 'text-danger' : 'text-warning' }} fw-semibold">Seu período de teste encerra <strong>hoje</strong>!</span>
                     @elseif($trialDays === 1)
-                        <span class="{{ $isUrgent ? 'text-danger' : 'text-warning' }} fw-semibold">
-                            Seu período de teste encerra <strong>amanhã</strong>!
-                        </span>
+                        <span class="{{ $isUrgent ? 'text-danger' : 'text-warning' }} fw-semibold">Seu período de teste encerra <strong>amanhã</strong>!</span>
                     @else
-                        <span style="color:rgba(226,232,240,.8);">
-                            Período de teste gratuito:
-                            <strong class="{{ $isUrgent ? 'text-danger' : 'text-warning' }}">
-                                {{ $trialDays }} {{ $trialDays === 1 ? 'dia restante' : 'dias restantes' }}
-                            </strong>
-                        </span>
+                        <span style="color:rgba(226,232,240,.8);">Período de teste gratuito: <strong class="{{ $isUrgent ? 'text-danger' : 'text-warning' }}">{{ $trialDays }} {{ $trialDays === 1 ? 'dia restante' : 'dias restantes' }}</strong></span>
                     @endif
                 </div>
-                <a href="{{ route('upgrade') }}"
-                   class="btn btn-sm {{ $isUrgent ? 'btn-danger' : 'btn-warning' }} fw-semibold py-0 px-3"
-                   style="font-size:.78rem; height:1.75rem; line-height:1.75rem;">
+                <a href="{{ route('upgrade') }}" class="btn btn-sm {{ $isUrgent ? 'btn-danger' : 'btn-warning' }} fw-semibold py-0 px-3" style="font-size:.78rem; height:1.75rem; line-height:1.75rem;">
                     <i class="bi bi-rocket-takeoff me-1"></i>Ver planos
                 </a>
             </div>
@@ -470,7 +408,7 @@
 <footer class="footer-main py-4">
     <div class="container" style="color:rgba(148,163,184,.5); font-size:.78rem;">
         <div class="d-flex align-items-center justify-content-center gap-2 mb-2">
-            <svg width="16" height="16" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 32 32" fill="none">
                 <rect width="32" height="32" rx="7" fill="#0D1929"/>
                 <path d="M7 10h5.5L16 16l3.5-6H25L18 22h-4L7 10Z" fill="#0EA5E9"/>
                 <circle cx="24" cy="10" r="2.2" fill="#38BDF8"/>
@@ -484,11 +422,8 @@
         <div style="height:1px; background:rgba(14,165,233,.07); margin-bottom:.75rem;"></div>
         <div class="text-center">
             Desenvolvido por
-            <a href="https://www.instagram.com/castilho_digital/"
-               target="_blank" rel="noopener noreferrer"
-               class="footer-dev-link ms-1">
-                <i class="bi bi-instagram"></i>
-                Castilho Soluções Digitais
+            <a href="https://www.instagram.com/castilho_digital/" target="_blank" rel="noopener noreferrer" class="footer-dev-link ms-1">
+                <i class="bi bi-instagram"></i>Castilho Soluções Digitais
             </a>
         </div>
     </div>
@@ -496,10 +431,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    // Ativa tooltips do Bootstrap (usado no botão Home)
-    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
-        new bootstrap.Tooltip(el)
-    })
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el))
 </script>
 @stack('scripts')
 </body>

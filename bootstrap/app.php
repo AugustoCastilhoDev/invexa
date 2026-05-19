@@ -11,6 +11,11 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        // Adiciona o banner de impersonate em todas as requisições web
+        $middleware->web(append: [
+            \App\Http\Middleware\ImpersonateBannerMiddleware::class,
+        ]);
+
         $middleware->alias([
             'role'       => \App\Http\Middleware\CheckRole::class,
             'company'    => \App\Http\Middleware\CompanyMiddleware::class,

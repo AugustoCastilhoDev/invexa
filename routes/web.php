@@ -32,11 +32,17 @@ Route::post('/logout',[AuthenticatedSessionController::class, 'destroy'])->name(
 Route::get('/register',  [RegisteredUserController::class, 'create'])->name('register');
 Route::post('/register', [RegisteredUserController::class, 'store'])->name('register.store');
 
-// ── Super-Admin (só superadmin, sem company/trial check)
+// ── Super-Admin
 Route::middleware(['auth', 'superadmin'])->prefix('admin')->name('admin.')->group(function () {
-    Route::get('/',                              [SuperAdminController::class, 'index'])->name('index');
-    Route::patch('/companies/{company}/toggle', [SuperAdminController::class, 'toggleCompany'])->name('companies.toggle');
+    Route::get('/',                                    [SuperAdminController::class, 'index'])->name('index');
+    Route::patch('/companies/{company}/toggle',        [SuperAdminController::class, 'toggleCompany'])->name('companies.toggle');
+    Route::post('/companies/{company}/impersonate',    [SuperAdminController::class, 'impersonate'])->name('companies.impersonate');
 });
+
+// ── Sair do modo suporte (auth simples, sem superadmin guard)
+Route::post('/admin/leave-impersonate', [SuperAdminController::class, 'leaveImpersonate'])
+    ->middleware('auth')
+    ->name('admin.leave-impersonate');
 
 // ── Upgrade (autenticado, fora do trial check)
 Route::middleware(['auth', 'company'])->group(function () {
