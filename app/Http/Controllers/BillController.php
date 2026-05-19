@@ -49,13 +49,9 @@ class BillController extends Controller
 
         return view('bills.index', compact(
             'bills',
-            'totalAmount',
-            'totalPaid',
-            'totalPending',
-            'totalOverdue',
-            'countOverdue',
-            'statuses',
-            'categories'
+            'totalAmount', 'totalPaid', 'totalPending',
+            'totalOverdue', 'countOverdue',
+            'statuses', 'categories'
         ));
     }
 
@@ -69,15 +65,15 @@ class BillController extends Controller
     {
         $companyId = auth()->user()->company_id;
         $validated = $request->validate([
-            'description'   => ['required','string','max:255'],
-            'supplier_id'   => ['nullable','exists:suppliers,id'],
-            'amount'        => ['required','numeric','min:0.01'],
-            'due_date'      => ['required','date'],
-            'status'        => ['required','in:pendente,paga,cancelada'],
-            'payment_method'=> ['nullable','string'],
-            'notes'         => ['nullable','string'],
-            'installments'  => ['nullable','integer','min:1','max:60'],
-            'recurrence'    => ['nullable','in:none,monthly,weekly'],
+            'description'    => ['required','string','max:255'],
+            'supplier_id'    => ['nullable','exists:suppliers,id'],
+            'amount'         => ['required','numeric','min:0.01'],
+            'due_date'       => ['required','date'],
+            'status'         => ['required','in:pendente,paga,cancelada'],
+            'payment_method' => ['nullable','string'],
+            'notes'          => ['nullable','string'],
+            'installments'   => ['nullable','integer','min:1','max:60'],
+            'recurrence'     => ['nullable','in:none,monthly,weekly'],
         ]);
 
         $installments = (int) ($validated['installments'] ?? 1);
@@ -86,22 +82,22 @@ class BillController extends Controller
         DB::transaction(function () use ($validated, $companyId, $installments, $recurrence) {
             $parentId = null;
             for ($i = 1; $i <= $installments; $i++) {
-                $due = Carbon::parse($validated['due_date'])->addMonths($i - 1);
+                $due  = Carbon::parse($validated['due_date'])->addMonths($i - 1);
                 $bill = Bill::create([
-                    'company_id'          => $companyId,
-                    'supplier_id'         => $validated['supplier_id'] ?? null,
-                    'description'         => $installments > 1
+                    'company_id'         => $companyId,
+                    'supplier_id'        => $validated['supplier_id'] ?? null,
+                    'description'        => $installments > 1
                         ? $validated['description'] . " ({$i}/{$installments})"
                         : $validated['description'],
-                    'amount'              => round((float)$validated['amount'] / $installments, 2),
-                    'due_date'            => $due,
-                    'status'              => $validated['status'],
-                    'payment_method'      => $validated['payment_method'] ?? null,
-                    'notes'               => $validated['notes'] ?? null,
-                    'installment_number'  => $installments > 1 ? $i : null,
-                    'installments_total'  => $installments > 1 ? $installments : null,
-                    'recurrence'          => $recurrence !== 'none' ? $recurrence : null,
-                    'parent_bill_id'      => $i > 1 ? $parentId : null,
+                    'amount'             => round((float) $validated['amount'] / $installments, 2),
+                    'due_date'           => $due,
+                    'status'             => $validated['status'],
+                    'payment_method'     => $validated['payment_method'] ?? null,
+                    'notes'              => $validated['notes'] ?? null,
+                    'installment_number' => $installments > 1 ? $i : null,
+                    'installments_total' => $installments > 1 ? $installments : null,
+                    'recurrence'         => $recurrence !== 'none' ? $recurrence : null,
+                    'parent_bill_id'     => $i > 1 ? $parentId : null,
                 ]);
                 if ($i === 1) { $parentId = $bill->id; }
             }
@@ -145,8 +141,13 @@ class BillController extends Controller
 
     public function pay(Bill $bill)
     {
-        if ($bill->status === 'paga') { return back()->with('error', 'Esta conta já está paga.'); }
-        $bill->update(['status' => 'paga', 'payment_date' => now()]);
+        if ($bill->status === 'paga') {
+            return back()->with('error', 'Esta conta já está paga.');
+        }
+        $bill->update([
+            'status'  => 'paga',
+            'paid_at' => now(),
+        ]);
         return back()->with('success', 'Conta marcada como paga.');
     }
 
@@ -154,8 +155,15 @@ class BillController extends Controller
     {
         $ids       = $request->input('ids', []);
         $companyId = auth()->user()->company_id;
-        Bill::whereIn('id', $ids)->where('company_id', $companyId)->where('status','pendente')
-            ->update(['status' => 'paga', 'payment_date' => now()]);
+
+        Bill::whereIn('id', $ids)
+            ->where('company_id', $companyId)
+            ->where('status', 'pendente')
+            ->update([
+                'status'  => 'paga',
+                'paid_at' => now(),
+            ]);
+
         return back()->with('success', count($ids) . ' conta(s) marcada(s) como paga(s).');
     }
 
