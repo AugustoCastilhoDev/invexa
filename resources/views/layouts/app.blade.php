@@ -106,6 +106,18 @@
         .alert-success { --bs-alert-bg:rgba(34,197,94,.10); --bs-alert-border-color:rgba(34,197,94,.2); color:#4ade80; }
         .alert-danger  { --bs-alert-bg:rgba(239,68,68,.10);  --bs-alert-border-color:rgba(239,68,68,.2);  color:#f87171; }
 
+        /* ─── TRIAL BANNER ────────────────────────────────────────────── */
+        .trial-banner {
+            background: linear-gradient(90deg, rgba(234,179,8,.12), rgba(234,179,8,.06));
+            border-bottom: 1px solid rgba(234,179,8,.25);
+            font-size: .82rem;
+            padding: .45rem 1rem;
+        }
+        .trial-banner.urgent {
+            background: linear-gradient(90deg, rgba(239,68,68,.15), rgba(239,68,68,.07));
+            border-bottom-color: rgba(239,68,68,.3);
+        }
+
         /* ─── FOOTER ─────────────────────────────────────────────────── */
         .footer-main {
             background: rgba(8,13,26,.8);
@@ -393,6 +405,47 @@
         </div>
     </div>
 </nav>
+
+{{-- ════════════════════ BANNER TRIAL ════════════════════ --}}
+@auth
+    @php
+        $company = auth()->user()->company;
+        $trialDays = $company?->trialDaysLeft() ?? 0;
+        $isOnTrial = $company?->isOnTrial() ?? false;
+        $isUrgent  = $isOnTrial && $trialDays <= 3;
+    @endphp
+
+    @if($isOnTrial)
+        <div class="trial-banner {{ $isUrgent ? 'urgent' : '' }}">
+            <div class="container d-flex align-items-center justify-content-between flex-wrap gap-2">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-clock{{ $isUrgent ? '-fill text-danger' : ' text-warning' }}"></i>
+                    @if($trialDays === 0)
+                        <span class="{{ $isUrgent ? 'text-danger' : 'text-warning' }} fw-semibold">
+                            Seu período de teste encerra <strong>hoje</strong>!
+                        </span>
+                    @elseif($trialDays === 1)
+                        <span class="{{ $isUrgent ? 'text-danger' : 'text-warning' }} fw-semibold">
+                            Seu período de teste encerra <strong>amanhã</strong>!
+                        </span>
+                    @else
+                        <span style="color:rgba(226,232,240,.8);">
+                            Período de teste gratuito:
+                            <strong class="{{ $isUrgent ? 'text-danger' : 'text-warning' }}">
+                                {{ $trialDays }} {{ $trialDays === 1 ? 'dia restante' : 'dias restantes' }}
+                            </strong>
+                        </span>
+                    @endif
+                </div>
+                <a href="{{ route('upgrade') }}"
+                   class="btn btn-sm {{ $isUrgent ? 'btn-danger' : 'btn-warning' }} fw-semibold py-0 px-3"
+                   style="font-size:.78rem; height:1.75rem; line-height:1.75rem;">
+                    <i class="bi bi-rocket-takeoff me-1"></i>Ver planos
+                </a>
+            </div>
+        </div>
+    @endif
+@endauth
 
 {{-- ════════════════════ CONTEÚDO ════════════════════ --}}
 <main class="py-4 min-vh-100">
