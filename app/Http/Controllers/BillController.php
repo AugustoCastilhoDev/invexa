@@ -66,7 +66,10 @@ class BillController extends Controller
         DB::transaction(function () use ($validated, $companyId, $installments, $recurrence) {
             $parentId = null;
             for ($i = 1; $i <= $installments; $i++) {
-                $due  = Carbon::parse($validated['due_date'])->addMonths($i - 1);
+                $due        = Carbon::parse($validated['due_date'])->addMonths($i - 1);
+                $unitAmount = round((float) $validated['amount'] / $installments, 2);
+                $isPaid     = $validated['status'] === 'paga';
+
                 $bill = Bill::create([
                     'company_id'         => $companyId,
                     'supplier_id'        => $validated['supplier_id'] ?? null,
@@ -74,9 +77,11 @@ class BillController extends Controller
                     'description'        => $installments > 1
                         ? $validated['description'] . " ({$i}/{$installments})"
                         : $validated['description'],
-                    'amount'             => round((float) $validated['amount'] / $installments, 2),
+                    'amount'             => $unitAmount,
+                    'amount_paid'        => $isPaid ? $unitAmount : 0,
                     'due_date'           => $due,
                     'status'             => $validated['status'],
+                    'paid_at'            => $isPaid ? now() : null,
                     'payment_method'     => $validated['payment_method'] ?? null,
                     'notes'              => $validated['notes'] ?? null,
                     'installments'       => $installments > 1 ? $installments : null,
@@ -116,6 +121,18 @@ class BillController extends Controller
             'payment_method' => ['nullable','string'],
             'notes'          => ['nullable','string'],
         ]);
+
+        // Se o status foi alterado para paga, preenche paid_at e amount_paid
+        if ($validated['status'] === 'paga' && $bill->status !== 'paga') {
+            $validated['paid_at']     = now();
+            $validated['amount_paid'] = $validated['amount'];
+        }
+        // Se foi reaberta (de paga para pendente), zera os campos de pagamento
+        if ($validated['status'] !== 'paga' && $bill->status === 'paga') {
+            $validated['paid_at']     = null;
+            $validated['amount_paid'] = 0;
+        }
+
         $bill->update($validated);
         return redirect()->route('bills.index')->with('success', 'Conta a pagar atualizada.');
     }
@@ -132,8 +149,9 @@ class BillController extends Controller
             return back()->with('error', 'Esta conta já está paga.');
         }
         $bill->update([
-            'status'  => 'paga',
-            'paid_at' => now(),
+            'status'      => 'paga',
+            'paid_at'     => now(),
+            'amount_paid' => $bill->amount,
         ]);
         return back()->with('success', 'Conta marcada como paga.');
     }
@@ -141,22 +159,39 @@ class BillController extends Controller
     public function bulkPay(Request $request)
     {
         $ids       = $request->input('ids', []);
+        $paidAt    = $request->input('paid_at') ? Carbon::parse($request->input('paid_at')) : now();
+        $method    = $request->input('payment_method');
         $companyId = auth()->user()->company_id;
 
-        Bill::whereIn('id', $ids)
-            ->where('company_id', $companyId)
-            ->where('status', 'pendente')
-            ->update([
-                'status'  => 'paga',
-                'paid_at' => now(),
-            ]);
+        if (empty($ids)) {
+            return back()->with('error', 'Nenhuma conta selecionada.');
+        }
 
-        return back()->with('success', count($ids) . ' conta(s) marcada(s) como paga(s).');
+        // Busca individualmente para disparar observers e gravar amount_paid corretamente
+        $bills = Bill::whereIn('id', $ids)
+            ->where('company_id', $companyId)
+            ->whereIn('status', ['pendente', 'vencida'])
+            ->get();
+
+        foreach ($bills as $bill) {
+            $bill->update([
+                'status'         => 'paga',
+                'paid_at'        => $paidAt,
+                'amount_paid'    => $bill->amount,
+                'payment_method' => $method ?? $bill->payment_method,
+            ]);
+        }
+
+        return back()->with('success', $bills->count() . ' conta(s) marcada(s) como paga(s).');
     }
 
     public function cancel(Bill $bill)
     {
-        $bill->update(['status' => 'cancelada']);
+        $bill->update([
+            'status'      => 'cancelada',
+            'paid_at'     => null,
+            'amount_paid' => 0,
+        ]);
         return back()->with('success', 'Conta cancelada.');
     }
 
