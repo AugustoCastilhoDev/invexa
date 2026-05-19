@@ -30,6 +30,11 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
+        // SuperAdmin vai direto para o painel de controle
+        if (Auth::user()->isSuperAdmin()) {
+            return redirect()->route('admin.index');
+        }
+
         return redirect()->intended(route('home'));
     }
 

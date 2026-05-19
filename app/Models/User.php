@@ -51,17 +51,18 @@ class User extends Authenticatable
 
     public function isAdmin(): bool
     {
-        return $this->role === 'admin';
+        // superadmin também tem privilégios de admin dentro de empresa
+        return in_array($this->role, ['superadmin', 'admin']);
     }
 
     public function isGerente(): bool
     {
-        return in_array($this->role, ['admin', 'gerente']);
+        return in_array($this->role, ['superadmin', 'admin', 'gerente']);
     }
 
     public function isVendedor(): bool
     {
-        return in_array($this->role, ['admin', 'gerente', 'vendedor']);
+        return in_array($this->role, ['superadmin', 'admin', 'gerente', 'vendedor']);
     }
 
     public function hasRole(string|array $roles): bool
