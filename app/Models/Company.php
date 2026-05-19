@@ -2,35 +2,25 @@
 
 namespace App\Models;
 
-use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Str;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Company extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'name',
-        'slug',
-        'cnpj',
-        'phone',
-        'email',
-        'logo',
-        'plan',
-        'active',
-        'trial_ends_at',
-        'plan_expires_at',
+        'name', 'email', 'phone', 'document', 'address',
+        'plan', 'active', 'trial_ends_at',
     ];
 
     protected $casts = [
-        'active'          => 'boolean',
-        'trial_ends_at'   => 'datetime',
-        'plan_expires_at' => 'datetime',
+        'active'        => 'boolean',
+        'trial_ends_at' => 'datetime',
     ];
 
-    // ── Relacionamentos ────────────────────────────────────────────
+    // ── Relacionamentos
 
     public function users()
     {
@@ -40,11 +30,6 @@ class Company extends Model
     public function products()
     {
         return $this->hasMany(Product::class);
-    }
-
-    public function categories()
-    {
-        return $this->hasMany(Category::class);
     }
 
     public function customers()
@@ -62,108 +47,100 @@ class Company extends Model
         return $this->hasMany(Sale::class);
     }
 
-    public function auditLogs()
-    {
-        return $this->hasMany(AuditLog::class);
-    }
+    // ── Limites por plano
 
-    // ── Trial & Plano ───────────────────────────────────────────
-
-    /** Empresa ainda está no período de trial ativo */
-    public function isOnTrial(): bool
-    {
-        return $this->trial_ends_at !== null
-            && Carbon::now()->lessThanOrEqualTo($this->trial_ends_at);
-    }
-
-    /** Trial já expirou (e não tem plano pago ativo) */
-    public function trialExpired(): bool
-    {
-        return $this->trial_ends_at !== null
-            && Carbon::now()->greaterThan($this->trial_ends_at)
-            && ! $this->hasPaidPlan();
-    }
-
-    /** Tem plano pago vigente */
-    public function hasPaidPlan(): bool
-    {
-        if ($this->plan === 'free') {
-            return false;
-        }
-
-        // Se não tem data de expiração, considera válido (vitalicio/manual)
-        if ($this->plan_expires_at === null) {
-            return true;
-        }
-
-        return Carbon::now()->lessThanOrEqualTo($this->plan_expires_at);
-    }
-
-    /** Empresa pode acessar o sistema (trial ativo OU plano pago vigente) */
-    public function isAccessible(): bool
-    {
-        return $this->active && ($this->isOnTrial() || $this->hasPaidPlan());
-    }
-
-    /** Dias restantes de trial (0 se já expirou) */
-    public function trialDaysLeft(): int
-    {
-        if (! $this->trial_ends_at) {
-            return 0;
-        }
-
-        $days = (int) Carbon::now()->diffInDays($this->trial_ends_at, false);
-        return max(0, $days);
-    }
-
-    // ── Limites por plano ────────────────────────────────────────
-
-    public function limits(): array
+    public function planLimits(): array
     {
         return match ($this->plan) {
-            'free'     => ['users' => 1,   'products' => 50,     'customers' => 100,    'suppliers' => 20],
-            'pro'      => ['users' => 5,   'products' => 500,    'customers' => 2000,   'suppliers' => 200],
-            'business' => ['users' => 999, 'products' => 999999, 'customers' => 999999, 'suppliers' => 999999],
-            default    => ['users' => 1,   'products' => 50,     'customers' => 100,    'suppliers' => 20],
+            'free'     => [
+                'products'       => 50,
+                'customers'      => 100,
+                'suppliers'      => 10,
+                'users'          => 2,
+                'purchase_orders'=> 20,
+            ],
+            'pro'      => [
+                'products'       => 500,
+                'customers'      => 1000,
+                'suppliers'      => 100,
+                'users'          => 10,
+                'purchase_orders'=> 200,
+            ],
+            'business' => [
+                'products'       => PHP_INT_MAX,
+                'customers'      => PHP_INT_MAX,
+                'suppliers'      => PHP_INT_MAX,
+                'users'          => PHP_INT_MAX,
+                'purchase_orders'=> PHP_INT_MAX,
+            ],
+            default    => [
+                'products'       => 50,
+                'customers'      => 100,
+                'suppliers'      => 10,
+                'users'          => 2,
+                'purchase_orders'=> 20,
+            ],
         };
     }
 
+    public function limit(string $resource): int
+    {
+        return $this->planLimits()[$resource] ?? 0;
+    }
+
+    public function canAdd(string $resource): bool
+    {
+        $limit = $this->limit($resource);
+        if ($limit === PHP_INT_MAX) return true;
+
+        return match ($resource) {
+            'products'        => $this->products()->count() < $limit,
+            'customers'       => $this->customers()->count() < $limit,
+            'suppliers'       => $this->suppliers()->count() < $limit,
+            'users'           => $this->users()->count() < $limit,
+            'purchase_orders' => \App\Models\PurchaseOrder::where('company_id', $this->id)->count() < $limit,
+            default           => false,
+        };
+    }
+
+    /** @deprecated Use canAdd('users') */
     public function canAddUser(): bool
     {
-        return $this->users()->count() < $this->limits()['users'];
+        return $this->canAdd('users');
     }
 
-    public function canAddProduct(): bool
+    public function usagePercent(string $resource): int
     {
-        return $this->products()->count() < $this->limits()['products'];
-    }
+        $limit = $this->limit($resource);
+        if ($limit === PHP_INT_MAX) return 0;
 
-    public function canAddCustomer(): bool
-    {
-        return $this->customers()->count() < $this->limits()['customers'];
-    }
-
-    public function canAddSupplier(): bool
-    {
-        return $this->suppliers()->count() < $this->limits()['suppliers'];
-    }
-
-    // ── Helpers ────────────────────────────────────────────────
-
-    public static function generateSlug(string $name): string
-    {
-        $slug  = Str::slug($name);
-        $count = static::where('slug', 'like', "{$slug}%")->count();
-        return $count ? "{$slug}-{$count}" : $slug;
-    }
-
-    public function getPlanLabelAttribute(): string
-    {
-        return match ($this->plan) {
-            'free'     => 'Gratuito',
-            'pro'      => 'Pro',
-            'business' => 'Business',
-            default    => 'Gratuito',
+        $used = match ($resource) {
+            'products'        => $this->products()->count(),
+            'customers'       => $this->customers()->count(),
+            'suppliers'       => $this->suppliers()->count(),
+            'users'           => $this->users()->count(),
+            'purchase_orders' => \App\Models\PurchaseOrder::where('company_id', $this->id)->count(),
+            default           => 0,
         };
+
+        return (int) min(100, round($used / $limit * 100));
+    }
+
+    // ── Trial
+
+    public function isOnTrial(): bool
+    {
+        return $this->trial_ends_at !== null && $this->trial_ends_at->isFuture();
+    }
+
+    public function trialDaysLeft(): int
+    {
+        if (!$this->isOnTrial()) return 0;
+        return (int) now()->diffInDays($this->trial_ends_at);
+    }
+
+    public function isActive(): bool
+    {
+        return $this->active;
     }
 }
