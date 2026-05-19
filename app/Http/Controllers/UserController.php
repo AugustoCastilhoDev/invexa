@@ -87,6 +87,7 @@ class UserController extends Controller
     public function edit(User $user)
     {
         $this->ensureSameCompany($user);
+        $this->blockSuperAdmin($user);
 
         return view('users.edit', compact('user'));
     }
@@ -94,6 +95,7 @@ class UserController extends Controller
     public function update(Request $request, User $user)
     {
         $this->ensureSameCompany($user);
+        $this->blockSuperAdmin($user);
 
         $request->validate([
             'name'     => ['required', 'string', 'max:255'],
@@ -126,6 +128,7 @@ class UserController extends Controller
     public function destroy(User $user)
     {
         $this->ensureSameCompany($user);
+        $this->blockSuperAdmin($user);
 
         if (auth()->id() === $user->id) {
             return redirect()
@@ -143,6 +146,7 @@ class UserController extends Controller
     public function toggleActive(User $user)
     {
         $this->ensureSameCompany($user);
+        $this->blockSuperAdmin($user);
 
         if (auth()->id() === $user->id) {
             return redirect()
@@ -157,10 +161,19 @@ class UserController extends Controller
             ->with('success', 'Status do usuário atualizado com sucesso.');
     }
 
+    // ── Guards privados ──────────────────────────────────────────
+
     private function ensureSameCompany(User $user): void
     {
         if ($user->company_id !== auth()->user()->company_id) {
             abort(403, 'Acesso não autorizado.');
+        }
+    }
+
+    private function blockSuperAdmin(User $user): void
+    {
+        if ($user->isSuperAdmin()) {
+            abort(403, 'Usuários Super Admin não podem ser gerenciados pelo painel de empresa.');
         }
     }
 }
