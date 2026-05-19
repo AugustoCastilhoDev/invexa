@@ -19,7 +19,7 @@ use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
-// ── Autenticação (pública) ────────────────────────────────────
+// ── Autenticação (pública) ────────────────────────────
 Route::get('/login',  [AuthenticatedSessionController::class, 'create'])->name('login');
 Route::post('/login', [AuthenticatedSessionController::class, 'store'])->name('login.post');
 Route::post('/logout',[AuthenticatedSessionController::class, 'destroy'])->name('logout');
@@ -27,12 +27,12 @@ Route::post('/logout',[AuthenticatedSessionController::class, 'destroy'])->name(
 Route::get('/register',  [RegisteredUserController::class, 'create'])->name('register');
 Route::post('/register', [RegisteredUserController::class, 'store'])->name('register.store');
 
-// ── Rotas protegidas ───────────────────────────────────────
+// ── Rotas protegidas ───────────────────────────────
 Route::middleware(['auth', 'company'])->group(function () {
 
     // Home
-    Route::get('/',      [HomeController::class, 'index'])->name('home');
-    Route::get('/home',  [HomeController::class, 'index'])->name('home.alias');
+    Route::get('/',     [HomeController::class, 'index'])->name('home');
+    Route::get('/home', [HomeController::class, 'index'])->name('home.alias');
 
     // Dashboard
     Route::get('/dashboard',            [DashboardController::class, 'index'])->name('dashboard');
@@ -92,19 +92,21 @@ Route::middleware(['auth', 'company'])->group(function () {
     Route::patch('/purchase-orders/{purchaseOrder}/receive', [PurchaseOrderController::class, 'receive'])->name('purchase-orders.receive');
 
     // Contas a Pagar
+    // ATENÇÃO: rotas estáticas (bulk-pay) devem vir ANTES do resource para não conflitar com bills.store (POST /bills)
+    Route::post('/bills/bulk-pay', [BillController::class, 'bulkPay'])->name('bills.bulk-pay');
     Route::resource('bills', BillController::class);
     Route::patch('/bills/{bill}/pay',    [BillController::class, 'pay'])->name('bills.pay');
-    Route::post('/bills/bulk-pay',       [BillController::class, 'bulkPay'])->name('bills.bulk-pay');
     Route::patch('/bills/{bill}/cancel', [BillController::class, 'cancel'])->name('bills.cancel');
 
     // Contas a Receber
+    // ATENÇÃO: rota estática (bulk-receive) deve vir ANTES do resource
+    Route::post('/receivables/bulk-receive', [ReceivableController::class, 'bulkReceive'])->name('receivables.bulk-receive');
     Route::resource('receivables', ReceivableController::class);
     Route::patch('/receivables/{receivable}/receive', [ReceivableController::class, 'receive'])->name('receivables.receive');
-    Route::post('/receivables/bulk-receive',          [ReceivableController::class, 'bulkReceive'])->name('receivables.bulk-receive');
     Route::patch('/receivables/{receivable}/cancel',  [ReceivableController::class, 'cancel'])->name('receivables.cancel');
 
-    // ── Relatórios ────────────────────────────────────────
-    Route::prefix('reports')->name('reports.')->group(function () {
+    // ── Relatórios ────────────────────────────────────
+Route::prefix('reports')->name('reports.')->group(function () {
         Route::get('/',                  [ReportController::class, 'index'])->name('index');
 
         // Financeiro
