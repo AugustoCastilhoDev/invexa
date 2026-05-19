@@ -81,6 +81,7 @@ Route::middleware(['auth', 'company'])->group(function () {
     Route::resource('categories', CategoryController::class);
 
     // Clientes
+    Route::get('/customers/search', [CustomerController::class, 'search'])->name('customers.search');
     Route::resource('customers', CustomerController::class);
 
     // Fornecedores
