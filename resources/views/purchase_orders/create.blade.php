@@ -29,7 +29,7 @@
         </div>
         <div class="card-body">
             <div class="row g-3">
-                <div class="col-12 col-md-5">
+                <div class="col-12 col-md-4">
                     <label class="form-label text-soft">Fornecedor <span class="text-danger">*</span></label>
                     <select name="supplier_id" class="form-select @error('supplier_id') is-invalid @enderror" required>
                         <option value="">Selecione o fornecedor...</option>
@@ -39,11 +39,26 @@
                     </select>
                     @error('supplier_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
-                <div class="col-12 col-md-3">
+                <div class="col-12 col-md-2">
+                    <label class="form-label text-soft">Data do Pedido <span class="text-danger">*</span></label>
+                    <input type="date" name="order_date" class="form-control @error('order_date') is-invalid @enderror"
+                           value="{{ old('order_date', now()->format('Y-m-d')) }}" required>
+                    @error('order_date')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                </div>
+                <div class="col-12 col-md-2">
                     <label class="form-label text-soft">Previsão de Entrega</label>
                     <input type="date" name="expected_date" class="form-control" value="{{ old('expected_date') }}">
                 </div>
-                <div class="col-12 col-md-4">
+                <div class="col-12 col-md-2">
+                    <label class="form-label text-soft">Status <span class="text-danger">*</span></label>
+                    <select name="status" class="form-select" required>
+                        <option value="pendente"  @selected(old('status','pendente')==='pendente')>Pendente</option>
+                        <option value="enviada"   @selected(old('status')==='enviada')>Enviada</option>
+                        <option value="recebida"  @selected(old('status')==='recebida')>Recebida</option>
+                        <option value="cancelada" @selected(old('status')==='cancelada')>Cancelada</option>
+                    </select>
+                </div>
+                <div class="col-12 col-md-2">
                     <label class="form-label text-soft">Observações</label>
                     <input type="text" name="notes" class="form-control" value="{{ old('notes') }}" placeholder="Condições, prazos...">
                 </div>
@@ -98,10 +113,10 @@
     @endif
 
     <div class="d-flex gap-2">
-        <button type="submit" name="save" class="btn btn-outline-secondary">
+        <button type="submit" name="status_override" value="pendente" class="btn btn-outline-secondary">
             <i class="bi bi-floppy me-1"></i>Salvar Rascunho
         </button>
-        <button type="submit" name="send" value="1" class="btn btn-primary">
+        <button type="submit" name="status_override" value="enviada" class="btn btn-primary">
             <i class="bi bi-send me-1"></i>Salvar e Enviar ao Fornecedor
         </button>
         <a href="{{ route('purchase-orders.index') }}" class="btn btn-outline-secondary ms-auto">Cancelar</a>
@@ -116,7 +131,7 @@
             <select name="items[__IDX__][product_id]" class="form-select form-select-sm product-select" required>
                 <option value="">Selecione...</option>
                 @foreach($products as $p)
-                    <option value="{{ $p->id }}" data-cost="{{ $p->cost }}">{{ $p->name }} ({{ $p->sku }})</option>
+                    <option value="{{ $p->id }}" data-cost="{{ $p->price }}">{{ $p->name }}</option>
                 @endforeach
             </select>
         </td>

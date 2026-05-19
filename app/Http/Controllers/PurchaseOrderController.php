@@ -59,19 +59,19 @@ class PurchaseOrderController extends Controller
     {
         $companyId = auth()->user()->company_id;
         $validated = $request->validate([
-            'supplier_id'        => ['required', 'exists:suppliers,id'],
-            'order_date'         => ['required', 'date'],
-            'expected_date'      => ['nullable', 'date', 'after_or_equal:order_date'],
-            'status'             => ['required', 'in:pendente,recebida,cancelada'],
-            'notes'              => ['nullable', 'string'],
-            'items'              => ['required', 'array', 'min:1'],
-            'items.*.product_id' => ['required', 'exists:products,id'],
-            'items.*.quantity'   => ['required', 'integer', 'min:1'],
-            'items.*.price'      => ['required', 'numeric', 'min:0'],
+            'supplier_id'            => ['required', 'exists:suppliers,id'],
+            'order_date'             => ['required', 'date'],
+            'expected_date'          => ['nullable', 'date', 'after_or_equal:order_date'],
+            'status'                 => ['required', 'in:pendente,enviada,recebida,cancelada'],
+            'notes'                  => ['nullable', 'string'],
+            'items'                  => ['required', 'array', 'min:1'],
+            'items.*.product_id'     => ['required', 'exists:products,id'],
+            'items.*.quantity'       => ['required', 'integer', 'min:1'],
+            'items.*.unit_cost'      => ['required', 'numeric', 'min:0'],
         ]);
         try {
             DB::transaction(function () use ($validated, $companyId) {
-                $total = collect($validated['items'])->sum(fn($i) => $i['quantity'] * $i['price']);
+                $total = collect($validated['items'])->sum(fn($i) => $i['quantity'] * $i['unit_cost']);
                 $order = PurchaseOrder::create([
                     'company_id'    => $companyId,
                     'supplier_id'   => $validated['supplier_id'],
@@ -86,11 +86,11 @@ class PurchaseOrderController extends Controller
                         'purchase_order_id' => $order->id,
                         'product_id'        => $item['product_id'],
                         'quantity'          => $item['quantity'],
-                        'price'             => $item['price'],
-                        'subtotal'          => $item['quantity'] * $item['price'],
+                        'unit_cost'         => $item['unit_cost'],
+                        'subtotal'          => $item['quantity'] * $item['unit_cost'],
                     ]);
                 }
-                if (in_array($validated['status'], ['pendente', 'recebida'])) {
+                if (in_array($validated['status'], ['pendente', 'enviada', 'recebida'])) {
                     $supplier = Supplier::find($validated['supplier_id']);
                     Bill::create([
                         'company_id'        => $companyId,
@@ -128,19 +128,19 @@ class PurchaseOrderController extends Controller
     {
         $companyId = auth()->user()->company_id;
         $validated = $request->validate([
-            'supplier_id'        => ['required', 'exists:suppliers,id'],
-            'order_date'         => ['required', 'date'],
-            'expected_date'      => ['nullable', 'date'],
-            'status'             => ['required', 'in:pendente,recebida,cancelada'],
-            'notes'              => ['nullable', 'string'],
-            'items'              => ['required', 'array', 'min:1'],
-            'items.*.product_id' => ['required', 'exists:products,id'],
-            'items.*.quantity'   => ['required', 'integer', 'min:1'],
-            'items.*.price'      => ['required', 'numeric', 'min:0'],
+            'supplier_id'            => ['required', 'exists:suppliers,id'],
+            'order_date'             => ['required', 'date'],
+            'expected_date'          => ['nullable', 'date'],
+            'status'                 => ['required', 'in:pendente,enviada,recebida,cancelada'],
+            'notes'                  => ['nullable', 'string'],
+            'items'                  => ['required', 'array', 'min:1'],
+            'items.*.product_id'     => ['required', 'exists:products,id'],
+            'items.*.quantity'       => ['required', 'integer', 'min:1'],
+            'items.*.unit_cost'      => ['required', 'numeric', 'min:0'],
         ]);
         try {
             DB::transaction(function () use ($purchaseOrder, $validated, $companyId) {
-                $total = collect($validated['items'])->sum(fn($i) => $i['quantity'] * $i['price']);
+                $total = collect($validated['items'])->sum(fn($i) => $i['quantity'] * $i['unit_cost']);
                 $purchaseOrder->items()->delete();
                 $purchaseOrder->update([
                     'supplier_id'   => $validated['supplier_id'],
@@ -155,8 +155,8 @@ class PurchaseOrderController extends Controller
                         'purchase_order_id' => $purchaseOrder->id,
                         'product_id'        => $item['product_id'],
                         'quantity'          => $item['quantity'],
-                        'price'             => $item['price'],
-                        'subtotal'          => $item['quantity'] * $item['price'],
+                        'unit_cost'         => $item['unit_cost'],
+                        'subtotal'          => $item['quantity'] * $item['unit_cost'],
                     ]);
                 }
             });

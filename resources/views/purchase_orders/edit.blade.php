@@ -108,7 +108,7 @@
                                 <input type="number" name="items[{{ $i }}][quantity]" class="form-control form-control-sm qty-input" min="1" value="{{ $item->quantity }}" required>
                             </td>
                             <td>
-                                <input type="number" name="items[{{ $i }}][price]" class="form-control form-control-sm cost-input" step="0.01" min="0" value="{{ $item->price }}" required>
+                                <input type="number" name="items[{{ $i }}][unit_cost]" class="form-control form-control-sm cost-input" step="0.01" min="0" value="{{ $item->unit_cost }}" required>
                             </td>
                             <td class="subtotal-cell" data-subtotal="{{ $item->subtotal }}">R$ {{ number_format($item->subtotal, 2, ',', '.') }}</td>
                             <td class="pe-3">
@@ -148,7 +148,7 @@
 
 </form>
 
-{{-- Template de linha (hidden) --}}
+{{-- Template de linha (hidden) para novos itens --}}
 <template id="rowTemplate">
     <tr class="item-row">
         <td class="ps-3">
@@ -163,7 +163,7 @@
             <input type="number" name="items[__IDX__][quantity]" class="form-control form-control-sm qty-input" min="1" value="1" required>
         </td>
         <td>
-            <input type="number" name="items[__IDX__][price]" class="form-control form-control-sm cost-input" step="0.01" min="0" value="0" required>
+            <input type="number" name="items[__IDX__][unit_cost]" class="form-control form-control-sm cost-input" step="0.01" min="0" value="0" required>
         </td>
         <td class="subtotal-cell" data-subtotal="0">R$ 0,00</td>
         <td class="pe-3">
@@ -175,7 +175,7 @@
 @push('scripts')
 <script>
     let idx = {{ $purchaseOrder->items->count() }};
-    const body        = document.getElementById('itemsBody');
+    const body         = document.getElementById('itemsBody');
     const grandTotalEl = document.getElementById('grandTotal');
 
     function fmtBRL(val) {
@@ -221,7 +221,6 @@
         });
     }
 
-    // Bind nos itens já existentes
     document.querySelectorAll('.item-row').forEach(row => bindRow(row));
 
     document.getElementById('addItem').addEventListener('click', function() {
