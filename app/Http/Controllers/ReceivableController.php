@@ -38,7 +38,7 @@ class ReceivableController extends Controller
 
         $categories = [
             'vendas'      => 'Vendas',
-            'servicos'    => 'Serviços',
+            'servicos'    => 'Servi\u00e7os',
             'assinaturas' => 'Assinaturas',
             'outros'      => 'Outros',
         ];
@@ -76,18 +76,23 @@ class ReceivableController extends Controller
 
         $installments = (int) ($validated['installments'] ?? 1);
         $recurrence   = $validated['recurrence'] ?? 'none';
+        $isReceived   = $validated['status'] === 'recebida';
 
-        DB::transaction(function () use ($validated, $companyId, $installments, $recurrence) {
+        DB::transaction(function () use ($validated, $companyId, $installments, $recurrence, $isReceived) {
             $parentId = null;
             for ($i = 1; $i <= $installments; $i++) {
-                $due = Carbon::parse($validated['due_date'])->addMonths($i - 1);
+                $due        = Carbon::parse($validated['due_date'])->addMonths($i - 1);
+                $unitAmount = round((float) $validated['amount'] / $installments, 2);
+
                 $r = Receivable::create([
                     'company_id'           => $companyId,
                     'customer_id'          => $validated['customer_id'] ?? null,
                     'description'          => $installments > 1
                         ? $validated['description'] . " ({$i}/{$installments})"
                         : $validated['description'],
-                    'amount'               => round((float) $validated['amount'] / $installments, 2),
+                    'amount'               => $unitAmount,
+                    'amount_received'      => $isReceived ? $unitAmount : null,
+                    'received_at'          => $isReceived ? now() : null,
                     'due_date'             => $due,
                     'status'               => $validated['status'],
                     'payment_method'       => $validated['payment_method'] ?? null,
@@ -128,6 +133,19 @@ class ReceivableController extends Controller
             'payment_method' => ['nullable','string'],
             'notes'          => ['nullable','string'],
         ]);
+
+        // Se status mudou para recebida, preenche amount_received e received_at
+        if ($validated['status'] === 'recebida' && $receivable->status !== 'recebida') {
+            $validated['amount_received'] = $validated['amount'];
+            $validated['received_at']     = now();
+        }
+
+        // Se foi reaberta (de recebida para pendente/cancelada), zera os campos
+        if ($validated['status'] !== 'recebida' && $receivable->status === 'recebida') {
+            $validated['amount_received'] = null;
+            $validated['received_at']     = null;
+        }
+
         $receivable->update($validated);
         return redirect()->route('receivables.index')->with('success', 'Conta a receber atualizada.');
     }
@@ -141,7 +159,7 @@ class ReceivableController extends Controller
     public function receive(Receivable $receivable)
     {
         if ($receivable->status === 'recebida') {
-            return back()->with('error', 'Já recebida.');
+            return back()->with('error', 'J\u00e1 recebida.');
         }
         $receivable->update([
             'status'          => 'recebida',
@@ -174,7 +192,11 @@ class ReceivableController extends Controller
 
     public function cancel(Receivable $receivable)
     {
-        $receivable->update(['status' => 'cancelada']);
+        $receivable->update([
+            'status'          => 'cancelada',
+            'amount_received' => null,
+            'received_at'     => null,
+        ]);
         return back()->with('success', 'Conta cancelada.');
     }
 }
