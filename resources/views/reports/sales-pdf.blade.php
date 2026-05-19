@@ -21,12 +21,12 @@
   .badge-success { background: #d1fae5; color: #065f46; }
   .badge-warning { background: #fef3c7; color: #92400e; }
   .badge-danger  { background: #fee2e2; color: #991b1b; }
-  @media print { body { padding: 0; } }
+  @media print { body { padding: 0; } .no-print { display: none; } }
 </style>
 </head>
 <body>
-<h1>Relatório de Vendas</h1>
-<p class="sub">Período: {{ $from->format('d/m/Y') }} até {{ $to->format('d/m/Y') }} — Gerado em {{ now()->format('d/m/Y H:i') }}</p>
+<h1>Relat&oacute;rio de Vendas</h1>
+<p class="sub">Per&iacute;odo: {{ $from->format('d/m/Y') }} at&eacute; {{ $to->format('d/m/Y') }} &mdash; Gerado em {{ now()->format('d/m/Y H:i') }}</p>
 
 <div class="kpis">
   <div class="kpi"><div class="kpi-label">Total de Vendas</div><div class="kpi-value">{{ $totalSales }}</div></div>
@@ -54,5 +54,11 @@
   </tbody>
 </table>
 
-<script>window.print();</script>
-</body></html>
+<div class="no-print" style="margin-top:32px;text-align:center;">
+  <button onclick="window.print()" style="padding:10px 28px;font-size:14px;cursor:pointer;background:#1d4ed8;color:#fff;border:none;border-radius:6px;">
+    &#128438; Imprimir / Salvar como PDF
+  </button>
+  <a href="javascript:history.back()" style="margin-left:12px;font-size:13px;color:#555;">Voltar</a>
+</div>
+</body>
+</html>
