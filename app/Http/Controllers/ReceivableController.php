@@ -144,8 +144,9 @@ class ReceivableController extends Controller
             return back()->with('error', 'Já recebida.');
         }
         $receivable->update([
-            'status'      => 'recebida',
-            'received_at' => now(),
+            'status'          => 'recebida',
+            'received_at'     => now(),
+            'amount_received' => $receivable->amount,
         ]);
         return back()->with('success', 'Conta marcada como recebida.');
     }
@@ -155,15 +156,20 @@ class ReceivableController extends Controller
         $ids       = $request->input('ids', []);
         $companyId = auth()->user()->company_id;
 
-        Receivable::whereIn('id', $ids)
+        $pending = Receivable::whereIn('id', $ids)
             ->where('company_id', $companyId)
             ->where('status', 'pendente')
-            ->update([
-                'status'      => 'recebida',
-                'received_at' => now(),
-            ]);
+            ->get();
 
-        return back()->with('success', count($ids) . ' conta(s) marcada(s) como recebida(s).');
+        foreach ($pending as $rec) {
+            $rec->update([
+                'status'          => 'recebida',
+                'received_at'     => now(),
+                'amount_received' => $rec->amount,
+            ]);
+        }
+
+        return back()->with('success', count($pending) . ' conta(s) marcada(s) como recebida(s).');
     }
 
     public function cancel(Receivable $receivable)
