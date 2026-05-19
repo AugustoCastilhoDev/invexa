@@ -165,8 +165,8 @@
 <nav class="navbar navbar-expand-lg navbar-main sticky-top">
     <div class="container-fluid px-4">
 
-        {{-- Logo da marca --}}
-        <a class="navbar-brand-custom" href="{{ route('home') }}">
+        {{-- Logo da marca — dashboard se logado, landing se visitante --}}
+        <a class="navbar-brand-custom" href="{{ Auth::check() ? route('dashboard') : route('landing') }}">
             <svg class="brand-icon-svg" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Invexa">
                 <rect width="32" height="32" rx="7" fill="#080D1A"/>
                 <path d="M7 10h5.5L16 16l3.5-6H25L18 22h-4L7 10Z" fill="#0EA5E9"/>
