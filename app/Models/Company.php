@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
@@ -19,13 +20,17 @@ class Company extends Model
         'logo',
         'plan',
         'active',
+        'trial_ends_at',
+        'plan_expires_at',
     ];
 
     protected $casts = [
-        'active' => 'boolean',
+        'active'          => 'boolean',
+        'trial_ends_at'   => 'datetime',
+        'plan_expires_at' => 'datetime',
     ];
 
-    // ── Relacionamentos ──────────────────────────────────────
+    // ── Relacionamentos ────────────────────────────────────────────
 
     public function users()
     {
@@ -62,17 +67,57 @@ class Company extends Model
         return $this->hasMany(AuditLog::class);
     }
 
-    // ── Helpers ──────────────────────────────────────────────
+    // ── Trial & Plano ───────────────────────────────────────────
 
-    /** Gera slug único a partir do nome da empresa */
-    public static function generateSlug(string $name): string
+    /** Empresa ainda está no período de trial ativo */
+    public function isOnTrial(): bool
     {
-        $slug  = Str::slug($name);
-        $count = static::where('slug', 'like', "{$slug}%")->count();
-        return $count ? "{$slug}-{$count}" : $slug;
+        return $this->trial_ends_at !== null
+            && Carbon::now()->lessThanOrEqualTo($this->trial_ends_at);
     }
 
-    /** Limites por plano */
+    /** Trial já expirou (e não tem plano pago ativo) */
+    public function trialExpired(): bool
+    {
+        return $this->trial_ends_at !== null
+            && Carbon::now()->greaterThan($this->trial_ends_at)
+            && ! $this->hasPaidPlan();
+    }
+
+    /** Tem plano pago vigente */
+    public function hasPaidPlan(): bool
+    {
+        if ($this->plan === 'free') {
+            return false;
+        }
+
+        // Se não tem data de expiração, considera válido (vitalicio/manual)
+        if ($this->plan_expires_at === null) {
+            return true;
+        }
+
+        return Carbon::now()->lessThanOrEqualTo($this->plan_expires_at);
+    }
+
+    /** Empresa pode acessar o sistema (trial ativo OU plano pago vigente) */
+    public function isAccessible(): bool
+    {
+        return $this->active && ($this->isOnTrial() || $this->hasPaidPlan());
+    }
+
+    /** Dias restantes de trial (0 se já expirou) */
+    public function trialDaysLeft(): int
+    {
+        if (! $this->trial_ends_at) {
+            return 0;
+        }
+
+        $days = (int) Carbon::now()->diffInDays($this->trial_ends_at, false);
+        return max(0, $days);
+    }
+
+    // ── Limites por plano ────────────────────────────────────────
+
     public function limits(): array
     {
         return match ($this->plan) {
@@ -101,6 +146,15 @@ class Company extends Model
     public function canAddSupplier(): bool
     {
         return $this->suppliers()->count() < $this->limits()['suppliers'];
+    }
+
+    // ── Helpers ────────────────────────────────────────────────
+
+    public static function generateSlug(string $name): string
+    {
+        $slug  = Str::slug($name);
+        $count = static::where('slug', 'like', "{$slug}%")->count();
+        return $count ? "{$slug}-{$count}" : $slug;
     }
 
     public function getPlanLabelAttribute(): string

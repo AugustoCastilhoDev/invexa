@@ -2,11 +2,9 @@
 
 /**
  * Laravel 11 — bootstrap/app.php
- *
- * Registra os dois novos middlewares com aliases
- * para uso nas rotas.
  */
 
+use App\Http\Middleware\CheckCompanyAccess;
 use App\Http\Middleware\CheckRole;
 use App\Http\Middleware\EnsureHasCompany;
 use Illuminate\Foundation\Application;
@@ -21,10 +19,10 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware) {
 
-        // Aliases — use nas rotas como string curta
         $middleware->alias([
-            'role'    => CheckRole::class,
-            'company' => EnsureHasCompany::class,
+            'role'           => CheckRole::class,
+            'company'        => EnsureHasCompany::class,
+            'trial'          => CheckCompanyAccess::class,
         ]);
 
     })

@@ -9,6 +9,7 @@ use App\Models\User;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
@@ -42,13 +43,14 @@ class RegisteredUserController extends Controller
             'password.min'          => 'A senha deve ter pelo menos 8 caracteres com letras e números.',
         ]);
 
-        // 1. Cria a empresa
+        // 1. Cria a empresa com trial de 14 dias
         $company = Company::create([
-            'name'   => $request->company_name,
-            'slug'   => Company::generateSlug($request->company_name),
-            'email'  => $request->email,
-            'plan'   => 'free',
-            'active' => true,
+            'name'          => $request->company_name,
+            'slug'          => Company::generateSlug($request->company_name),
+            'email'         => $request->email,
+            'plan'          => 'free',
+            'active'        => true,
+            'trial_ends_at' => Carbon::now()->addDays(14),
         ]);
 
         // 2. Cria o usuário como admin da empresa
