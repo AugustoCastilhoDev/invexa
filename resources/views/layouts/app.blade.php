@@ -12,7 +12,6 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css">
     <style>
-        /* ─── BRAND TOKENS ──────────────────────────────────────────── */
         :root {
             --brand-abyss:    #080D1A;
             --brand-navy:     #0D1929;
@@ -22,7 +21,6 @@
             --brand-glow:     rgba(14,165,233,.35);
         }
 
-        /* ─── BASE ───────────────────────────────────────────────────── */
         body {
             background: radial-gradient(circle at top left,  rgba(14,165,233,.07), transparent 22%),
                         radial-gradient(circle at bottom right, rgba(56,189,248,.05), transparent 20%),
@@ -30,7 +28,6 @@
             color: #e2e8f0;
         }
 
-        /* ─── NAVBAR ─────────────────────────────────────────────────── */
         .navbar-main {
             background: rgba(8,13,26,.93);
             border-bottom: 1px solid rgba(14,165,233,.12);
@@ -38,7 +35,6 @@
             padding-top:.6rem; padding-bottom:.6rem;
         }
 
-        /* Brand logo inline SVG */
         .navbar-brand-custom {
             display:flex; align-items:center; gap:.55rem;
             font-size:1rem; font-weight:700; color:#F0F9FF !important;
@@ -61,6 +57,19 @@
         .navbar-main .nav-link.active { color:#38BDF8 !important; background:rgba(14,165,233,.12); }
         .nav-divider { width:1px; height:1.25rem; background:rgba(14,165,233,.18); align-self:center; margin:0 .25rem; }
 
+        /* Botão Home — ícone de casa com tooltip */
+        .nav-home-btn {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 2rem; height: 2rem;
+            border-radius: .4rem;
+            color: rgba(226,232,240,.65) !important;
+            font-size: 1rem;
+            transition: color .2s ease, background .2s ease;
+            text-decoration: none;
+        }
+        .nav-home-btn:hover { color: #F0F9FF !important; background: rgba(14,165,233,.08); }
+        .nav-home-btn.active { color: #38BDF8 !important; background: rgba(14,165,233,.12); }
+
         .navbar-main .dropdown-menu {
             background:rgba(10,18,35,.97); border:1px solid rgba(14,165,233,.14);
             border-radius:.6rem; box-shadow:0 16px 32px rgba(0,0,0,.45);
@@ -76,7 +85,6 @@
         .navbar-main .dropdown-item-text   { font-size:.78rem; color:rgba(148,163,184,.7); padding:.4rem .75rem; }
         .navbar-main .dropdown-divider     { border-color:rgba(14,165,233,.12); margin:.3rem 0; }
 
-        /* Avatar com cor da marca */
         .user-avatar {
             width:1.75rem; height:1.75rem; border-radius:50%;
             background:linear-gradient(135deg,var(--brand-sky),var(--brand-electric));
@@ -84,7 +92,6 @@
             font-size:.72rem; font-weight:700; color:var(--brand-abyss); flex-shrink:0;
         }
 
-        /* ─── FORMS ──────────────────────────────────────────────────── */
         .form-control, .form-select {
             background-color:rgba(13,25,41,.7) !important;
             border-color:rgba(14,165,233,.2) !important;
@@ -96,17 +103,14 @@
             box-shadow:0 0 0 0.2rem rgba(14,165,233,.25) !important;
         }
 
-        /* ─── CARDS / TABLES ─────────────────────────────────────────── */
         .card-dark-bg  { background:rgba(13,25,41,.88); border:1px solid rgba(14,165,233,.1); color:#e2e8f0; }
         .card-header-dark { background:rgba(13,25,41,.95); border-color:rgba(14,165,233,.1); }
         .table-dark-custom { background:rgba(13,25,41,.82); }
         .text-soft { color:rgba(226,232,240,.72) !important; }
 
-        /* ─── ALERTS ─────────────────────────────────────────────────── */
         .alert-success { --bs-alert-bg:rgba(34,197,94,.10); --bs-alert-border-color:rgba(34,197,94,.2); color:#4ade80; }
         .alert-danger  { --bs-alert-bg:rgba(239,68,68,.10);  --bs-alert-border-color:rgba(239,68,68,.2);  color:#f87171; }
 
-        /* ─── TRIAL BANNER ────────────────────────────────────────────── */
         .trial-banner {
             background: linear-gradient(90deg, rgba(234,179,8,.12), rgba(234,179,8,.06));
             border-bottom: 1px solid rgba(234,179,8,.25);
@@ -118,30 +122,18 @@
             border-bottom-color: rgba(239,68,68,.3);
         }
 
-        /* ─── FOOTER ─────────────────────────────────────────────────── */
         .footer-main {
             background: rgba(8,13,26,.8);
             border-top: 1px solid rgba(14,165,233,.09);
         }
         .footer-dev-link {
-            display: inline-flex;
-            align-items: center;
-            gap: .35rem;
-            color: #38BDF8;
-            text-decoration: none;
-            font-weight: 600;
+            display: inline-flex; align-items: center; gap: .35rem;
+            color: #38BDF8; text-decoration: none; font-weight: 600;
             transition: color .2s ease, opacity .2s ease;
         }
-        .footer-dev-link:hover {
-            color: #7DD3FC;
-            opacity: .9;
-        }
-        .footer-dev-link .bi-instagram {
-            font-size: .85rem;
-            opacity: .85;
-        }
+        .footer-dev-link:hover { color: #7DD3FC; opacity: .9; }
+        .footer-dev-link .bi-instagram { font-size: .85rem; opacity: .85; }
 
-        /* ─── STOCK ALERT BADGE ──────────────────────────────────────── */
         .stock-alert-badge {
             display:inline-flex; align-items:center; justify-content:center;
             min-width:1.1rem; height:1.1rem;
@@ -161,12 +153,11 @@
 </head>
 <body>
 
-{{-- ════════════════════ NAVBAR ════════════════════ --}}
 <nav class="navbar navbar-expand-lg navbar-main sticky-top">
     <div class="container-fluid px-4">
 
-        {{-- Logo da marca — dashboard se logado, landing se visitante --}}
-        <a class="navbar-brand-custom" href="{{ Auth::check() ? route('dashboard') : route('landing') }}">
+        {{-- Logo --}}
+        <a class="navbar-brand-custom" href="{{ Auth::check() ? route('home') : route('landing') }}">
             <svg class="brand-icon-svg" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Invexa">
                 <rect width="32" height="32" rx="7" fill="#080D1A"/>
                 <path d="M7 10h5.5L16 16l3.5-6H25L18 22h-4L7 10Z" fill="#0EA5E9"/>
@@ -183,6 +174,17 @@
 
         <div class="collapse navbar-collapse" id="navbarMain">
             <ul class="navbar-nav ms-auto mb-2 mb-lg-0 align-items-lg-center gap-1">
+
+                {{-- ★ Botão Home --}}
+                <li class="nav-item">
+                    <a class="nav-home-btn {{ request()->routeIs('home') ? 'active' : '' }}"
+                       href="{{ route('home') }}"
+                       title="Início"
+                       data-bs-toggle="tooltip"
+                       data-bs-placement="bottom">
+                        <i class="bi bi-house-fill"></i>
+                    </a>
+                </li>
 
                 {{-- Dashboard --}}
                 <li class="nav-item">
@@ -406,7 +408,7 @@
     </div>
 </nav>
 
-{{-- ════════════════════ BANNER TRIAL ════════════════════ --}}
+{{-- BANNER TRIAL --}}
 @auth
     @php
         $company = auth()->user()->company;
@@ -447,7 +449,6 @@
     @endif
 @endauth
 
-{{-- ════════════════════ CONTEÚDO ════════════════════ --}}
 <main class="py-4 min-vh-100">
     <div class="container">
         @if(session('success'))
@@ -466,11 +467,8 @@
     </div>
 </main>
 
-{{-- ════════════════════ FOOTER ════════════════════ --}}
 <footer class="footer-main py-4">
     <div class="container" style="color:rgba(148,163,184,.5); font-size:.78rem;">
-
-        {{-- Linha superior: logo + nome + copyright --}}
         <div class="d-flex align-items-center justify-content-center gap-2 mb-2">
             <svg width="16" height="16" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                 <rect width="32" height="32" rx="7" fill="#0D1929"/>
@@ -483,11 +481,7 @@
             <span style="color:rgba(148,163,184,.25);">·</span>
             <span>&copy; {{ date('Y') }}</span>
         </div>
-
-        {{-- Divisor sutil --}}
         <div style="height:1px; background:rgba(14,165,233,.07); margin-bottom:.75rem;"></div>
-
-        {{-- Linha inferior: crédito do desenvolvedor --}}
         <div class="text-center">
             Desenvolvido por
             <a href="https://www.instagram.com/castilho_digital/"
@@ -497,11 +491,16 @@
                 Castilho Soluções Digitais
             </a>
         </div>
-
     </div>
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // Ativa tooltips do Bootstrap (usado no botão Home)
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
+        new bootstrap.Tooltip(el)
+    })
+</script>
 @stack('scripts')
 </body>
 </html>
