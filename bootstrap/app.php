@@ -14,7 +14,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role'       => \App\Http\Middleware\CheckRole::class,
             'company'    => \App\Http\Middleware\CompanyMiddleware::class,
-            'trial'      => \App\Http\Middleware\CheckTrialMiddleware::class,
+            'trial'      => \App\Http\Middleware\CheckCompanyAccess::class,
             'superadmin' => \App\Http\Middleware\SuperAdminMiddleware::class,
         ]);
     })
