@@ -121,7 +121,7 @@
     </div>
 </div>
 
-{{-- RESUMO DO DIA --}}
+{{-- RESUMO DO DIA (gerente+) --}}
 @if(Auth::check() && Auth::user()->isGerente())
 <div class="mt-4">
     <div class="section-label">Resumo do dia</div>
@@ -158,19 +158,19 @@
 </div>
 @endif
 
-{{-- CARD DO PLANO ATUAL --}}
+{{-- CARD DO PLANO — somente admin da empresa --}}
 @auth
+@if(Auth::user()->hasRole('admin') && Auth::user()->company)
 @php
-    $company   = auth()->user()->company;
-    $planLabel = ['free' => 'Free', 'pro' => 'Pro', 'business' => 'Business'][$company?->plan ?? 'free'] ?? 'Free';
-    $planColor = ['free' => '#94a3b8', 'pro' => '#38BDF8', 'business' => '#c084fc'][$company?->plan ?? 'free'] ?? '#94a3b8';
+    $company   = Auth::user()->company;
+    $planLabel = ['free' => 'Free', 'pro' => 'Pro', 'business' => 'Business'][$company->plan] ?? 'Free';
+    $planColor = ['free' => '#94a3b8', 'pro' => '#38BDF8', 'business' => '#c084fc'][$company->plan] ?? '#94a3b8';
     $resources = [
-        ['products',        'Produtos',    'bi-box-seam'],
-        ['customers',       'Clientes',    'bi-people'],
-        ['users',           'Usuários',    'bi-shield-person'],
+        ['products',  'Produtos',  'bi-box-seam'],
+        ['customers', 'Clientes',  'bi-people'],
+        ['users',     'Usuários',  'bi-shield-person'],
     ];
 @endphp
-@if($company && !auth()->user()->isSuperAdmin())
 <div class="mt-4">
     <div class="section-label">Seu Plano</div>
     <div class="plan-card">
@@ -206,7 +206,7 @@
                         <div class="plan-usage-bar">
                             <div class="plan-usage-fill" style="width:{{ $pct }}%; background:{{ $barColor }};"></div>
                         </div>
-                        <div style="font-size:.72rem; color:rgba(148,163,184,.5);">{{ $pct }}% &mdash; limite {{ number_format($limit) }}</div>
+                        <div style="font-size:.72rem; color:rgba(148,163,184,.5);">{{ $pct }}% — limite {{ number_format($limit) }}</div>
                     @endif
                 </div>
             @endforeach
@@ -287,8 +287,8 @@
         </a>
         @endif
 
-        {{-- Card Meu Plano --}}
-        @if(!auth()->user()->isSuperAdmin())
+        {{-- Card Meu Plano — somente admin da empresa --}}
+        @if(Auth::check() && Auth::user()->hasRole('admin'))
         <a href="{{ route('upgrade') }}" class="module-card" style="border-color:rgba(14,165,233,.18);">
             <div class="module-card-icon" style="background:rgba(14,165,233,.12); color:#38BDF8;"><i class="bi bi-rocket-takeoff"></i></div>
             <div>

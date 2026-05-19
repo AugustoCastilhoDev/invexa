@@ -137,7 +137,7 @@
 <nav class="navbar navbar-expand-lg navbar-main sticky-top">
     <div class="container-fluid px-4">
         <a class="navbar-brand-custom" href="{{ Auth::check() ? route('home') : route('landing') }}">
-            <svg class="brand-icon-svg" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <svg class="brand-icon-svg" viewBox="0 0 32 32" fill="none">
                 <rect width="32" height="32" rx="7" fill="#080D1A"/>
                 <path d="M7 10h5.5L16 16l3.5-6H25L18 22h-4L7 10Z" fill="#0EA5E9"/>
                 <circle cx="24" cy="10" r="2.2" fill="#38BDF8"/>
@@ -270,7 +270,8 @@
                                     <span class="badge mt-1 bg-opacity-25 bg-{{ Auth::user()->role_badge }} text-{{ Auth::user()->role_badge }}" style="font-size:.65rem;">
                                         {{ Auth::user()->role_label }}
                                     </span>
-                                    @if(!Auth::user()->isSuperAdmin() && Auth::user()->company)
+                                    {{-- Badge do plano: somente admin da empresa --}}
+                                    @if(Auth::user()->hasRole('admin') && Auth::user()->company)
                                         @php
                                             $planColors = ['free'=>'#94a3b8','pro'=>'#38BDF8','business'=>'#c084fc'];
                                             $pc = $planColors[Auth::user()->company->plan] ?? '#94a3b8';
@@ -288,7 +289,8 @@
                                 <i class="bi bi-person-gear me-2"></i>Editar Perfil
                             </a>
                         </li>
-                        @if(Auth::check() && !Auth::user()->isSuperAdmin())
+                        {{-- Link Meu Plano: somente admin da empresa --}}
+                        @if(Auth::check() && Auth::user()->hasRole('admin'))
                         <li>
                             <a class="dropdown-item {{ request()->routeIs('upgrade') ? 'active' : '' }}" href="{{ route('upgrade') }}">
                                 <i class="bi bi-rocket-takeoff me-2"></i>Meu Plano
@@ -344,7 +346,7 @@
 </div>
 @endif
 
-{{-- BANNER TRIAL --}}
+{{-- BANNER TRIAL — somente admin da empresa vê o trial banner --}}
 @auth
     @php
         $company   = auth()->user()->company;
@@ -352,7 +354,7 @@
         $isOnTrial = $company?->isOnTrial() ?? false;
         $isUrgent  = $isOnTrial && $trialDays <= 3;
     @endphp
-    @if($isOnTrial)
+    @if($isOnTrial && auth()->user()->hasRole('admin'))
         <div class="trial-banner {{ $isUrgent ? 'urgent' : '' }}">
             <div class="container d-flex align-items-center justify-content-between flex-wrap gap-2">
                 <div class="d-flex align-items-center gap-2">
