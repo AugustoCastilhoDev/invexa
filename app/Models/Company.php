@@ -4,11 +4,10 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Company extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory;
 
     protected $fillable = [
         'name', 'email', 'phone', 'document', 'address',
@@ -53,32 +52,32 @@ class Company extends Model
     {
         return match ($this->plan) {
             'free'     => [
-                'products'       => 50,
-                'customers'      => 100,
-                'suppliers'      => 10,
-                'users'          => 2,
-                'purchase_orders'=> 20,
+                'products'        => 50,
+                'customers'       => 100,
+                'suppliers'       => 10,
+                'users'           => 2,
+                'purchase_orders' => 20,
             ],
             'pro'      => [
-                'products'       => 500,
-                'customers'      => 1000,
-                'suppliers'      => 100,
-                'users'          => 10,
-                'purchase_orders'=> 200,
+                'products'        => 500,
+                'customers'       => 1000,
+                'suppliers'       => 100,
+                'users'           => 10,
+                'purchase_orders' => 200,
             ],
             'business' => [
-                'products'       => PHP_INT_MAX,
-                'customers'      => PHP_INT_MAX,
-                'suppliers'      => PHP_INT_MAX,
-                'users'          => PHP_INT_MAX,
-                'purchase_orders'=> PHP_INT_MAX,
+                'products'        => PHP_INT_MAX,
+                'customers'       => PHP_INT_MAX,
+                'suppliers'       => PHP_INT_MAX,
+                'users'           => PHP_INT_MAX,
+                'purchase_orders' => PHP_INT_MAX,
             ],
             default    => [
-                'products'       => 50,
-                'customers'      => 100,
-                'suppliers'      => 10,
-                'users'          => 2,
-                'purchase_orders'=> 20,
+                'products'        => 50,
+                'customers'       => 100,
+                'suppliers'       => 10,
+                'users'           => 2,
+                'purchase_orders' => 20,
             ],
         };
     }
@@ -98,7 +97,7 @@ class Company extends Model
             'customers'       => $this->customers()->count() < $limit,
             'suppliers'       => $this->suppliers()->count() < $limit,
             'users'           => $this->users()->count() < $limit,
-            'purchase_orders' => \App\Models\PurchaseOrder::where('company_id', $this->id)->count() < $limit,
+            'purchase_orders' => PurchaseOrder::where('company_id', $this->id)->count() < $limit,
             default           => false,
         };
     }
@@ -119,7 +118,7 @@ class Company extends Model
             'customers'       => $this->customers()->count(),
             'suppliers'       => $this->suppliers()->count(),
             'users'           => $this->users()->count(),
-            'purchase_orders' => \App\Models\PurchaseOrder::where('company_id', $this->id)->count(),
+            'purchase_orders' => PurchaseOrder::where('company_id', $this->id)->count(),
             default           => 0,
         };
 
