@@ -4,6 +4,7 @@ namespace App\Notifications;
 
 use App\Models\Product;
 use Illuminate\Bus\Queueable;
+use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
 class LowStockNotification extends Notification
@@ -14,7 +15,7 @@ class LowStockNotification extends Notification
 
     public function via($notifiable): array
     {
-        return ['database'];
+        return ['database', 'mail'];
     }
 
     public function toDatabase($notifiable): array
@@ -26,5 +27,18 @@ class LowStockNotification extends Notification
             'url'        => route('products.index'),
             'product_id' => $this->product->id,
         ];
+    }
+
+    public function toMail($notifiable): MailMessage
+    {
+        return (new MailMessage)
+            ->subject('📦 Estoque baixo — ' . $this->product->name)
+            ->greeting('Olá, ' . $notifiable->name . '!')
+            ->line('O produto abaixo está com estoque abaixo do mínimo configurado.')
+            ->line('**Produto:** ' . $this->product->name)
+            ->line('**Quantidade atual:** ' . $this->product->quantity . ' unidade(s)')
+            ->line('**Estoque mínimo:** ' . ($this->product->min_stock ?? 5) . ' unidade(s)')
+            ->action('Ver produtos', route('products.index'))
+            ->line('Faça um pedido de reposição para evitar rupturas de estoque.');
     }
 }
