@@ -151,12 +151,20 @@
                                         </td>
                                         <td class="py-2 text-end fw-semibold text-white">R$ {{ number_format($r->amount, 2, ',', '.') }}</td>
                                         <td class="py-2 text-center pe-3">
-                                            @php $sc = ['recebido'=>'success','pendente'=>'warning','cancelado'=>'danger']; @endphp
-                                            <span class="badge bg-{{ $sc[$r->status] ?? 'secondary' }} bg-opacity-25
-                                                         text-{{ $sc[$r->status] ?? 'secondary' }}
-                                                         border border-{{ $sc[$r->status] ?? 'secondary' }} border-opacity-25"
+                                            @php
+                                                $sc = [
+                                                    'recebida'  => 'success',
+                                                    'pendente'  => 'warning',
+                                                    'vencida'   => 'danger',
+                                                    'cancelada' => 'secondary',
+                                                ];
+                                                $color = $sc[$r->status] ?? 'secondary';
+                                            @endphp
+                                            <span class="badge bg-{{ $color }} bg-opacity-25
+                                                         text-{{ $color }}
+                                                         border border-{{ $color }} border-opacity-25"
                                                   style="font-size:.72rem;">
-                                                {{ ucfirst($r->status) }}
+                                                {{ $r->status_label }}
                                             </span>
                                         </td>
                                     </tr>
@@ -204,12 +212,20 @@
                                         </td>
                                         <td class="py-2 text-end fw-semibold text-white">R$ {{ number_format($b->amount, 2, ',', '.') }}</td>
                                         <td class="py-2 text-center pe-3">
-                                            @php $sc = ['pago'=>'success','pendente'=>'warning','cancelado'=>'danger']; @endphp
-                                            <span class="badge bg-{{ $sc[$b->status] ?? 'secondary' }} bg-opacity-25
-                                                         text-{{ $sc[$b->status] ?? 'secondary' }}
-                                                         border border-{{ $sc[$b->status] ?? 'secondary' }} border-opacity-25"
+                                            @php
+                                                $sc = [
+                                                    'paga'      => 'success',
+                                                    'pendente'  => 'warning',
+                                                    'vencida'   => 'danger',
+                                                    'cancelada' => 'secondary',
+                                                ];
+                                                $color = $sc[$b->status] ?? 'secondary';
+                                            @endphp
+                                            <span class="badge bg-{{ $color }} bg-opacity-25
+                                                         text-{{ $color }}
+                                                         border border-{{ $color }} border-opacity-25"
                                                   style="font-size:.72rem;">
-                                                {{ ucfirst($b->status) }}
+                                                {{ $b->status_label }}
                                             </span>
                                         </td>
                                     </tr>
