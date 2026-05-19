@@ -221,8 +221,10 @@ class DashboardController extends Controller
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         // MÓDULO 3.5 — Painel Financeiro
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        $today   = now($this->tz)->startOfDay();
-        $in7days = now($this->tz)->addDays(7)->endOfDay();
+
+        // Datas como string pura para comparação segura com coluna DATE do MySQL
+        $todayDate  = now($this->tz)->toDateString();
+        $in7Date    = now($this->tz)->addDays(7)->toDateString();
 
         $finReceivablePending = (float) Receivable::where('company_id', $companyId)
             ->whereIn('status', ['pendente', 'vencida'])
@@ -240,16 +242,19 @@ class DashboardController extends Controller
 
         $finCashBalance = $finReceivablePending - $finPayablePending;
 
+        // Apenas contas ainda PENDENTES ou VENCIDAS no intervalo dos próximos 7 dias
         $upcomingPayables = Bill::where('company_id', $companyId)
             ->whereIn('status', ['pendente', 'vencida'])
-            ->whereBetween('due_date', [$today, $in7days])
+            ->whereDate('due_date', '>=', $todayDate)
+            ->whereDate('due_date', '<=', $in7Date)
             ->orderBy('due_date')
             ->limit(6)
             ->get();
 
         $upcomingReceivables = Receivable::where('company_id', $companyId)
             ->whereIn('status', ['pendente', 'vencida'])
-            ->whereBetween('due_date', [$today, $in7days])
+            ->whereDate('due_date', '>=', $todayDate)
+            ->whereDate('due_date', '<=', $in7Date)
             ->orderBy('due_date')
             ->limit(6)
             ->get();
@@ -267,8 +272,7 @@ class DashboardController extends Controller
             ->pluck('total', 'day')
             ->map(fn($v) => (float) $v);
 
-        // Série 2: Recebíveis JÁ RECEBIDOS → por received_at (campo correto em receivables)
-        // COALESCE(received_at, due_date) garante fallback para registros sem data de baixa
+        // Série 2: Recebíveis JÁ RECEBIDOS → por received_at
         $cfRecRecebida = Receivable::where('company_id', $companyId)
             ->where('status', 'recebida')
             ->where(function ($q) use ($cfFrom, $cfTo) {
@@ -292,8 +296,7 @@ class DashboardController extends Controller
             ->pluck('total', 'day')
             ->map(fn($v) => (float) $v);
 
-        // Série 3b: Contas a pagar PAGAS → por paid_at (campo correto em bills)
-        // COALESCE(paid_at, due_date) garante fallback para registros sem data de baixa
+        // Série 3b: Contas a pagar PAGAS → por paid_at
         $cfPayPaga = Bill::where('company_id', $companyId)
             ->where('status', 'paga')
             ->where(function ($q) use ($cfFrom, $cfTo) {
