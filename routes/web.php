@@ -7,6 +7,7 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\LandingController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PurchaseOrderController;
@@ -20,7 +21,10 @@ use App\Http\Controllers\UpgradeController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
-// ── Públicas ──────────────────────────────────────────────
+// ── Landing Page (pública) ──────────────────────────────────
+Route::get('/', [LandingController::class, 'index'])->name('landing');
+
+// ── Autenticação (pública) ──────────────────────────────────
 Route::get('/login',  [AuthenticatedSessionController::class, 'create'])->name('login');
 Route::post('/login', [AuthenticatedSessionController::class, 'store'])->name('login.post');
 Route::post('/logout',[AuthenticatedSessionController::class, 'destroy'])->name('logout');
@@ -28,7 +32,7 @@ Route::post('/logout',[AuthenticatedSessionController::class, 'destroy'])->name(
 Route::get('/register',  [RegisteredUserController::class, 'create'])->name('register');
 Route::post('/register', [RegisteredUserController::class, 'store'])->name('register.store');
 
-// ── Upgrade (autenticado, mas fora do trial check) ─────────────────
+// ── Upgrade (autenticado, fora do trial check) ─────────────────
 Route::middleware(['auth', 'company'])->group(function () {
     Route::get('/upgrade', [UpgradeController::class, 'index'])->name('upgrade');
 });
@@ -36,7 +40,7 @@ Route::middleware(['auth', 'company'])->group(function () {
 // ── Protegidas (requer trial/plano ativo) ───────────────────────
 Route::middleware(['auth', 'company', 'trial'])->group(function () {
 
-    Route::get('/',     [HomeController::class, 'index'])->name('home');
+    Route::get('/home', [HomeController::class, 'index'])->name('home');
     Route::get('/home', [HomeController::class, 'index'])->name('home.alias');
 
     Route::get('/dashboard',            [DashboardController::class, 'index'])->name('dashboard');
