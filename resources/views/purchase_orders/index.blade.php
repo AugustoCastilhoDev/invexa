@@ -124,7 +124,7 @@
                                         <i class="bi bi-eye"></i>
                                     </a>
                                     @if($order->canReceive() && auth()->user()->hasRole(['admin','gerente']))
-                                        <a href="{{ route('purchase-orders.receive-form', $order) }}" class="btn btn-sm btn-outline-success" title="Receber">
+                                        <a href="{{ route('purchase-orders.show', $order) }}" class="btn btn-sm btn-outline-success" title="Receber">
                                             <i class="bi bi-box-arrow-in-down"></i>
                                         </a>
                                     @endif
