@@ -46,6 +46,43 @@ class Company extends Model
         return $this->hasMany(Sale::class);
     }
 
+    // ── Acesso / Trial
+
+    public function isOnTrial(): bool
+    {
+        return $this->trial_ends_at !== null && $this->trial_ends_at->isFuture();
+    }
+
+    public function trialDaysLeft(): int
+    {
+        if (!$this->isOnTrial()) return 0;
+        return (int) now()->diffInDays($this->trial_ends_at);
+    }
+
+    public function isActive(): bool
+    {
+        return $this->active;
+    }
+
+    /**
+     * Empresa acessível = trial ainda válido OU plano pago (pro/business).
+     * Plano free sem trial ativo também libera (sem restrição de acesso, só de limites).
+     */
+    public function isAccessible(): bool
+    {
+        if ($this->isOnTrial()) {
+            return true;
+        }
+
+        // free sempre acessível (restrições são apenas de limites de quantidade)
+        if ($this->plan === 'free') {
+            return true;
+        }
+
+        // pro e business: trial expirou mas plano pago ativo
+        return in_array($this->plan, ['pro', 'business']);
+    }
+
     // ── Limites por plano
 
     public function planLimits(): array
@@ -123,23 +160,5 @@ class Company extends Model
         };
 
         return (int) min(100, round($used / $limit * 100));
-    }
-
-    // ── Trial
-
-    public function isOnTrial(): bool
-    {
-        return $this->trial_ends_at !== null && $this->trial_ends_at->isFuture();
-    }
-
-    public function trialDaysLeft(): int
-    {
-        if (!$this->isOnTrial()) return 0;
-        return (int) now()->diffInDays($this->trial_ends_at);
-    }
-
-    public function isActive(): bool
-    {
-        return $this->active;
     }
 }
