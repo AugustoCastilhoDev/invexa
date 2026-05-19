@@ -191,22 +191,29 @@ body {
     </div>
     <div class="col-6 col-xl-3">
         @php
-            $dueToday = $upcomingPayables->filter(fn($p) => $p->due_date->isToday())->count()
-                      + $upcomingReceivables->filter(fn($r) => $r->due_date->isToday())->count();
-            $due7 = $upcomingPayables->count() + $upcomingReceivables->count();
+            $duePayToday = $upcomingPayables->filter(fn($p) => $p->due_date->isToday())->count();
+            $duePayTotal = $upcomingPayables->count();
+            $dueRecTotal = $upcomingReceivables->count();
         @endphp
         <div class="card card-dark-bg dashboard-card h-100" style="border-color:rgba(99,102,241,.25);">
             <div class="card-body py-3 px-4">
                 <p class="text-soft mb-1" style="font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;">VENCIMENTOS</p>
-                <p class="fw-bold mb-1" style="font-size:1.35rem;color:#818cf8;">{{ $due7 }} conta(s)</p>
-                @if($dueToday > 0)
-                    <small style="color:#fca5a5;"><i class="bi bi-alarm-fill me-1"></i>{{ $dueToday }} vencem hoje</small>
+                <p class="fw-bold mb-1" style="font-size:1.35rem;color:#818cf8;">
+                    {{ $duePayTotal }} conta(s) a pagar
+                </p>
+                @if($duePayToday > 0)
+                    <small style="color:#fca5a5;"><i class="bi bi-alarm-fill me-1"></i>{{ $duePayToday }} vence(m) hoje</small>
+                @elseif($duePayTotal === 0)
+                    <small class="text-soft">Nenhuma a pagar nos próximos 7 dias</small>
                 @else
                     <small class="text-soft">Nos próximos 7 dias</small>
                 @endif
+                @if($dueRecTotal > 0)
+                    <div class="mt-1"><small style="color:#4ade80;"><i class="bi bi-arrow-down-circle me-1"></i>{{ $dueRecTotal }} a receber</small></div>
+                @endif
             </div>
             <div class="card-footer py-2 px-4" style="background:transparent;border-top:1px solid rgba(99,102,241,.15);">
-                <span style="font-size:.78rem;color:#818cf8;"><i class="bi bi-calendar-event me-1"></i>Próximos 7 dias</span>
+                <a href="{{ route('bills.index') }}" class="text-decoration-none" style="font-size:.78rem;color:#818cf8;"><i class="bi bi-calendar-event me-1"></i>Próximos 7 dias</a>
             </div>
         </div>
     </div>
