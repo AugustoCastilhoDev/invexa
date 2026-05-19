@@ -17,7 +17,7 @@ class Sale extends Model
         'sale_date','status','notes','total',
     ];
 
-    protected $casts = ['sale_date' => 'date'];
+    protected $casts = ['sale_date' => 'datetime'];
 
     public function company(): BelongsTo   { return $this->belongsTo(Company::class); }
     public function customer(): BelongsTo  { return $this->belongsTo(Customer::class); }
