@@ -2,6 +2,35 @@
 
 @section('title', 'Editar Perfil')
 
+@push('styles')
+<style>
+.nav-tabs .nav-link.active {
+    background: rgba(14,165,233,.12) !important;
+    border-color: rgba(14,165,233,.3) rgba(14,165,233,.3) transparent !important;
+    color: #38BDF8 !important;
+}
+.nav-tabs .nav-link:hover:not(.active) {
+    background: rgba(14,165,233,.05);
+    color: #e2e8f0 !important;
+    border-color: transparent;
+}
+.role-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: .18rem .55rem;
+    border-radius: 999px;
+    font-size: .7rem;
+    font-weight: 700;
+    letter-spacing: .03em;
+    line-height: 1;
+}
+.role-badge.admin    { background: rgba(14,165,233,.15); border: 1px solid rgba(14,165,233,.3); color: #38BDF8; }
+.role-badge.gerente  { background: rgba(168,85,247,.15); border: 1px solid rgba(168,85,247,.3); color: #c084fc; }
+.role-badge.vendedor { background: rgba(34,197,94,.15);  border: 1px solid rgba(34,197,94,.3);  color: #4ade80; }
+.role-badge.default  { background: rgba(148,163,184,.12); border: 1px solid rgba(148,163,184,.2); color: #94a3b8; }
+</style>
+@endpush
+
 @section('content')
 <div class="row justify-content-center">
     <div class="col-12 col-lg-7">
@@ -12,12 +41,19 @@
                 {{ strtoupper(substr($user->name, 0, 1)) }}
             </div>
             <div>
-                <h4 class="mb-0 text-white fw-semibold">Editar Perfil</h4>
-                <p class="text-soft mb-0" style="font-size:.85rem;">
-                    <span class="badge bg-opacity-20 bg-{{ $user->role_badge }} text-{{ $user->role_badge }}" style="font-size:.7rem;">
-                        {{ $user->role_label }}
-                    </span>
-                    &middot; {{ $user->company->name ?? 'Empresa não definida' }}
+                <h4 class="mb-0 fw-semibold" style="color:#F0F9FF;">Editar Perfil</h4>
+                <p class="mb-0" style="font-size:.85rem; color:rgba(148,163,184,.7);">
+                    @php
+                        $roleClass = match($user->role) {
+                            'admin'    => 'admin',
+                            'gerente'  => 'gerente',
+                            'vendedor' => 'vendedor',
+                            default    => 'default',
+                        };
+                    @endphp
+                    <span class="role-badge {{ $roleClass }}">{{ $user->role_label }}</span>
+                    <span class="mx-1" style="color:rgba(148,163,184,.35);">·</span>
+                    <span style="color:rgba(148,163,184,.6);">{{ $user->company->name ?? 'Empresa não definida' }}</span>
                 </p>
             </div>
         </div>
@@ -244,21 +280,6 @@
 </div>
 @endsection
 
-@push('styles')
-<style>
-.nav-tabs .nav-link.active {
-    background: rgba(14,165,233,.12) !important;
-    border-color: rgba(14,165,233,.3) rgba(14,165,233,.3) transparent !important;
-    color: #38BDF8 !important;
-}
-.nav-tabs .nav-link:hover:not(.active) {
-    background: rgba(14,165,233,.05);
-    color: #e2e8f0 !important;
-    border-color: transparent;
-}
-</style>
-@endpush
-
 @push('scripts')
 <script>
 function togglePassword(fieldId, btn) {
@@ -273,8 +294,8 @@ function togglePassword(fieldId, btn) {
     }
 }
 function checkStrength(val) {
-    const bar = document.getElementById('strengthBar');
-    const fill = document.getElementById('strengthFill');
+    const bar   = document.getElementById('strengthBar');
+    const fill  = document.getElementById('strengthFill');
     const label = document.getElementById('strengthLabel');
     if (!val) { bar.style.display = 'none'; return; }
     bar.style.display = '';
@@ -285,20 +306,20 @@ function checkStrength(val) {
     if (/[0-9]/.test(val)) score++;
     if (/[^A-Za-z0-9]/.test(val)) score++;
     const levels = [
-        { pct: '20%', color: '#ef4444', text: 'Muito fraca' },
-        { pct: '40%', color: '#f97316', text: 'Fraca' },
-        { pct: '60%', color: '#eab308', text: 'Média' },
-        { pct: '80%', color: '#22c55e', text: 'Forte' },
+        { pct: '20%',  color: '#ef4444', text: 'Muito fraca' },
+        { pct: '40%',  color: '#f97316', text: 'Fraca' },
+        { pct: '60%',  color: '#eab308', text: 'Média' },
+        { pct: '80%',  color: '#22c55e', text: 'Forte' },
         { pct: '100%', color: '#10b981', text: 'Muito forte' },
     ];
     const lvl = levels[Math.min(score, 4)];
-    fill.style.width = lvl.pct;
+    fill.style.width           = lvl.pct;
     fill.style.backgroundColor = lvl.color;
-    label.textContent = lvl.text;
-    label.style.color = lvl.color;
+    label.textContent          = lvl.text;
+    label.style.color          = lvl.color;
 }
 function previewLogo(input) {
-    const preview = document.getElementById('logoPreview');
+    const preview     = document.getElementById('logoPreview');
     const placeholder = document.getElementById('logoPlaceholder');
     if (input.files && input.files[0]) {
         const reader = new FileReader();
@@ -310,22 +331,18 @@ function previewLogo(input) {
         reader.readAsDataURL(input.files[0]);
     }
 }
-// Máscara CNPJ
 document.getElementById('cnpj')?.addEventListener('input', function () {
     let v = this.value.replace(/\D/g, '').slice(0, 14);
     v = v.replace(/(\d{2})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1.$2')
          .replace(/(\d{3})(\d)/, '$1/$2').replace(/(\d{4})(\d)/, '$1-$2');
     this.value = v;
 });
-// Máscara telefone
 document.getElementById('phone_company')?.addEventListener('input', function () {
     let v = this.value.replace(/\D/g, '').slice(0, 11);
     if (v.length <= 10) v = v.replace(/(\d{2})(\d{4})(\d{0,4})/, '($1) $2-$3');
-    else v = v.replace(/(\d{2})(\d{5})(\d{0,4})/, '($1) $2-$3');
+    else                v = v.replace(/(\d{2})(\d{5})(\d{0,4})/, '($1) $2-$3');
     this.value = v.trim().replace(/-$/, '');
 });
-
-// Abre aba empresa se vier erro de empresa
 @if($errors->has('name') || $errors->has('cnpj') || $errors->has('phone') || $errors->has('address') || $errors->has('logo'))
     document.addEventListener('DOMContentLoaded', () => {
         const tab = document.querySelector('#tab-empresa');
