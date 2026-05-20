@@ -161,7 +161,6 @@
 <nav class="navbar navbar-expand-lg navbar-main sticky-top">
     <div class="container-fluid px-4">
         <a class="navbar-brand-custom" href="{{ Auth::check() ? route('home') : route('landing') }}">
-            {{-- SVG Invexa sempre visível --}}
             <svg class="brand-icon-svg" viewBox="0 0 32 32" fill="none">
                 <rect width="32" height="32" rx="7" fill="#080D1A"/>
                 <path d="M7 10h5.5L16 16l3.5-6H25L18 22h-4L7 10Z" fill="#0EA5E9"/>
@@ -169,14 +168,12 @@
             </svg>
 
             @if($companyLogo)
-                {{-- Logo da empresa cadastrado --}}
                 <div class="brand-divider"></div>
                 <img src="{{ $companyLogo }}"
                      alt="{{ $companyName }}"
                      class="company-logo-nav"
                      title="{{ $companyName }}">
             @else
-                {{-- Fallback: nome da empresa ou INVEXA --}}
                 <span>{{ Auth::check() && $authCompany ? $companyName : 'INVEXA' }}</span>
             @endif
         </a>
@@ -269,11 +266,14 @@
                         <i class="bi bi-bar-chart-line me-1 opacity-75"></i>Relatórios
                     </a>
                     <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="{{ route('reports.top-products') }}"><i class="bi bi-trophy me-2"></i>Produtos Mais Vendidos</a></li>
-                        <li><a class="dropdown-item" href="{{ route('reports.purchases') }}"><i class="bi bi-cart-check me-2"></i>Relatório de Compras</a></li>
-                        <li><a class="dropdown-item" href="{{ route('reports.sales') }}"><i class="bi bi-graph-up me-2"></i>Relatório de Vendas</a></li>
-                        <li><a class="dropdown-item" href="{{ route('reports.financial') }}"><i class="bi bi-wallet2 me-2"></i>Relatório Financeiro</a></li>
-                        <li><a class="dropdown-item" href="{{ route('reports.stock') }}"><i class="bi bi-boxes me-2"></i>Relatório de Estoque</a></li>
+                        <li><a class="dropdown-item {{ request()->routeIs('reports.top-products') ? 'active' : '' }}" href="{{ route('reports.top-products') }}"><i class="bi bi-trophy me-2"></i>Produtos Mais Vendidos</a></li>
+                        <li><a class="dropdown-item {{ request()->routeIs('reports.purchases') ? 'active' : '' }}" href="{{ route('reports.purchases') }}"><i class="bi bi-cart-check me-2"></i>Relatório de Compras</a></li>
+                        <li><a class="dropdown-item {{ request()->routeIs('reports.sales') ? 'active' : '' }}" href="{{ route('reports.sales') }}"><i class="bi bi-graph-up me-2"></i>Relatório de Vendas</a></li>
+                        <li><a class="dropdown-item {{ request()->routeIs('reports.returns') ? 'active' : '' }}" href="{{ route('reports.returns') }}"><i class="bi bi-arrow-return-left me-2"></i>Relatório de Devoluções</a></li>
+                        <li><a class="dropdown-item {{ request()->routeIs('reports.financial') ? 'active' : '' }}" href="{{ route('reports.financial') }}"><i class="bi bi-wallet2 me-2"></i>Relatório Financeiro</a></li>
+                        <li><a class="dropdown-item {{ request()->routeIs('reports.stock') ? 'active' : '' }}" href="{{ route('reports.stock') }}"><i class="bi bi-boxes me-2"></i>Relatório de Estoque</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item {{ request()->routeIs('reports.index') ? 'active' : '' }}" href="{{ route('reports.index') }}"><i class="bi bi-grid me-2"></i>Ver Todos</a></li>
                     </ul>
                 </li>
                 @endif
