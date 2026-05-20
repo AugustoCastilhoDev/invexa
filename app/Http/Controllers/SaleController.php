@@ -87,10 +87,16 @@ class SaleController extends Controller
 
         try {
             DB::transaction(function () use ($validated, $companyId, $customerName, $saleDateTime) {
+                // Número seqüencial isolado por empresa
+                $saleNumber = Sale::withoutGlobalScope('company')
+                    ->where('company_id', $companyId)
+                    ->max('sale_number') + 1;
+
                 $total = collect($validated['items'])->sum(fn($i) => $i['quantity'] * $i['price']);
 
                 $sale = Sale::create([
                     'company_id'    => $companyId,
+                    'sale_number'   => $saleNumber,
                     'customer_id'   => $validated['customer_id'],
                     'customer_name' => $customerName,
                     'sale_date'     => $saleDateTime,
@@ -128,7 +134,7 @@ class SaleController extends Controller
                         'quantity_before' => $before,
                         'quantity_after'  => $after,
                         'reason'          => 'venda',
-                        'notes'           => "Venda #{$sale->id} — {$customerName}",
+                        'notes'           => "Venda #{$sale->sale_number} — {$customerName}",
                         'source_type'     => Sale::class,
                         'source_id'       => $sale->id,
                     ]);
@@ -139,7 +145,7 @@ class SaleController extends Controller
                         'company_id'  => $companyId,
                         'customer_id' => $sale->customer_id,
                         'sale_id'     => $sale->id,
-                        'description' => "Venda #{$sale->id} — {$customerName}",
+                        'description' => "Venda #{$sale->sale_number} — {$customerName}",
                         'amount'      => $total,
                         'due_date'    => Carbon::parse($sale->sale_date)->addDays($this->receivableDueDays)->toDateString(),
                         'status'      => 'pendente',
@@ -217,7 +223,7 @@ class SaleController extends Controller
                         'product_id' => $oldProduct->id, 'company_id' => $companyId,
                         'user_id' => auth()->id(), 'type' => 'entrada',
                         'quantity' => $netQty, 'quantity_before' => $before, 'quantity_after' => $after,
-                        'reason' => 'devolucao', 'notes' => "Estorno da edição da Venda #{$sale->id}",
+                        'reason' => 'devolucao', 'notes' => "Estorno da edição da Venda #{$sale->sale_number}",
                         'source_type' => Sale::class, 'source_id' => $sale->id,
                     ]);
                 }
@@ -253,7 +259,7 @@ class SaleController extends Controller
                         'product_id' => $product->id, 'company_id' => $companyId,
                         'user_id' => auth()->id(), 'type' => 'saida',
                         'quantity' => -$item['quantity'], 'quantity_before' => $before, 'quantity_after' => $after,
-                        'reason' => 'venda', 'notes' => "Venda #{$sale->id} (editada) — {$customerName}",
+                        'reason' => 'venda', 'notes' => "Venda #{$sale->sale_number} (editada) — {$customerName}",
                         'source_type' => Sale::class, 'source_id' => $sale->id,
                     ]);
                 }
@@ -263,7 +269,7 @@ class SaleController extends Controller
                         'company_id'  => $companyId,
                         'customer_id' => $sale->customer_id,
                         'sale_id'     => $sale->id,
-                        'description' => "Venda #{$sale->id} — {$customerName}",
+                        'description' => "Venda #{$sale->sale_number} — {$customerName}",
                         'amount'      => $total,
                         'due_date'    => Carbon::parse($saleDateTime)->addDays($this->receivableDueDays)->toDateString(),
                         'status'      => 'pendente',
@@ -300,7 +306,7 @@ class SaleController extends Controller
                     StockMovement::create([
                         'product_id' => $product->id, 'company_id' => $companyId, 'user_id' => auth()->id(),
                         'type' => 'entrada', 'quantity' => $netQty, 'quantity_before' => $before, 'quantity_after' => $after,
-                        'reason' => 'cancelamento', 'notes' => "Estorno por cancelamento da Venda #{$sale->id}",
+                        'reason' => 'cancelamento', 'notes' => "Estorno por cancelamento da Venda #{$sale->sale_number}",
                         'source_type' => Sale::class, 'source_id' => $sale->id,
                     ]);
                 }
@@ -332,7 +338,7 @@ class SaleController extends Controller
                     StockMovement::create([
                         'product_id' => $product->id, 'company_id' => $companyId, 'user_id' => auth()->id(),
                         'type' => 'entrada', 'quantity' => $netQty, 'quantity_before' => $before, 'quantity_after' => $after,
-                        'reason' => 'devolucao', 'notes' => "Estorno por exclusão da Venda #{$sale->id}",
+                        'reason' => 'devolucao', 'notes' => "Estorno por exclusão da Venda #{$sale->sale_number}",
                         'source_type' => Sale::class, 'source_id' => $sale->id,
                     ]);
                 }
@@ -369,6 +375,6 @@ class SaleController extends Controller
         $pdf = Pdf::loadView('sales.pdf', compact('sale', 'company'))
             ->setPaper('a4', 'portrait')
             ->setOptions(['defaultFont' => 'DejaVu Sans', 'isHtml5ParserEnabled' => true, 'isRemoteEnabled' => false, 'dpi' => 150]);
-        return $pdf->download('nf-venda-' . $sale->id . '-' . now()->format('Ymd') . '.pdf');
+        return $pdf->download('nf-venda-' . $sale->sale_number . '-' . now()->format('Ymd') . '.pdf');
     }
 }

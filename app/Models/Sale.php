@@ -14,15 +14,15 @@ class Sale extends Model
     use SoftDeletes;
 
     protected $fillable = [
-        'company_id','customer_id','customer_name',
-        'sale_date','status','notes','total',
+        'company_id', 'sale_number', 'customer_id', 'customer_name',
+        'sale_date', 'status', 'notes', 'total',
     ];
 
     protected $casts = ['sale_date' => 'datetime'];
 
     /**
      * Isola automaticamente todas as queries pelo company_id do usuário autenticado.
-     * Use Sale::withoutGlobalScope('company') quando precisar de acesso irrestrito (ex: jobs, seeders).
+     * Use Sale::withoutGlobalScope('company') quando precisar de acesso irrestrito.
      */
     protected static function booted(): void
     {
