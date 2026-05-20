@@ -12,11 +12,6 @@ class Company extends Model
 
     protected $primaryKey = 'id';
 
-    public function subscriptions()
-    {
-        return $this->hasMany(\Laravel\Cashier\Subscription::class, 'billable_id')->orderBy('created_at', 'desc');
-    }
-
     protected $fillable = [
         'name', 'email', 'phone', 'document', 'address',
         'plan', 'active', 'trial_ends_at',
@@ -29,11 +24,11 @@ class Company extends Model
 
     // ── Relacionamentos
 
-    public function users()         { return $this->hasMany(User::class); }
-    public function products()      { return $this->hasMany(Product::class); }
-    public function customers()     { return $this->hasMany(Customer::class); }
-    public function suppliers()     { return $this->hasMany(Supplier::class); }
-    public function sales()         { return $this->hasMany(Sale::class); }
+    public function users()      { return $this->hasMany(User::class); }
+    public function products()   { return $this->hasMany(Product::class); }
+    public function customers()  { return $this->hasMany(Customer::class); }
+    public function suppliers()  { return $this->hasMany(Supplier::class); }
+    public function sales()      { return $this->hasMany(Sale::class); }
 
     // ── Acesso / Trial
 
@@ -41,7 +36,6 @@ class Company extends Model
     {
         // Trial só vale se ainda não tem assinatura paga ativa
         if ($this->hasActiveSubscription()) return false;
-
         return $this->trial_ends_at !== null && $this->trial_ends_at->isFuture();
     }
 
@@ -98,7 +92,6 @@ class Company extends Model
 
             $plan = $map[$priceId] ?? 'free';
 
-            // Zera o trial ao confirmar assinatura paga
             $this->update([
                 'plan'          => $plan,
                 'trial_ends_at' => null,
@@ -113,10 +106,10 @@ class Company extends Model
     public function planLimits(): array
     {
         return match ($this->plan) {
-            'free'     => ['products' => 50,           'customers' => 100,           'suppliers' => 10,  'users' => 2,           'purchase_orders' => 20],
-            'pro'      => ['products' => 500,          'customers' => 1000,          'suppliers' => 100, 'users' => 10,          'purchase_orders' => 200],
-            'business' => ['products' => PHP_INT_MAX,  'customers' => PHP_INT_MAX,   'suppliers' => PHP_INT_MAX, 'users' => PHP_INT_MAX, 'purchase_orders' => PHP_INT_MAX],
-            default    => ['products' => 50,           'customers' => 100,           'suppliers' => 10,  'users' => 2,           'purchase_orders' => 20],
+            'free'     => ['products' => 50,          'customers' => 100,          'suppliers' => 10,          'users' => 2,           'purchase_orders' => 20],
+            'pro'      => ['products' => 500,         'customers' => 1000,         'suppliers' => 100,         'users' => 10,          'purchase_orders' => 200],
+            'business' => ['products' => PHP_INT_MAX, 'customers' => PHP_INT_MAX,  'suppliers' => PHP_INT_MAX, 'users' => PHP_INT_MAX, 'purchase_orders' => PHP_INT_MAX],
+            default    => ['products' => 50,          'customers' => 100,          'suppliers' => 10,          'users' => 2,           'purchase_orders' => 20],
         };
     }
 
