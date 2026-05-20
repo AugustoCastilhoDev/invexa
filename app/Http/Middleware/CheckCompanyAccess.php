@@ -8,9 +8,6 @@ use Symfony\Component\HttpFoundation\Response;
 
 class CheckCompanyAccess
 {
-    /**
-     * Rotas liberadas mesmo com trial/assinatura expirados.
-     */
     protected array $except = [
         'upgrade',
         'logout',
@@ -33,7 +30,8 @@ class CheckCompanyAccess
             return $next($request);
         }
 
-        $company = $user->company;
+        // fresh() garante dados atualizados do banco, sem cache de relacionamento
+        $company = $user->company()->first();
 
         // Empresa inexistente ou inativa
         if (! $company || ! $company->active) {
@@ -46,7 +44,7 @@ class CheckCompanyAccess
             return $next($request);
         }
 
-        // Plano free sempre tem acesso (dentro dos limites)
+        // Plano free sempre tem acesso
         if ($company->plan === 'free') {
             return $next($request);
         }
