@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Laravel\Cashier\Exceptions\IncompletePayment;
-use Laravel\Stripe\StripeClient;
 
 class SubscriptionController extends Controller
 {
@@ -29,7 +28,7 @@ class SubscriptionController extends Controller
             'cancel_url'  => route('pricing'),
             'metadata'    => [
                 'company_id' => $company->id,
-                'plan'       => $request->plan,   // guarda o slug do plano para usar no success()
+                'plan'       => $request->plan,
             ],
         ];
 
@@ -49,13 +48,6 @@ class SubscriptionController extends Controller
         }
     }
 
-    /**
-     * Callback de sucesso do Stripe Checkout.
-     *
-     * Lemos o slug do plano diretamente dos metadata da Session — isso evita
-     * race condition com o webhook (que pode ainda não ter chegado quando o
-     * usuário é redirecionado de volta ao sistema).
-     */
     public function success(Request $request)
     {
         $company = auth()->user()->company;
@@ -66,16 +58,14 @@ class SubscriptionController extends Controller
                 $stripe  = new \Stripe\StripeClient(config('cashier.secret'));
                 $session = $stripe->checkout->sessions->retrieve($request->session_id);
 
-                // Pega o slug gravado nos metadata no momento do checkout
                 if (! empty($session->metadata->plan)) {
                     $plan = $session->metadata->plan === 'business' ? 'business' : 'pro';
                 }
             } catch (\Exception $e) {
-                // Silencia — fallback para syncPlanFromSubscription abaixo
+                // fallback abaixo
             }
         }
 
-        // Se por algum motivo o metadata não veio, tenta via subscription
         if ($plan === 'free') {
             $company->refresh();
             $sub = $company->subscription('default');
@@ -92,10 +82,14 @@ class SubscriptionController extends Controller
             }
         }
 
-        $company->update(['plan' => $plan]);
+        // Atualiza plano e encerra o trial — assinatura paga substitui o trial
+        $company->update([
+            'plan'          => $plan,
+            'trial_ends_at' => null,
+        ]);
 
         return redirect()->route('dashboard')
-            ->with('success', '🎉 Assinatura ativada com sucesso! Bem-vindo ao ' . ucfirst($plan) . '.');
+            ->with('success', '\ud83c\udf89 Assinatura ativada com sucesso! Bem-vindo ao ' . ucfirst($plan) . '.');
     }
 
     public function billingPortal()
@@ -109,6 +103,6 @@ class SubscriptionController extends Controller
         $company->subscription('default')?->cancel();
 
         return redirect()->route('subscription.index')
-            ->with('warning', 'Assinatura cancelada. Você terá acesso até o fim do período pago.');
+            ->with('warning', 'Assinatura cancelada. Voc\u00ea ter\u00e1 acesso at\u00e9 o fim do per\u00edodo pago.');
     }
 }
