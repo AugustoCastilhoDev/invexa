@@ -11,7 +11,9 @@ class ProductController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Product::where('company_id', Auth::user()->company_id)
+        $companyId = Auth::user()->company_id;
+
+        $query = Product::where('company_id', $companyId)
             ->with('category')
             ->orderBy('name');
 
@@ -21,17 +23,37 @@ class ProductController extends Controller
                   ->orWhere('sku', 'like', '%' . $request->search . '%');
             });
         }
-        if ($request->filled('category_id')) {
-            $query->where('category_id', $request->category_id);
+        if ($request->filled('category')) {
+            $query->where('category_id', $request->category);
         }
         if ($request->filled('status')) {
             $query->where('active', $request->status === 'ativo');
         }
+        if ($request->boolean('low_stock')) {
+            $query->where('active', true)
+                  ->where('min_quantity', '>', 0)
+                  ->whereColumn('quantity', '<=', 'min_quantity');
+        }
 
-        $products   = $query->paginate(15)->withQueryString();
-        $categories = Category::where('company_id', Auth::user()->company_id)->orderBy('name')->get();
+        $products        = $query->paginate(15)->withQueryString();
+        $categories      = Category::where('company_id', $companyId)->orderBy('name')->get();
+        $totalProducts   = Product::where('company_id', $companyId)->count();
+        $categoriesCount = $categories->count();
+        $lowStockCount   = Product::where('company_id', $companyId)
+                               ->where('active', true)
+                               ->where('min_quantity', '>', 0)
+                               ->whereColumn('quantity', '<=', 'min_quantity')
+                               ->count();
+        $lowStockAlert   = $lowStockCount;
 
-        return view('products.index', compact('products', 'categories'));
+        return view('products.index', compact(
+            'products',
+            'categories',
+            'totalProducts',
+            'categoriesCount',
+            'lowStockCount',
+            'lowStockAlert'
+        ));
     }
 
     public function create()
@@ -39,7 +61,7 @@ class ProductController extends Controller
         $company = Auth::user()->company;
         if ($company && !$company->canAdd('products')) {
             return redirect()->route('products.index')
-                ->with('error', $this->limitMessage('produtos', $company->limit('products'), 'products'));
+                ->with('error', $this->limitMessage('produtos', $company->limit('products')));
         }
 
         $categories = Category::where('company_id', Auth::user()->company_id)->orderBy('name')->get();
@@ -51,19 +73,19 @@ class ProductController extends Controller
         $company = Auth::user()->company;
         if ($company && !$company->canAdd('products')) {
             return redirect()->route('products.index')
-                ->with('error', $this->limitMessage('produtos', $company->limit('products'), 'products'));
+                ->with('error', $this->limitMessage('produtos', $company->limit('products')));
         }
 
         $request->validate([
-            'name'        => ['required', 'string', 'max:255'],
-            'sku'         => ['nullable', 'string', 'max:100'],
-            'category_id' => ['nullable', 'exists:categories,id'],
-            'price'       => ['required', 'numeric', 'min:0'],
-            'cost_price'  => ['nullable', 'numeric', 'min:0'],
-            'quantity'    => ['required', 'integer', 'min:0'],
-            'min_quantity'=> ['nullable', 'integer', 'min:0'],
-            'description' => ['nullable', 'string'],
-            'unit'        => ['nullable', 'string', 'max:20'],
+            'name'         => ['required', 'string', 'max:255'],
+            'sku'          => ['nullable', 'string', 'max:100'],
+            'category_id'  => ['nullable', 'exists:categories,id'],
+            'price'        => ['required', 'numeric', 'min:0'],
+            'cost_price'   => ['nullable', 'numeric', 'min:0'],
+            'quantity'     => ['required', 'integer', 'min:0'],
+            'min_quantity' => ['nullable', 'integer', 'min:0'],
+            'description'  => ['nullable', 'string'],
+            'unit'         => ['nullable', 'string', 'max:20'],
         ]);
 
         Product::create(array_merge($request->all(), [
@@ -76,31 +98,31 @@ class ProductController extends Controller
 
     public function show(Product $product)
     {
-        $this->authorize($product);
+        $this->authorizeProduct($product);
         return view('products.show', compact('product'));
     }
 
     public function edit(Product $product)
     {
-        $this->authorize($product);
+        $this->authorizeProduct($product);
         $categories = Category::where('company_id', Auth::user()->company_id)->orderBy('name')->get();
         return view('products.edit', compact('product', 'categories'));
     }
 
     public function update(Request $request, Product $product)
     {
-        $this->authorize($product);
+        $this->authorizeProduct($product);
 
         $request->validate([
-            'name'        => ['required', 'string', 'max:255'],
-            'sku'         => ['nullable', 'string', 'max:100'],
-            'category_id' => ['nullable', 'exists:categories,id'],
-            'price'       => ['required', 'numeric', 'min:0'],
-            'cost_price'  => ['nullable', 'numeric', 'min:0'],
-            'quantity'    => ['required', 'integer', 'min:0'],
-            'min_quantity'=> ['nullable', 'integer', 'min:0'],
-            'description' => ['nullable', 'string'],
-            'unit'        => ['nullable', 'string', 'max:20'],
+            'name'         => ['required', 'string', 'max:255'],
+            'sku'          => ['nullable', 'string', 'max:100'],
+            'category_id'  => ['nullable', 'exists:categories,id'],
+            'price'        => ['required', 'numeric', 'min:0'],
+            'cost_price'   => ['nullable', 'numeric', 'min:0'],
+            'quantity'     => ['required', 'integer', 'min:0'],
+            'min_quantity' => ['nullable', 'integer', 'min:0'],
+            'description'  => ['nullable', 'string'],
+            'unit'         => ['nullable', 'string', 'max:20'],
         ]);
 
         $product->update(array_merge($request->all(), [
@@ -112,20 +134,19 @@ class ProductController extends Controller
 
     public function destroy(Product $product)
     {
-        $this->authorize($product);
+        $this->authorizeProduct($product);
         $product->delete();
         return redirect()->route('products.index')->with('success', 'Produto excluído com sucesso.');
     }
 
-    private function authorize(Product $product): void
+    private function authorizeProduct(Product $product): void
     {
         if ($product->company_id !== Auth::user()->company_id) abort(403);
     }
 
-    private function limitMessage(string $nome, int $limite, string $resource): string
+    private function limitMessage(string $nome, int $limite): string
     {
-        $company = Auth::user()->company;
-        $plano   = strtoupper($company->plan);
-        return "Limite de {$nome} do plano {$plano} atingido ({$limite}).  ✨ Faça upgrade para continuar.";
+        $plano = strtoupper(Auth::user()->company->plan);
+        return "Limite de {$nome} do plano {$plano} atingido ({$limite}). ✨ Faça upgrade para continuar.";
     }
 }
