@@ -9,14 +9,26 @@ use Symfony\Component\HttpFoundation\Response;
 class CheckCompanyAccess
 {
     /**
-     * Bloqueia acesso se o trial expirou e a empresa não tem plano pago ativo.
-     * Super-admins (sem company_id) são sempre permitidos.
+     * Rotas liberadas mesmo com trial/assinatura expirados.
      */
+    protected array $except = [
+        'upgrade',
+        'logout',
+        'pricing',
+        'subscription.index',
+        'subscription.checkout',
+        'subscription.success',
+        'subscription.billing-portal',
+        'subscription.cancel',
+        'subscription.invoice',
+        'cashier.webhook',
+    ];
+
     public function handle(Request $request, Closure $next): Response
     {
         $user = $request->user();
 
-        // Usuários sem empresa (super-admin) passam direto
+        // Super-admin (sem empresa) passa direto
         if (! $user || ! $user->company_id) {
             return $next($request);
         }
@@ -25,14 +37,31 @@ class CheckCompanyAccess
 
         // Empresa inexistente ou inativa
         if (! $company || ! $company->active) {
-            return redirect()->route('upgrade')->with('error', 'Sua conta está inativa. Entre em contato com o suporte.');
+            return redirect()->route('upgrade')
+                ->with('error', 'Sua conta está inativa. Entre em contato com o suporte.');
         }
 
-        // Trial ou plano expirado — redireciona para upgrade (evita loop)
-        if (! $company->isAccessible() && ! $request->routeIs('upgrade', 'logout')) {
-            return redirect()->route('upgrade');
+        // Rotas que nunca devem ser bloqueadas
+        if ($request->routeIs($this->except)) {
+            return $next($request);
         }
 
-        return $next($request);
+        // Plano free sempre tem acesso (dentro dos limites)
+        if ($company->plan === 'free') {
+            return $next($request);
+        }
+
+        // Trial ativo: passa
+        if ($company->isOnTrial()) {
+            return $next($request);
+        }
+
+        // Assinatura paga ativa: passa
+        if ($company->hasActiveSubscription()) {
+            return $next($request);
+        }
+
+        // Nenhuma condição satisfeita: upgrade
+        return redirect()->route('upgrade');
     }
 }
