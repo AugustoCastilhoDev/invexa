@@ -17,32 +17,32 @@ class ReceivableController extends Controller
         'outros'      => 'Outros',
     ];
 
+    private array $statuses = [
+        'pendente'  => 'Pendente',
+        'recebida'  => 'Recebida',
+        'cancelada' => 'Cancelada',
+    ];
+
     public function index(Request $request)
     {
         $companyId = auth()->user()->company_id;
         $query = Receivable::with('customer')->where('company_id', $companyId);
-        if ($request->filled('search'))   { $query->where('description','like','%'.$request->search.'%'); }
+        if ($request->filled('search'))   { $query->where('description', 'like', '%'.$request->search.'%'); }
         if ($request->filled('status'))   { $query->where('status', $request->status); }
         if ($request->filled('category')) { $query->where('category', $request->category); }
-        if ($request->filled('from'))     { $query->whereDate('due_date','>=', $request->from); }
-        if ($request->filled('to'))       { $query->whereDate('due_date','<=', $request->to); }
-        if ($request->boolean('trashed') && auth()->user()->hasRole(['admin','gerente'])) {
+        if ($request->filled('from'))     { $query->whereDate('due_date', '>=', $request->from); }
+        if ($request->filled('to'))       { $query->whereDate('due_date', '<=', $request->to); }
+        if ($request->boolean('trashed') && auth()->user()->hasRole(['admin', 'gerente'])) {
             $query->onlyTrashed();
         }
 
         $totalAmount   = (clone $query)->sum('amount');
-        $totalReceived = (clone $query)->where('status','recebida')->sum('amount');
-        $totalPending  = (clone $query)->where('status','pendente')->sum('amount');
-        $totalOverdue  = (clone $query)->where('status','vencida')->sum('amount');
-        $countOverdue  = (clone $query)->where('status','vencida')->count();
+        $totalReceived = (clone $query)->where('status', 'recebida')->sum('amount');
+        $totalPending  = (clone $query)->where('status', 'pendente')->sum('amount');
+        $totalOverdue  = (clone $query)->where('status', 'vencida')->sum('amount');
+        $countOverdue  = (clone $query)->where('status', 'vencida')->count();
 
-        $statuses = [
-            'pendente'  => 'Pendente',
-            'recebida'  => 'Recebida',
-            'vencida'   => 'Vencida',
-            'cancelada' => 'Cancelada',
-        ];
-
+        $statuses    = $this->statuses + ['vencida' => 'Vencida'];
         $categories  = $this->categories;
         $receivables = $query->orderBy('due_date')->paginate(15)->withQueryString();
 
@@ -58,22 +58,33 @@ class ReceivableController extends Controller
     {
         $customers  = Customer::where('company_id', auth()->user()->company_id)->orderBy('name')->get();
         $categories = $this->categories;
-        return view('receivables.create', compact('customers', 'categories'));
+        $statuses   = $this->statuses;
+        return view('receivables.create', compact('customers', 'categories', 'statuses'));
     }
 
     public function store(Request $request)
     {
         $companyId = auth()->user()->company_id;
         $validated = $request->validate([
-            'description'    => ['required','string','max:255'],
-            'customer_id'    => ['nullable','exists:customers,id'],
-            'amount'         => ['required','numeric','min:0.01'],
-            'due_date'       => ['required','date'],
-            'status'         => ['required','in:pendente,recebida,cancelada'],
-            'payment_method' => ['nullable','string'],
-            'notes'          => ['nullable','string'],
-            'installments'   => ['nullable','integer','min:1','max:60'],
-            'recurrence'     => ['nullable','in:none,monthly,weekly'],
+            'description'    => ['required', 'string', 'max:255'],
+            'customer_id'    => ['nullable', 'exists:customers,id'],
+            'amount'         => ['required', 'numeric', 'min:0.01'],
+            'due_date'       => ['required', 'date'],
+            'category'       => ['required', 'in:vendas,servicos,assinaturas,outros'],
+            'status'         => ['required', 'in:pendente,recebida,cancelada'],
+            'payment_method' => ['nullable', 'string'],
+            'notes'          => ['nullable', 'string'],
+            'installments'   => ['nullable', 'integer', 'min:1', 'max:60'],
+            'recurrence'     => ['nullable', 'in:none,monthly,weekly'],
+        ], [
+            'description.required'  => 'O campo Descrição é obrigatório.',
+            'amount.required'       => 'O campo Valor é obrigatório.',
+            'amount.min'            => 'O valor deve ser maior que zero.',
+            'due_date.required'     => 'O campo Vencimento é obrigatório.',
+            'category.required'     => 'Selecione uma categoria.',
+            'category.in'           => 'Categoria inválida.',
+            'status.required'       => 'Selecione um status.',
+            'status.in'             => 'Status inválido.',
         ]);
 
         $installments = (int) ($validated['installments'] ?? 1);
@@ -96,6 +107,7 @@ class ReceivableController extends Controller
                     'amount_received'      => $isReceived ? $unitAmount : null,
                     'received_at'          => $isReceived ? now() : null,
                     'due_date'             => $due,
+                    'category'             => $validated['category'],
                     'status'               => $validated['status'],
                     'payment_method'       => $validated['payment_method'] ?? null,
                     'notes'                => $validated['notes'] ?? null,
@@ -114,7 +126,7 @@ class ReceivableController extends Controller
 
     public function show(Receivable $receivable)
     {
-        $receivable->load(['customer','sale']);
+        $receivable->load(['customer', 'sale']);
         return view('receivables.show', compact('receivable'));
     }
 
@@ -122,19 +134,30 @@ class ReceivableController extends Controller
     {
         $customers  = Customer::where('company_id', auth()->user()->company_id)->orderBy('name')->get();
         $categories = $this->categories;
-        return view('receivables.edit', compact('receivable', 'customers', 'categories'));
+        $statuses   = $this->statuses;
+        return view('receivables.edit', compact('receivable', 'customers', 'categories', 'statuses'));
     }
 
     public function update(Request $request, Receivable $receivable)
     {
         $validated = $request->validate([
-            'description'    => ['required','string','max:255'],
-            'customer_id'    => ['nullable','exists:customers,id'],
-            'amount'         => ['required','numeric','min:0.01'],
-            'due_date'       => ['required','date'],
-            'status'         => ['required','in:pendente,recebida,cancelada'],
-            'payment_method' => ['nullable','string'],
-            'notes'          => ['nullable','string'],
+            'description'    => ['required', 'string', 'max:255'],
+            'customer_id'    => ['nullable', 'exists:customers,id'],
+            'amount'         => ['required', 'numeric', 'min:0.01'],
+            'due_date'       => ['required', 'date'],
+            'category'       => ['required', 'in:vendas,servicos,assinaturas,outros'],
+            'status'         => ['required', 'in:pendente,recebida,cancelada'],
+            'payment_method' => ['nullable', 'string'],
+            'notes'          => ['nullable', 'string'],
+        ], [
+            'description.required' => 'O campo Descrição é obrigatório.',
+            'amount.required'      => 'O campo Valor é obrigatório.',
+            'amount.min'           => 'O valor deve ser maior que zero.',
+            'due_date.required'    => 'O campo Vencimento é obrigatório.',
+            'category.required'    => 'Selecione uma categoria.',
+            'category.in'          => 'Categoria inválida.',
+            'status.required'      => 'Selecione um status.',
+            'status.in'            => 'Status inválido.',
         ]);
 
         if ($validated['status'] === 'recebida' && $receivable->status !== 'recebida') {
