@@ -23,15 +23,24 @@ class SubscriptionController extends Controller
         $company = auth()->user()->company;
         $priceId = config('cashier.prices.' . $request->plan);
 
+        // Monta os parâmetros base do checkout
+        $checkoutParams = [
+            'success_url' => route('subscription.success') . '?session_id={CHECKOUT_SESSION_ID}',
+            'cancel_url'  => route('pricing'),
+            'metadata'    => ['company_id' => $company->id],
+        ];
+
+        // Só envia customer_email se a empresa ainda NÃO tem um stripe_id.
+        // Quando stripe_id já existe, o Cashier usa o customer existente automaticamente
+        // e o Stripe rejeita a combinação customer + customer_email.
+        if (! $company->stripe_id) {
+            $checkoutParams['customer_email'] = $company->email;
+        }
+
         try {
             return $company
                 ->newSubscription('default', $priceId)
-                ->checkout([
-                    'success_url'    => route('subscription.success') . '?session_id={CHECKOUT_SESSION_ID}',
-                    'cancel_url'     => route('pricing'),
-                    'customer_email' => $company->email,
-                    'metadata'       => ['company_id' => $company->id],
-                ]);
+                ->checkout($checkoutParams);
         } catch (IncompletePayment $e) {
             return redirect()->route('cashier.payment', [
                 $e->payment->id,
