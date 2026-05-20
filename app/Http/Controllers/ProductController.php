@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\Supplier;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -64,8 +65,11 @@ class ProductController extends Controller
                 ->with('error', $this->limitMessage('produtos', $company->limit('products')));
         }
 
-        $categories = Category::where('company_id', Auth::user()->company_id)->orderBy('name')->get();
-        return view('products.create', compact('categories'));
+        $companyId  = Auth::user()->company_id;
+        $categories = Category::where('company_id', $companyId)->orderBy('name')->get();
+        $suppliers  = Supplier::where('company_id', $companyId)->orderBy('name')->get();
+
+        return view('products.create', compact('categories', 'suppliers'));
     }
 
     public function store(Request $request)
@@ -80,6 +84,7 @@ class ProductController extends Controller
             'name'         => ['required', 'string', 'max:255'],
             'sku'          => ['nullable', 'string', 'max:100'],
             'category_id'  => ['nullable', 'exists:categories,id'],
+            'supplier_id'  => ['nullable', 'exists:suppliers,id'],
             'price'        => ['required', 'numeric', 'min:0'],
             'cost_price'   => ['nullable', 'numeric', 'min:0'],
             'quantity'     => ['required', 'integer', 'min:0'],
@@ -105,8 +110,10 @@ class ProductController extends Controller
     public function edit(Product $product)
     {
         $this->authorizeProduct($product);
-        $categories = Category::where('company_id', Auth::user()->company_id)->orderBy('name')->get();
-        return view('products.edit', compact('product', 'categories'));
+        $companyId  = Auth::user()->company_id;
+        $categories = Category::where('company_id', $companyId)->orderBy('name')->get();
+        $suppliers  = Supplier::where('company_id', $companyId)->orderBy('name')->get();
+        return view('products.edit', compact('product', 'categories', 'suppliers'));
     }
 
     public function update(Request $request, Product $product)
@@ -117,6 +124,7 @@ class ProductController extends Controller
             'name'         => ['required', 'string', 'max:255'],
             'sku'          => ['nullable', 'string', 'max:100'],
             'category_id'  => ['nullable', 'exists:categories,id'],
+            'supplier_id'  => ['nullable', 'exists:suppliers,id'],
             'price'        => ['required', 'numeric', 'min:0'],
             'cost_price'   => ['nullable', 'numeric', 'min:0'],
             'quantity'     => ['required', 'integer', 'min:0'],
