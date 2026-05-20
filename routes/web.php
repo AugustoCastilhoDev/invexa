@@ -9,6 +9,7 @@ use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LandingController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
@@ -98,6 +99,13 @@ Route::middleware(['auth', 'company', 'trial', 'onboarding'])->group(function ()
     Route::get('/profile',   [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
 
+    // ── Notificações
+    Route::get('/notifications',                       [NotificationController::class, 'index'])->name('notifications.index');
+    Route::get('/notifications/unread',                [NotificationController::class, 'unread'])->name('notifications.unread');
+    Route::post('/notifications/mark-all-read',        [NotificationController::class, 'markAllRead'])->name('notifications.mark-all-read');
+    Route::post('/notifications/{id}/read',            [NotificationController::class, 'markRead'])->name('notifications.mark-read');
+    Route::delete('/notifications/{id}',               [NotificationController::class, 'destroy'])->name('notifications.destroy');
+
     Route::get('/sales',        [SaleController::class, 'index'])->name('sales.index');
     Route::get('/sales/create', [SaleController::class, 'create'])->name('sales.create');
     Route::post('/sales',       [SaleController::class, 'store'])->name('sales.store');
@@ -170,7 +178,6 @@ Route::middleware(['auth', 'company', 'trial', 'onboarding'])->group(function ()
         Route::get('/top-products',      [ReportController::class, 'topProducts'])->name('top-products');
         Route::get('/top-products/pdf',  [ReportController::class, 'topProductsPdf'])->name('top-products.pdf');
         Route::get('/top-products/csv',  [ReportController::class, 'topProductsCsv'])->name('top-products.csv');
-        // Devoluções
         Route::get('/returns',           [ReportController::class, 'returns'])->name('returns');
         Route::get('/returns/pdf',       [ReportController::class, 'returnsPdf'])->name('returns.pdf');
         Route::get('/returns/csv',       [ReportController::class, 'returnsCsv'])->name('returns.csv');

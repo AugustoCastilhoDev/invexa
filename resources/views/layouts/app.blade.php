@@ -39,24 +39,12 @@
         }
         .navbar-brand-custom:hover { opacity:.82; }
         .brand-icon-svg { width:2rem; height:2rem; flex-shrink:0; filter: drop-shadow(0 0 6px var(--brand-glow)); }
-
-        /* Logo da empresa na navbar */
         .company-logo-nav {
-            height: 2rem;
-            width: auto;
-            max-width: 7rem;
-            border-radius: 5px;
-            object-fit: contain;
-            border: 1px solid rgba(14,165,233,.15);
-            padding: 2px 4px;
-            background: rgba(13,25,41,.6);
+            height: 2rem; width: auto; max-width: 7rem; border-radius: 5px;
+            object-fit: contain; border: 1px solid rgba(14,165,233,.15);
+            padding: 2px 4px; background: rgba(13,25,41,.6);
         }
-        .brand-divider {
-            width: 1px; height: 1.4rem;
-            background: rgba(14,165,233,.2);
-            margin: 0 .1rem;
-        }
-
+        .brand-divider { width: 1px; height: 1.4rem; background: rgba(14,165,233,.2); margin: 0 .1rem; }
         .navbar-main .nav-link {
             color:rgba(226,232,240,.65) !important; font-size:.875rem; font-weight:500;
             padding:.35rem .7rem !important; border-radius:.4rem;
@@ -147,6 +135,32 @@
             0%,100% { box-shadow:0 0 0 2px var(--brand-abyss),0 0 0 0 rgba(239,68,68,.6); }
             50%      { box-shadow:0 0 0 2px var(--brand-abyss),0 0 0 4px rgba(239,68,68,.0); }
         }
+        /* Sino de notificações */
+        #notif-list::-webkit-scrollbar { width: 4px; }
+        #notif-list::-webkit-scrollbar-track { background: transparent; }
+        #notif-list::-webkit-scrollbar-thumb { background: rgba(14,165,233,.3); border-radius: 4px; }
+        .notif-item {
+            display: flex; align-items: flex-start; gap: .75rem;
+            padding: .65rem .9rem;
+            border-bottom: 1px solid rgba(148,163,184,.07);
+            cursor: pointer;
+            transition: background .15s ease;
+            text-decoration: none;
+        }
+        .notif-item:hover { background: rgba(14,165,233,.07); }
+        .notif-item:last-child { border-bottom: 0; }
+        .notif-icon-wrap {
+            width: 2.1rem; height: 2.1rem; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0; font-size: 1rem;
+        }
+        .notif-icon-wrap.danger  { background: rgba(239,68,68,.18);  color: #f87171; }
+        .notif-icon-wrap.warning { background: rgba(234,179,8,.15);  color: #facc15; }
+        .notif-icon-wrap.info    { background: rgba(14,165,233,.15); color: #38BDF8; }
+        .notif-icon-wrap.success { background: rgba(34,197,94,.15);  color: #4ade80; }
+        .notif-title   { font-size: .8rem; font-weight: 600; color: #e2e8f0; line-height: 1.3; }
+        .notif-message { font-size: .74rem; color: rgba(148,163,184,.85); line-height: 1.4; margin-top: .1rem; }
+        .notif-time    { font-size: .68rem; color: rgba(148,163,184,.5); margin-top: .2rem; }
     </style>
     @stack('styles')
 </head>
@@ -166,13 +180,9 @@
                 <path d="M7 10h5.5L16 16l3.5-6H25L18 22h-4L7 10Z" fill="#0EA5E9"/>
                 <circle cx="24" cy="10" r="2.2" fill="#38BDF8"/>
             </svg>
-
             @if($companyLogo)
                 <div class="brand-divider"></div>
-                <img src="{{ $companyLogo }}"
-                     alt="{{ $companyName }}"
-                     class="company-logo-nav"
-                     title="{{ $companyName }}">
+                <img src="{{ $companyLogo }}" alt="{{ $companyName }}" class="company-logo-nav" title="{{ $companyName }}">
             @else
                 <span>{{ Auth::check() && $authCompany ? $companyName : 'INVEXA' }}</span>
             @endif
@@ -287,6 +297,48 @@
                 @endif
 
                 <li class="nav-item d-none d-lg-flex"><div class="nav-divider"></div></li>
+
+                {{-- SINO DE NOTIFICAÇÕES --}}
+                @auth
+                <li class="nav-item dropdown">
+                    <a class="nav-link position-relative px-2" href="#"
+                       id="notifBell" role="button"
+                       data-bs-toggle="dropdown"
+                       aria-expanded="false"
+                       title="Notificações">
+                        <i class="bi bi-bell fs-5"></i>
+                        <span id="notif-badge"
+                              class="position-absolute top-0 start-100 translate-middle badge rounded-pill"
+                              style="background:#ef4444;font-size:.55rem;padding:.28rem .42rem;display:none;">0</span>
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-end p-0"
+                         style="min-width:340px;max-width:94vw;border:1px solid rgba(14,165,233,.18);background:rgba(10,18,35,.98);border-radius:.7rem;box-shadow:0 20px 40px rgba(0,0,0,.55);">
+                        <div class="d-flex align-items-center justify-content-between px-3 py-2"
+                             style="border-bottom:1px solid rgba(14,165,233,.12);">
+                            <span class="fw-semibold text-white" style="font-size:.85rem;">
+                                <i class="bi bi-bell me-1 text-info"></i>Notificações
+                            </span>
+                            <a href="#" id="notif-mark-all"
+                               style="font-size:.72rem;color:#38BDF8;text-decoration:none;">
+                                Marcar todas como lidas
+                            </a>
+                        </div>
+                        <div id="notif-list" style="max-height:380px;overflow-y:auto;">
+                            <div id="notif-empty" class="text-center py-4"
+                                 style="color:rgba(148,163,184,.6);font-size:.82rem;">
+                                <i class="bi bi-check2-circle d-block fs-4 mb-1 opacity-50"></i>
+                                Nenhuma notificação nova
+                            </div>
+                        </div>
+                        <div class="px-3 py-2" style="border-top:1px solid rgba(14,165,233,.10);">
+                            <a href="{{ route('notifications.index') }}"
+                               style="font-size:.76rem;color:#38BDF8;text-decoration:none;">
+                                <i class="bi bi-list-ul me-1"></i>Ver todas as notificações
+                            </a>
+                        </div>
+                    </div>
+                </li>
+                @endauth
 
                 {{-- DROPDOWN USUÁRIO --}}
                 <li class="nav-item dropdown">
@@ -453,6 +505,90 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el))</script>
+
+@auth
+<script>
+(function () {
+    const POLL_INTERVAL = 60000;
+
+    function fetchNotifications() {
+        fetch('{{ route("notifications.unread") }}', {
+            headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+        })
+        .then(r => r.json())
+        .then(data => {
+            const badge = document.getElementById('notif-badge');
+            const list  = document.getElementById('notif-list');
+            const empty = document.getElementById('notif-empty');
+            if (!badge || !list) return;
+
+            badge.textContent = data.count > 99 ? '99+' : data.count;
+            badge.style.display = data.count > 0 ? 'inline' : 'none';
+
+            list.querySelectorAll('.notif-item').forEach(el => el.remove());
+
+            if (data.items.length === 0) {
+                if (empty) empty.style.display = 'block';
+                return;
+            }
+            if (empty) empty.style.display = 'none';
+
+            data.items.forEach(n => {
+                const el = document.createElement('a');
+                el.className = 'notif-item';
+                el.href = n.url || '#';
+                el.dataset.id = n.id;
+                el.innerHTML = `
+                    <div class="notif-icon-wrap ${n.type}">
+                        <i class="bi ${n.icon}"></i>
+                    </div>
+                    <div style="flex:1;min-width:0;">
+                        <div class="notif-title">${n.title}</div>
+                        <div class="notif-message">${n.message}</div>
+                        <div class="notif-time">${n.time}</div>
+                    </div>
+                `;
+                el.addEventListener('click', () => markRead(n.id));
+                list.insertBefore(el, empty);
+            });
+        })
+        .catch(() => {});
+    }
+
+    function markRead(id) {
+        fetch(`/notifications/${id}/read`, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json'
+            }
+        }).then(() => fetchNotifications()).catch(() => {});
+    }
+
+    document.getElementById('notif-mark-all')?.addEventListener('click', function (e) {
+        e.preventDefault();
+        fetch('{{ route("notifications.mark-all-read") }}', {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json'
+            }
+        }).then(r => {
+            // aceita tanto JSON quanto redirect
+            fetchNotifications();
+        }).catch(() => {});
+    });
+
+    document.getElementById('notifBell')?.addEventListener('show.bs.dropdown', fetchNotifications);
+
+    document.addEventListener('DOMContentLoaded', function () {
+        fetchNotifications();
+        setInterval(fetchNotifications, POLL_INTERVAL);
+    });
+})();
+</script>
+@endauth
+
 @stack('scripts')
 </body>
 </html>
