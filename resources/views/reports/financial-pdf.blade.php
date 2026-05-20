@@ -6,8 +6,6 @@
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: Arial, sans-serif; font-size: 12px; color: #1a1a1a; padding: 32px; }
-  h1 { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
-  .sub { color: #555; font-size: 11px; margin-bottom: 24px; }
   .kpis { display: flex; gap: 16px; margin-bottom: 24px; }
   .kpi { flex: 1; background: #f4f4f4; border-radius: 8px; padding: 12px 16px; }
   .kpi-label { font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: #666; }
@@ -26,13 +24,15 @@
 </style>
 </head>
 <body>
-<h1>Relat&oacute;rio Financeiro</h1>
-<p class="sub">Per&iacute;odo: {{ $from->format('d/m/Y') }} at&eacute; {{ $to->format('d/m/Y') }} &mdash; Gerado em {{ now()->format('d/m/Y H:i') }}</p>
+
+@include('reports.partials.pdf-header', ['reportTitle' => 'Relatório Financeiro'])
+
+<p style="color:#555;font-size:11px;margin-bottom:20px;">Período: {{ $from->format('d/m/Y') }} até {{ $to->format('d/m/Y') }}</p>
 
 <div class="kpis">
   <div class="kpi"><div class="kpi-label">Receitas Recebidas</div><div class="kpi-value">R$ {{ number_format($receivablesPaid, 2, ',', '.') }}</div></div>
   <div class="kpi"><div class="kpi-label">Despesas Pagas</div><div class="kpi-value">R$ {{ number_format($billsPaid, 2, ',', '.') }}</div></div>
-  <div class="kpi"><div class="kpi-label">Saldo L&iacute;quido</div><div class="kpi-value">R$ {{ number_format($netBalance, 2, ',', '.') }}</div></div>
+  <div class="kpi"><div class="kpi-label">Saldo Líquido</div><div class="kpi-value">R$ {{ number_format($netBalance, 2, ',', '.') }}</div></div>
   <div class="kpi"><div class="kpi-label">Saldo Projetado</div><div class="kpi-value">R$ {{ number_format($projectedBalance, 2, ',', '.') }}</div></div>
 </div>
 
@@ -69,9 +69,7 @@
 </table>
 
 <div class="no-print" style="margin-top:32px;text-align:center;">
-  <button onclick="window.print()" style="padding:10px 28px;font-size:14px;cursor:pointer;background:#1d4ed8;color:#fff;border:none;border-radius:6px;">
-    &#128438; Imprimir / Salvar como PDF
-  </button>
+  <button onclick="window.print()" style="padding:10px 28px;font-size:14px;cursor:pointer;background:#1d4ed8;color:#fff;border:none;border-radius:6px;">&#128438; Imprimir / Salvar como PDF</button>
   <a href="javascript:history.back()" style="margin-left:12px;font-size:13px;color:#555;">Voltar</a>
 </div>
 </body>
