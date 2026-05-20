@@ -39,6 +39,24 @@
         }
         .navbar-brand-custom:hover { opacity:.82; }
         .brand-icon-svg { width:2rem; height:2rem; flex-shrink:0; filter: drop-shadow(0 0 6px var(--brand-glow)); }
+
+        /* Logo da empresa na navbar */
+        .company-logo-nav {
+            height: 2rem;
+            width: auto;
+            max-width: 7rem;
+            border-radius: 5px;
+            object-fit: contain;
+            border: 1px solid rgba(14,165,233,.15);
+            padding: 2px 4px;
+            background: rgba(13,25,41,.6);
+        }
+        .brand-divider {
+            width: 1px; height: 1.4rem;
+            background: rgba(14,165,233,.2);
+            margin: 0 .1rem;
+        }
+
         .navbar-main .nav-link {
             color:rgba(226,232,240,.65) !important; font-size:.875rem; font-weight:500;
             padding:.35rem .7rem !important; border-radius:.4rem;
@@ -134,15 +152,33 @@
 </head>
 <body>
 
+@php
+    $authCompany = Auth::check() ? Auth::user()->company : null;
+    $companyLogo = $authCompany?->logo ? Storage::url($authCompany->logo) : null;
+    $companyName = $authCompany?->name ?? 'Invexa';
+@endphp
+
 <nav class="navbar navbar-expand-lg navbar-main sticky-top">
     <div class="container-fluid px-4">
         <a class="navbar-brand-custom" href="{{ Auth::check() ? route('home') : route('landing') }}">
+            {{-- SVG Invexa sempre visível --}}
             <svg class="brand-icon-svg" viewBox="0 0 32 32" fill="none">
                 <rect width="32" height="32" rx="7" fill="#080D1A"/>
                 <path d="M7 10h5.5L16 16l3.5-6H25L18 22h-4L7 10Z" fill="#0EA5E9"/>
                 <circle cx="24" cy="10" r="2.2" fill="#38BDF8"/>
             </svg>
-            <span>INVEXA</span>
+
+            @if($companyLogo)
+                {{-- Logo da empresa cadastrado --}}
+                <div class="brand-divider"></div>
+                <img src="{{ $companyLogo }}"
+                     alt="{{ $companyName }}"
+                     class="company-logo-nav"
+                     title="{{ $companyName }}">
+            @else
+                {{-- Fallback: nome da empresa ou INVEXA --}}
+                <span>{{ Auth::check() && $authCompany ? $companyName : 'INVEXA' }}</span>
+            @endif
         </a>
 
         <button class="navbar-toggler border-0 shadow-none p-1" type="button"
@@ -270,7 +306,6 @@
                                     <span class="badge mt-1 bg-opacity-25 bg-{{ Auth::user()->role_badge }} text-{{ Auth::user()->role_badge }}" style="font-size:.65rem;">
                                         {{ Auth::user()->role_label }}
                                     </span>
-                                    {{-- Badge do plano: somente admin da empresa --}}
                                     @if(Auth::user()->hasRole('admin') && Auth::user()->company)
                                         @php
                                             $planColors = ['free'=>'#94a3b8','pro'=>'#38BDF8','business'=>'#c084fc'];
@@ -289,7 +324,6 @@
                                 <i class="bi bi-person-gear me-2"></i>Editar Perfil
                             </a>
                         </li>
-                        {{-- Link Meu Plano: somente admin da empresa --}}
                         @if(Auth::check() && Auth::user()->hasRole('admin'))
                         <li>
                             <a class="dropdown-item {{ request()->routeIs('upgrade') ? 'active' : '' }}" href="{{ route('upgrade') }}">
@@ -346,7 +380,7 @@
 </div>
 @endif
 
-{{-- BANNER TRIAL — somente admin da empresa vê o trial banner --}}
+{{-- BANNER TRIAL --}}
 @auth
     @php
         $company   = auth()->user()->company;
