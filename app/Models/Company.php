@@ -4,10 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Laravel\Cashier\Billable;
 
 class Company extends Model
 {
-    use HasFactory;
+    use HasFactory, Billable;
 
     protected $fillable = [
         'name', 'email', 'phone', 'document', 'address',
@@ -64,23 +65,38 @@ class Company extends Model
         return $this->active;
     }
 
+    public function hasActiveSubscription(): bool
+    {
+        return $this->subscribed('default');
+    }
+
     /**
-     * Empresa acessível = trial ainda válido OU plano pago (pro/business).
-     * Plano free sem trial ativo também libera (sem restrição de acesso, só de limites).
+     * Empresa acessível = trial ainda válido OU assinatura ativa OU plano free.
      */
     public function isAccessible(): bool
     {
-        if ($this->isOnTrial()) {
-            return true;
-        }
+        if ($this->isOnTrial()) return true;
+        if ($this->plan === 'free') return true;
+        return $this->hasActiveSubscription();
+    }
 
-        // free sempre acessível (restrições são apenas de limites de quantidade)
-        if ($this->plan === 'free') {
-            return true;
+    /**
+     * Sincroniza o campo `plan` local com o Price ID da assinatura Stripe.
+     */
+    public function syncPlanFromSubscription(): void
+    {
+        $sub = $this->subscription('default');
+        if (!$sub || !$sub->active()) {
+            $this->update(['plan' => 'free']);
+            return;
         }
-
-        // pro e business: trial expirou mas plano pago ativo
-        return in_array($this->plan, ['pro', 'business']);
+        $priceId = $sub->stripe_price;
+        $map = [
+            config('cashier.prices.pro')        => 'pro',
+            config('cashier.prices.pro_launch') => 'pro',
+            config('cashier.prices.business')   => 'business',
+        ];
+        $this->update(['plan' => $map[$priceId] ?? 'free']);
     }
 
     // ── Limites por plano
