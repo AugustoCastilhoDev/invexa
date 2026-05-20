@@ -13,6 +13,32 @@ class NotificationController extends Controller
         return view('notifications.index', compact('notifications'));
     }
 
+    public function unread()
+    {
+        $user  = auth()->user();
+        $items = $user->unreadNotifications->take(10)->map(function ($n) {
+            return [
+                'id'      => $n->id,
+                'type'    => $n->data['type']    ?? 'info',
+                'title'   => $n->data['title']   ?? 'Notificação',
+                'message' => $n->data['message'] ?? '',
+                'url'     => $n->data['url']     ?? null,
+                'icon'    => $n->data['icon']    ?? 'bi-bell',
+                'time'    => $n->created_at->diffForHumans(),
+            ];
+        });
+        return response()->json([
+            'count' => $user->unreadNotifications->count(),
+            'items' => $items,
+        ]);
+    }
+
+    public function markRead(string $id)
+    {
+        auth()->user()->notifications()->where('id', $id)->first()?->markAsRead();
+        return response()->json(['ok' => true]);
+    }
+
     public function markAllRead()
     {
         auth()->user()->unreadNotifications->markAsRead();
