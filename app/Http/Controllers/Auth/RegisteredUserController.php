@@ -43,14 +43,15 @@ class RegisteredUserController extends Controller
             'password.min'          => 'A senha deve ter pelo menos 8 caracteres com letras e números.',
         ]);
 
-        // 1. Cria a empresa com trial de 14 dias
+        // 1. Cria a empresa com trial de 14 dias e onboarding pendente
         $company = Company::create([
-            'name'          => $request->company_name,
-            'slug'          => Company::generateSlug($request->company_name),
-            'email'         => $request->email,
-            'plan'          => 'free',
-            'active'        => true,
-            'trial_ends_at' => Carbon::now()->addDays(14),
+            'name'                 => $request->company_name,
+            'slug'                 => Company::generateSlug($request->company_name),
+            'email'                => $request->email,
+            'plan'                 => 'free',
+            'active'               => true,
+            'trial_ends_at'        => Carbon::now()->addDays(14),
+            'onboarding_completed' => false,
         ]);
 
         // 2. Cria o usuário como admin da empresa
@@ -74,6 +75,7 @@ class RegisteredUserController extends Controller
             Log::warning('WelcomeMail não enviado para ' . $user->email . ': ' . $e->getMessage());
         }
 
-        return redirect(route('dashboard'));
+        // 4. Redireciona para o wizard de onboarding
+        return redirect()->route('onboarding.show');
     }
 }
