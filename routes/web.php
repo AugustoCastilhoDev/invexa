@@ -16,6 +16,8 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SaleController;
 use App\Http\Controllers\SaleReturnController;
 use App\Http\Controllers\StockMovementController;
+use App\Http\Controllers\SubscriptionController;
+use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\SuperAdmin\SuperAdminController;
 use App\Http\Controllers\UpgradeController;
@@ -24,6 +26,13 @@ use Illuminate\Support\Facades\Route;
 
 // ── Landing Page (pública)
 Route::get('/', [LandingController::class, 'index'])->name('landing');
+
+// ── Pricing (pública)
+Route::get('/pricing', fn () => view('pricing'))->name('pricing');
+
+// ── Webhook Stripe (sem CSRF, sem auth)
+Route::post('/stripe/webhook', [StripeWebhookController::class, 'handleWebhook'])
+    ->name('cashier.webhook');
 
 // ── Autenticação (pública)
 Route::get('/login',  [AuthenticatedSessionController::class, 'create'])->name('login');
@@ -39,7 +48,7 @@ Route::middleware(['auth', 'superadmin'])->prefix('admin')->name('admin.')->grou
     Route::post('/companies/{company}/impersonate',    [SuperAdminController::class, 'impersonate'])->name('companies.impersonate');
 });
 
-// ── Sair do modo suporte (auth simples, sem superadmin guard)
+// ── Sair do modo suporte
 Route::post('/admin/leave-impersonate', [SuperAdminController::class, 'leaveImpersonate'])
     ->middleware('auth')
     ->name('admin.leave-impersonate');
@@ -47,6 +56,18 @@ Route::post('/admin/leave-impersonate', [SuperAdminController::class, 'leaveImpe
 // ── Upgrade (autenticado, fora do trial check)
 Route::middleware(['auth', 'company'])->group(function () {
     Route::get('/upgrade', [UpgradeController::class, 'index'])->name('upgrade');
+});
+
+// ── Assinatura (autenticado, fora do trial check)
+Route::middleware(['auth', 'company'])->prefix('settings')->name('subscription.')->group(function () {
+    Route::get('/subscription',           [SubscriptionController::class, 'index'])->name('index');
+    Route::post('/subscription/checkout', [SubscriptionController::class, 'checkout'])->name('checkout');
+    Route::get('/subscription/success',   [SubscriptionController::class, 'success'])->name('success');
+    Route::get('/subscription/portal',    [SubscriptionController::class, 'billingPortal'])->name('billing-portal');
+    Route::delete('/subscription/cancel', [SubscriptionController::class, 'cancel'])->name('cancel');
+    Route::get('/subscription/invoice/{invoice}', function (string $invoice) {
+        return auth()->user()->company->downloadInvoice($invoice);
+    })->name('invoice');
 });
 
 // ── Protegidas (requer trial/plano ativo)
