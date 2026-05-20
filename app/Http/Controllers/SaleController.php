@@ -16,6 +16,9 @@ use Illuminate\Support\Facades\DB;
 
 class SaleController extends Controller
 {
+    /** Prazo padrão (dias) para vencimento da conta a receber gerada automaticamente pela venda. */
+    private int $receivableDueDays = 30;
+
     public function index(Request $request)
     {
         $companyId = auth()->user()->company_id;
@@ -138,7 +141,7 @@ class SaleController extends Controller
                         'sale_id'     => $sale->id,
                         'description' => "Venda #{$sale->id} — {$customerName}",
                         'amount'      => $total,
-                        'due_date'    => $sale->sale_date,
+                        'due_date'    => Carbon::parse($sale->sale_date)->addDays($this->receivableDueDays)->toDateString(),
                         'status'      => 'pendente',
                     ]);
                 }
@@ -262,7 +265,7 @@ class SaleController extends Controller
                         'sale_id'     => $sale->id,
                         'description' => "Venda #{$sale->id} — {$customerName}",
                         'amount'      => $total,
-                        'due_date'    => $sale->sale_date,
+                        'due_date'    => Carbon::parse($saleDateTime)->addDays($this->receivableDueDays)->toDateString(),
                         'status'      => 'pendente',
                     ]);
                 }
