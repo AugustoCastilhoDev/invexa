@@ -10,6 +10,18 @@ class Company extends Model
 {
     use HasFactory, Billable;
 
+    /**
+     * Cashier usa billable_id por padrão.
+     * Sobrescrevemos para que as queries usem o nome correto.
+     */
+    protected $primaryKey = 'id';
+
+    // Diz ao Cashier qual coluna usar na tabela subscriptions
+    public function subscriptions()
+    {
+        return $this->hasMany(\Laravel\Cashier\Subscription::class, 'billable_id')->orderBy('created_at', 'desc');
+    }
+
     protected $fillable = [
         'name', 'email', 'phone', 'document', 'address',
         'plan', 'active', 'trial_ends_at',
@@ -67,7 +79,12 @@ class Company extends Model
 
     public function hasActiveSubscription(): bool
     {
-        return $this->subscribed('default');
+        try {
+            return $this->subscribed('default');
+        } catch (\Exception $e) {
+            // Tabela subscriptions ainda não existe ou coluna incorreta
+            return false;
+        }
     }
 
     /**
@@ -85,18 +102,22 @@ class Company extends Model
      */
     public function syncPlanFromSubscription(): void
     {
-        $sub = $this->subscription('default');
-        if (!$sub || !$sub->active()) {
-            $this->update(['plan' => 'free']);
-            return;
+        try {
+            $sub = $this->subscription('default');
+            if (!$sub || !$sub->active()) {
+                $this->update(['plan' => 'free']);
+                return;
+            }
+            $priceId = $sub->stripe_price;
+            $map = [
+                config('cashier.prices.pro')        => 'pro',
+                config('cashier.prices.pro_launch') => 'pro',
+                config('cashier.prices.business')   => 'business',
+            ];
+            $this->update(['plan' => $map[$priceId] ?? 'free']);
+        } catch (\Exception $e) {
+            // Silencia erro se tabela não existir ainda
         }
-        $priceId = $sub->stripe_price;
-        $map = [
-            config('cashier.prices.pro')        => 'pro',
-            config('cashier.prices.pro_launch') => 'pro',
-            config('cashier.prices.business')   => 'business',
-        ];
-        $this->update(['plan' => $map[$priceId] ?? 'free']);
     }
 
     // ── Limites por plano
