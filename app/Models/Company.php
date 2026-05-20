@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 use Laravel\Cashier\Billable;
 
 class Company extends Model
@@ -12,7 +13,6 @@ class Company extends Model
 
     protected $primaryKey = 'id';
 
-    // Sobrescreve o relacionamento padrão do Cashier para usar billable_id
     public function subscriptions()
     {
         return $this->hasMany(\Laravel\Cashier\Subscription::class, 'billable_id')
@@ -20,25 +20,37 @@ class Company extends Model
     }
 
     protected $fillable = [
-        'name', 'email', 'phone', 'document', 'address',
-        'plan', 'active', 'trial_ends_at',
+        'name', 'slug', 'email', 'phone', 'cnpj', 'address',
+        'plan', 'active', 'trial_ends_at', 'logo',
+        'onboarding_completed',
     ];
 
     protected $casts = [
-        'active'        => 'boolean',
-        'trial_ends_at' => 'datetime',
+        'active'               => 'boolean',
+        'trial_ends_at'        => 'datetime',
+        'onboarding_completed' => 'boolean',
     ];
 
-    // ── Relacionamentos
+    // ── Slug único
+    public static function generateSlug(string $name): string
+    {
+        $base = Str::slug($name);
+        $slug = $base;
+        $i = 2;
+        while (static::where('slug', $slug)->exists()) {
+            $slug = $base . '-' . $i++;
+        }
+        return $slug;
+    }
 
+    // ── Relacionamentos
     public function users()      { return $this->hasMany(User::class); }
     public function products()   { return $this->hasMany(Product::class); }
     public function customers()  { return $this->hasMany(Customer::class); }
     public function suppliers()  { return $this->hasMany(Supplier::class); }
     public function sales()      { return $this->hasMany(Sale::class); }
 
-    // ── Acesso / Trial
-
+    // ── Trial / Acesso
     public function isOnTrial(): bool
     {
         if ($this->hasActiveSubscription()) return false;
@@ -51,10 +63,7 @@ class Company extends Model
         return (int) now()->diffInDays($this->trial_ends_at);
     }
 
-    public function isActive(): bool
-    {
-        return $this->active;
-    }
+    public function isActive(): bool { return $this->active; }
 
     public function hasActiveSubscription(): bool
     {
@@ -76,33 +85,21 @@ class Company extends Model
     {
         try {
             $sub = $this->subscription('default');
-
             if (! $sub || ! $sub->active()) {
                 $this->update(['plan' => 'free']);
                 return;
             }
-
-            $priceId = $sub->items()->first()?->stripe_price
-                     ?? $sub->stripe_price
-                     ?? null;
-
+            $priceId = $sub->items()->first()?->stripe_price ?? $sub->stripe_price ?? null;
             $map = [
                 config('cashier.prices.pro')        => 'pro',
                 config('cashier.prices.pro_launch') => 'pro',
                 config('cashier.prices.business')   => 'business',
             ];
-
-            $this->update([
-                'plan'          => $map[$priceId] ?? 'free',
-                'trial_ends_at' => null,
-            ]);
-        } catch (\Exception $e) {
-            //
-        }
+            $this->update(['plan' => $map[$priceId] ?? 'free', 'trial_ends_at' => null]);
+        } catch (\Exception $e) {}
     }
 
     // ── Limites por plano
-
     public function planLimits(): array
     {
         return match ($this->plan) {
@@ -113,16 +110,12 @@ class Company extends Model
         };
     }
 
-    public function limit(string $resource): int
-    {
-        return $this->planLimits()[$resource] ?? 0;
-    }
+    public function limit(string $resource): int { return $this->planLimits()[$resource] ?? 0; }
 
     public function canAdd(string $resource): bool
     {
         $limit = $this->limit($resource);
         if ($limit === PHP_INT_MAX) return true;
-
         return match ($resource) {
             'products'        => $this->products()->count() < $limit,
             'customers'       => $this->customers()->count() < $limit,
@@ -140,7 +133,6 @@ class Company extends Model
     {
         $limit = $this->limit($resource);
         if ($limit === PHP_INT_MAX) return 0;
-
         $used = match ($resource) {
             'products'        => $this->products()->count(),
             'customers'       => $this->customers()->count(),
@@ -149,7 +141,6 @@ class Company extends Model
             'purchase_orders' => PurchaseOrder::where('company_id', $this->id)->count(),
             default           => 0,
         };
-
         return (int) min(100, round($used / $limit * 100));
     }
 }

@@ -6,7 +6,7 @@ use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-class CheckOnboarding extends Middleware
+class CheckOnboarding
 {
     public function handle(Request $request, Closure $next): Response
     {
@@ -23,7 +23,7 @@ class CheckOnboarding extends Middleware
 
         $company = $user->company;
 
-        // Se onboarding não foi concluído e não está na rota do wizard
+        // Se onboarding não concluído e não está na rota do wizard
         if (
             $company &&
             ! $company->onboarding_completed &&

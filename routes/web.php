@@ -8,6 +8,7 @@ use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LandingController;
+use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PurchaseOrderController;
@@ -41,6 +42,13 @@ Route::post('/logout',[AuthenticatedSessionController::class, 'destroy'])->name(
 Route::get('/register',  [RegisteredUserController::class, 'create'])->name('register');
 Route::post('/register', [RegisteredUserController::class, 'store'])->name('register.store');
 
+// ── Onboarding (autenticado, sem trial check)
+Route::middleware(['auth', 'company'])->prefix('onboarding')->name('onboarding.')->group(function () {
+    Route::get('/',     [OnboardingController::class, 'show'])->name('show');
+    Route::post('/',    [OnboardingController::class, 'store'])->name('store');
+    Route::post('/skip',[OnboardingController::class, 'skip'])->name('skip');
+});
+
 // ── Super-Admin
 Route::middleware(['auth', 'superadmin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/',                                    [SuperAdminController::class, 'index'])->name('index');
@@ -71,7 +79,7 @@ Route::middleware(['auth', 'company'])->prefix('settings')->name('subscription.'
 });
 
 // ── Protegidas (requer trial/plano ativo)
-Route::middleware(['auth', 'company', 'trial'])->group(function () {
+Route::middleware(['auth', 'company', 'trial', 'onboarding'])->group(function () {
 
     Route::get('/home', [HomeController::class, 'index'])->name('home');
 
