@@ -10,17 +10,27 @@ class SupplierController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Supplier::where('company_id', Auth::user()->company_id)->orderBy('name');
+        $companyId = Auth::user()->company_id;
+
+        $query = Supplier::where('company_id', $companyId)->orderBy('name');
 
         if ($request->filled('search')) {
             $query->where(function ($q) use ($request) {
                 $q->where('name', 'like', '%' . $request->search . '%')
-                  ->orWhere('email', 'like', '%' . $request->search . '%');
+                  ->orWhere('email', 'like', '%' . $request->search . '%')
+                  ->orWhere('document', 'like', '%' . $request->search . '%');
             });
         }
 
-        $suppliers = $query->paginate(15)->withQueryString();
-        return view('suppliers.index', compact('suppliers'));
+        if ($request->filled('status')) {
+            $query->where('active', $request->status === 'active');
+        }
+
+        $suppliers      = $query->paginate(15)->withQueryString();
+        $totalSuppliers = Supplier::where('company_id', $companyId)->count();
+        $activeSuppliers = Supplier::where('company_id', $companyId)->where('active', true)->count();
+
+        return view('suppliers.index', compact('suppliers', 'totalSuppliers', 'activeSuppliers'));
     }
 
     public function create()
@@ -42,12 +52,12 @@ class SupplierController extends Controller
         }
 
         $request->validate([
-            'name'    => ['required', 'string', 'max:255'],
-            'email'   => ['nullable', 'email', 'max:255'],
-            'phone'   => ['nullable', 'string', 'max:30'],
-            'document'=> ['nullable', 'string', 'max:30'],
-            'address' => ['nullable', 'string', 'max:500'],
-            'notes'   => ['nullable', 'string'],
+            'name'     => ['required', 'string', 'max:255'],
+            'email'    => ['nullable', 'email', 'max:255'],
+            'phone'    => ['nullable', 'string', 'max:30'],
+            'document' => ['nullable', 'string', 'max:30'],
+            'address'  => ['nullable', 'string', 'max:500'],
+            'notes'    => ['nullable', 'string'],
         ]);
 
         Supplier::create(array_merge($request->all(), [
@@ -59,27 +69,27 @@ class SupplierController extends Controller
 
     public function show(Supplier $supplier)
     {
-        $this->authorize($supplier);
+        $this->authorizeSupplier($supplier);
         return view('suppliers.show', compact('supplier'));
     }
 
     public function edit(Supplier $supplier)
     {
-        $this->authorize($supplier);
+        $this->authorizeSupplier($supplier);
         return view('suppliers.edit', compact('supplier'));
     }
 
     public function update(Request $request, Supplier $supplier)
     {
-        $this->authorize($supplier);
+        $this->authorizeSupplier($supplier);
 
         $request->validate([
-            'name'    => ['required', 'string', 'max:255'],
-            'email'   => ['nullable', 'email', 'max:255'],
-            'phone'   => ['nullable', 'string', 'max:30'],
-            'document'=> ['nullable', 'string', 'max:30'],
-            'address' => ['nullable', 'string', 'max:500'],
-            'notes'   => ['nullable', 'string'],
+            'name'     => ['required', 'string', 'max:255'],
+            'email'    => ['nullable', 'email', 'max:255'],
+            'phone'    => ['nullable', 'string', 'max:30'],
+            'document' => ['nullable', 'string', 'max:30'],
+            'address'  => ['nullable', 'string', 'max:500'],
+            'notes'    => ['nullable', 'string'],
         ]);
 
         $supplier->update($request->all());
@@ -88,12 +98,12 @@ class SupplierController extends Controller
 
     public function destroy(Supplier $supplier)
     {
-        $this->authorize($supplier);
+        $this->authorizeSupplier($supplier);
         $supplier->delete();
         return redirect()->route('suppliers.index')->with('success', 'Fornecedor excluído com sucesso.');
     }
 
-    private function authorize(Supplier $supplier): void
+    private function authorizeSupplier(Supplier $supplier): void
     {
         if ($supplier->company_id !== Auth::user()->company_id) abort(403);
     }
@@ -101,6 +111,6 @@ class SupplierController extends Controller
     private function limitMessage(string $nome, int $limite): string
     {
         $plano = strtoupper(Auth::user()->company->plan);
-        return "Limite de {$nome} do plano {$plano} atingido ({$limite}).  ✨ Faça upgrade para continuar.";
+        return "Limite de {$nome} do plano {$plano} atingido ({$limite}). ✨ Faça upgrade para continuar.";
     }
 }
