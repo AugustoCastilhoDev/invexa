@@ -5,7 +5,6 @@ namespace App\Http\Controllers\SuperAdmin;
 use App\Http\Controllers\Controller;
 use App\Models\Company;
 use App\Models\User;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class SuperAdminController extends Controller
@@ -54,14 +53,23 @@ class SuperAdminController extends Controller
 
     public function impersonate(Company $company)
     {
-        // Pega o primeiro admin ativo da empresa
-        $target = User::where('company_id', $company->id)
-            ->where('active', true)
-            ->whereIn('role', ['admin', 'gerente', 'vendedor'])
-            ->orderByRaw("FIELD(role, 'admin', 'gerente', 'vendedor')")
-            ->firstOrFail();
+        // Prioridade: admin > gerente > vendedor (compatível com MySQL e SQLite)
+        $roleOrder = ['admin', 'gerente', 'vendedor'];
 
-        // Guarda o ID do superadmin na sessão
+        $target = null;
+        foreach ($roleOrder as $role) {
+            $target = User::where('company_id', $company->id)
+                ->where('active', true)
+                ->where('role', $role)
+                ->first();
+            if ($target) break;
+        }
+
+        if (! $target) {
+            return back()->with('error', 'Nenhum usuário ativo encontrado nesta empresa.');
+        }
+
+        // Guarda o ID do superadmin na sessão para poder voltar
         session([
             'impersonator_id'      => Auth::id(),
             'impersonator_name'    => Auth::user()->name,
@@ -70,7 +78,7 @@ class SuperAdminController extends Controller
 
         Auth::login($target);
 
-        return redirect()->route('home')
+        return redirect()->route('dashboard')
             ->with('success', "Entrando como {$target->name} — {$company->name}.");
     }
 
@@ -78,7 +86,7 @@ class SuperAdminController extends Controller
     {
         $impersonatorId = session('impersonator_id');
 
-        if (!$impersonatorId) {
+        if (! $impersonatorId) {
             return redirect()->route('admin.index');
         }
 
