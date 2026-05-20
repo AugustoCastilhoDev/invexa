@@ -8,6 +8,7 @@ use App\Models\PurchaseOrder;
 use App\Models\Receivable;
 use App\Models\Sale;
 use App\Models\SaleItem;
+use App\Models\SaleReturn;
 use App\Models\Supplier;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -381,45 +382,116 @@ class ReportController extends Controller
     }
 
     // ---------------------------------------------------------------
+    // Relatorio de Devolucoes
+    // ---------------------------------------------------------------
+    public function returns(Request $request)
+    {
+        [$companyId, $period, $from, $to, $reasons, $returns,
+         $totalReturns, $totalItems, $totalValue] = $this->returnsData($request);
+
+        return view('reports.returns', compact(
+            'period', 'from', 'to', 'reasons',
+            'returns', 'totalReturns', 'totalItems', 'totalValue'
+        ));
+    }
+
+    public function returnsCsv(Request $request): Response
+    {
+        [, , $from, $to, , $returns] = $this->returnsData($request);
+        $filename = 'devolucoes_' . $from->format('Ymd') . '_' . $to->format('Ymd') . '.csv';
+
+        $lines[] = implode(';', ['#', 'Data', 'Venda', 'Cliente', 'Motivo', 'Itens', 'Valor', 'Status']);
+        foreach ($returns as $r) {
+            $val = $r->items->sum(fn($i) => $i->quantity * $i->unit_price);
+            $lines[] = implode(';', [
+                $r->id,
+                $r->created_at->format('d/m/Y'),
+                $r->sale_id ? '#' . $r->sale_id : '',
+                $r->sale?->customer?->name ?? 'Consumidor',
+                ucfirst($r->reason ?? ''),
+                $r->items->sum('quantity'),
+                number_format($val, 2, ',', '.'),
+                ucfirst($r->status),
+            ]);
+        }
+
+        return $this->csvResponse("\xEF\xBB\xBF" . implode("\n", $lines), $filename);
+    }
+
+    public function returnsPdf(Request $request): Response
+    {
+        [, , $from, $to, , $returns,
+         $totalReturns, $totalItems, $totalValue] = $this->returnsData($request);
+
+        $html = view('reports.returns-pdf', compact(
+            'from', 'to', 'returns', 'totalReturns', 'totalItems', 'totalValue'
+        ))->render();
+
+        return response($html, 200, ['Content-Type' => 'text/html; charset=UTF-8']);
+    }
+
+    // ---------------------------------------------------------------
     // Helpers de dados
     // ---------------------------------------------------------------
+    private function returnsData(Request $request): array
+    {
+        $companyId = auth()->user()->company_id;
+        $period    = $request->get('period', 'month');
+        [$from, $to] = $this->resolvePeriod($period, $request);
+        $reason    = $request->get('reason');
+
+        $query = SaleReturn::with(['sale.customer', 'items'])
+            ->whereHas('sale', fn($q) => $q->where('company_id', $companyId))
+            ->whereBetween('created_at', [$from, $to]);
+
+        if ($reason) {
+            $query->where('reason', $reason);
+        }
+
+        $returns = $query->orderByDesc('created_at')->get();
+
+        // Lista de motivos distintos para o filtro
+        $reasons = SaleReturn::whereHas('sale', fn($q) => $q->where('company_id', $companyId))
+            ->whereNotNull('reason')
+            ->distinct()
+            ->pluck('reason')
+            ->sort()
+            ->values()
+            ->toArray();
+
+        $totalReturns = $returns->count();
+        $totalItems   = $returns->sum(fn($r) => $r->items->sum('quantity'));
+        $totalValue   = $returns->sum(fn($r) => $r->items->sum(fn($i) => $i->quantity * $i->unit_price));
+
+        return [$companyId, $period, $from, $to, $reasons, $returns, $totalReturns, $totalItems, $totalValue];
+    }
+
     private function financialData(Request $request): array
     {
         $companyId = auth()->user()->company_id;
         $period    = $request->get('period', 'month');
         [$from, $to] = $this->resolvePeriod($period, $request);
 
-        // RECEITAS RECEBIDAS: status 'recebida' e received_at dentro do período
         $receivablesPaid    = Receivable::where('company_id', $companyId)
                                 ->where('status', 'recebida')
                                 ->whereBetween('received_at', [$from, $to])
                                 ->sum('amount_received');
-
-        // RECEITAS PENDENTES: status 'pendente' e due_date dentro do período
         $receivablesPending = Receivable::where('company_id', $companyId)
                                 ->where('status', 'pendente')
                                 ->whereBetween('due_date', [$from, $to])
                                 ->sum('amount');
-
-        // RECEITAS VENCIDAS: pendente e vencimento antes de hoje
         $receivablesOverdue = Receivable::where('company_id', $companyId)
                                 ->where('status', 'pendente')
                                 ->where('due_date', '<', now()->startOfDay())
                                 ->sum('amount');
-
-        // DESPESAS PAGAS: status 'paga' e paid_at dentro do período
         $billsPaid          = Bill::where('company_id', $companyId)
                                 ->where('status', 'paga')
                                 ->whereBetween('paid_at', [$from, $to])
                                 ->sum('amount_paid');
-
-        // DESPESAS PENDENTES: status 'pendente' e due_date dentro do período
         $billsPending       = Bill::where('company_id', $companyId)
                                 ->where('status', 'pendente')
                                 ->whereBetween('due_date', [$from, $to])
                                 ->sum('amount');
-
-        // DESPESAS VENCIDAS: pendente e vencimento antes de hoje
         $billsOverdue       = Bill::where('company_id', $companyId)
                                 ->where('status', 'pendente')
                                 ->where('due_date', '<', now()->startOfDay())
@@ -546,7 +618,7 @@ class ReportController extends Controller
             })
             ->join('products as p', 'p.id', '=', 'sale_items.product_id')
             ->leftJoin('categories as c', 'c.id', '=', 'p.category_id')
-            ->where('s.company_id', $companyId)
+            ->where('s.company_id', auth()->user()->company_id)
             ->whereNotIn('s.status', ['cancelada'])
             ->whereBetween('s.created_at', [$from, $to])
             ->groupBy('sale_items.product_id', 'p.name', 'c.name')
@@ -644,25 +716,14 @@ class ReportController extends Controller
 
     private function resolvePeriod(string $period, Request $request): array
     {
-        if ($period === 'week') {
-            return [now()->startOfWeek(), now()->endOfWeek()];
-        }
-
-        if ($period === 'month') {
-            return [now()->startOfMonth(), now()->endOfMonth()];
-        }
-
-        if ($period === 'quarter') {
-            return [now()->startOfQuarter(), now()->endOfQuarter()];
-        }
-
-        if ($period === 'year') {
-            return [now()->startOfYear(), now()->endOfYear()];
-        }
+        if ($period === 'week')    return [now()->startOfWeek(),    now()->endOfWeek()];
+        if ($period === 'month')   return [now()->startOfMonth(),   now()->endOfMonth()];
+        if ($period === 'quarter') return [now()->startOfQuarter(), now()->endOfQuarter()];
+        if ($period === 'year')    return [now()->startOfYear(),    now()->endOfYear()];
 
         if ($period === 'custom') {
             $from = Carbon::parse($request->get('from', now()->startOfMonth()));
-            $to   = Carbon::parse($request->get('to', now()->endOfMonth()))->endOfDay();
+            $to   = Carbon::parse($request->get('to',   now()->endOfMonth()))->endOfDay();
             return [$from, $to];
         }
 

@@ -170,6 +170,10 @@ Route::middleware(['auth', 'company', 'trial', 'onboarding'])->group(function ()
         Route::get('/top-products',      [ReportController::class, 'topProducts'])->name('top-products');
         Route::get('/top-products/pdf',  [ReportController::class, 'topProductsPdf'])->name('top-products.pdf');
         Route::get('/top-products/csv',  [ReportController::class, 'topProductsCsv'])->name('top-products.csv');
+        // Devoluções
+        Route::get('/returns',           [ReportController::class, 'returns'])->name('returns');
+        Route::get('/returns/pdf',       [ReportController::class, 'returnsPdf'])->name('returns.pdf');
+        Route::get('/returns/csv',       [ReportController::class, 'returnsCsv'])->name('returns.csv');
     });
 
     Route::resource('users', UserController::class);
