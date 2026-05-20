@@ -1,57 +1,71 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bem-vindo ao Invexa</title>
-    <style>
-        body { margin:0; padding:0; background:#f1f5f9; font-family:'Segoe UI',Arial,sans-serif; color:#1e293b; }
-        .wrapper { max-width:600px; margin:40px auto; background:#ffffff; border-radius:12px; overflow:hidden; box-shadow:0 4px 24px rgba(15,23,42,.10); }
-        .header { background:linear-gradient(135deg,#1d4ed8,#2563eb); padding:36px 40px; text-align:center; }
-        .header h1 { margin:0; color:#ffffff; font-size:26px; font-weight:700; letter-spacing:-.02em; }
-        .header p { margin:6px 0 0; color:rgba(255,255,255,.75); font-size:14px; }
-        .body { padding:36px 40px; }
-        .body h2 { font-size:20px; font-weight:700; color:#1e293b; margin-top:0; }
-        .body p { font-size:15px; line-height:1.7; color:#475569; margin:0 0 16px; }
-        .features { background:#f8fafc; border-radius:8px; padding:20px 24px; margin:24px 0; }
-        .features ul { margin:0; padding:0 0 0 20px; }
-        .features li { font-size:14px; color:#475569; line-height:2; }
-        .btn-wrap { text-align:center; margin:28px 0; }
-        .btn { display:inline-block; background:#2563eb; color:#ffffff !important; text-decoration:none; padding:13px 32px; border-radius:8px; font-size:15px; font-weight:600; }
-        .footer { background:#f8fafc; border-top:1px solid #e2e8f0; padding:20px 40px; text-align:center; }
-        .footer p { margin:0; font-size:12px; color:#94a3b8; }
-        .footer a { color:#2563eb; text-decoration:none; }
-    </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+  body{margin:0;padding:0;background:#f0f4f8;font-family:'Segoe UI',Arial,sans-serif;}
+  .wrapper{max-width:580px;margin:32px auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.08);}
+  .header{background:linear-gradient(135deg,#080D1A 0%,#0D1929 100%);padding:36px 40px;text-align:center;}
+  .header svg{width:48px;height:48px;}
+  .header h1{color:#F0F9FF;font-size:22px;margin:14px 0 4px;letter-spacing:-.02em;}
+  .header p{color:rgba(226,232,240,.65);font-size:14px;margin:0;}
+  .body{padding:36px 40px;}
+  .body h2{color:#1e293b;font-size:18px;margin:0 0 12px;}
+  .body p{color:#475569;font-size:15px;line-height:1.65;margin:0 0 16px;}
+  .feature{display:flex;align-items:flex-start;gap:12px;margin-bottom:14px;}
+  .feature-icon{width:36px;height:36px;border-radius:8px;background:#EFF6FF;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px;}
+  .feature-text{font-size:14px;color:#475569;line-height:1.5;}
+  .feature-text strong{color:#1e293b;display:block;margin-bottom:2px;}
+  .btn{display:inline-block;background:linear-gradient(135deg,#0EA5E9,#38BDF8);color:#fff!important;text-decoration:none;padding:13px 32px;border-radius:8px;font-weight:700;font-size:15px;margin:8px 0 24px;}
+  .trial-badge{background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;padding:14px 18px;color:#1d4ed8;font-size:14px;margin-bottom:24px;}
+  .footer{background:#f8fafc;border-top:1px solid #e2e8f0;padding:20px 40px;text-align:center;}
+  .footer p{color:#94a3b8;font-size:12px;margin:0;}
+  .footer a{color:#0EA5E9;text-decoration:none;}
+</style>
 </head>
 <body>
 <div class="wrapper">
-    <div class="header">
-        <h1>📦 Invexa</h1>
-        <p>Gestão inteligente para o seu negócio</p>
+  <div class="header">
+    <svg viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="7" fill="#080D1A"/><path d="M7 10h5.5L16 16l3.5-6H25L18 22h-4L7 10Z" fill="#0EA5E9"/><circle cx="24" cy="10" r="2.2" fill="#38BDF8"/></svg>
+    <h1>Bem-vindo ao Invexa! 🚀</h1>
+    <p>Sua gestão de estoque e vendas começa agora</p>
+  </div>
+  <div class="body">
+    <h2>Olá, {{ $user->name }}! 👋</h2>
+    <p>Sua conta foi criada com sucesso. Você tem acesso completo ao Invexa durante o seu período de teste gratuito.</p>
+
+    <div class="trial-badge">
+      🎁 <strong>14 dias de trial gratuito</strong> — explore todas as funcionalidades sem precisar de cartão de crédito.
     </div>
-    <div class="body">
-        <h2>Olá, {{ $user->name }}! 👋</h2>
-        <p>Seja muito bem-vindo ao <strong>Invexa</strong>! Sua conta foi criada com sucesso e você já pode começar a usar o sistema.</p>
-        <div class="features">
-            <p style="margin:0 0 10px;font-weight:600;color:#1e293b;font-size:14px;">O que você pode fazer agora:</p>
-            <ul>
-                <li>📦 Gerenciar produtos e estoque</li>
-                <li>💰 Registrar vendas e emitir relatórios</li>
-                <li>📑 Controlar contas a pagar e a receber</li>
-                <li>👥 Cadastrar clientes e fornecedores</li>
-                <li>📊 Acompanhar o fluxo de caixa no dashboard</li>
-            </ul>
-        </div>
-        <p>Acesse o painel agora e configure sua empresa:</p>
-        <div class="btn-wrap">
-            <a href="{{ url('/dashboard') }}" class="btn">Acessar o painel →</a>
-        </div>
-        <p style="font-size:13px;color:#94a3b8;">Se você não criou esta conta, ignore este e-mail.</p>
+
+    <p><strong>O que você pode fazer agora:</strong></p>
+
+    <div class="feature">
+      <div class="feature-icon">📦</div>
+      <div class="feature-text"><strong>Cadastrar produtos e categorias</strong>Organize seu estoque e controle entradas e saídas.</div>
     </div>
-    <div class="footer">
-        <p>© {{ date('Y') }} <a href="{{ url('/') }}">Invexa</a>. Todos os direitos reservados.</p>
-        <p style="margin-top:4px;">Enviado para <a href="mailto:{{ $user->email }}">{{ $user->email }}</a></p>
+    <div class="feature">
+      <div class="feature-icon">🛒</div>
+      <div class="feature-text"><strong>Registrar vendas</strong>Emita notas, acompanhe pagamentos e histórico de clientes.</div>
     </div>
+    <div class="feature">
+      <div class="feature-icon">💰</div>
+      <div class="feature-text"><strong>Controle financeiro</strong>Contas a pagar, contas a receber e relatórios completos.</div>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">📊</div>
+      <div class="feature-text"><strong>Relatórios e gráficos</strong>Tome decisões baseadas em dados reais do seu negócio.</div>
+    </div>
+
+    <div style="text-align:center;margin-top:28px;">
+      <a href="{{ config('app.url') }}/dashboard" class="btn">Acessar minha conta →</a>
+    </div>
+  </div>
+  <div class="footer">
+    <p>Desenvolvido por <a href="https://www.instagram.com/castilho_digital/">Castilho Soluções Digitais</a> &nbsp;·&nbsp; {{ date('Y') }}</p>
+    <p style="margin-top:6px;">Se você não criou esta conta, ignore este e-mail.</p>
+  </div>
 </div>
 </body>
 </html>

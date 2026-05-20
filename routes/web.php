@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\BillController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\CompanyProfileController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HomeController;
@@ -76,6 +77,13 @@ Route::middleware(['auth', 'company'])->prefix('settings')->name('subscription.'
     Route::get('/subscription/invoice/{invoice}', function (string $invoice) {
         return auth()->user()->company->downloadInvoice($invoice);
     })->name('invoice');
+});
+
+// ── Perfil da Empresa (autenticado, apenas admin)
+Route::middleware(['auth', 'company', 'role:admin'])->prefix('settings')->name('settings.')->group(function () {
+    Route::get('/company',         [CompanyProfileController::class, 'edit'])->name('company.edit');
+    Route::patch('/company',       [CompanyProfileController::class, 'update'])->name('company.update');
+    Route::delete('/company/logo', [CompanyProfileController::class, 'destroyLogo'])->name('company.logo.destroy');
 });
 
 // ── Protegidas (requer trial/plano ativo)

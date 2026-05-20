@@ -17,15 +17,11 @@ class WelcomeMail extends Mailable
 
     public function envelope(): Envelope
     {
-        return new Envelope(
-            subject: '🎉 Bem-vindo ao Invexa, ' . $this->user->name . '!',
-        );
+        return new Envelope(subject: 'Bem-vindo ao Invexa! 🚀');
     }
 
     public function content(): Content
     {
-        return new Content(
-            view: 'emails.welcome',
-        );
+        return new Content(view: 'emails.welcome');
     }
 }
