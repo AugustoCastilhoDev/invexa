@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Listeners\SendWelcomeEmail;
 use App\Models\Bill;
+use App\Models\Company;
 use App\Models\Customer;
 use App\Models\Product;
 use App\Models\Receivable;
@@ -17,6 +18,7 @@ use App\Policies\BillPolicy;
 use App\Policies\ReceivablePolicy;
 use App\Policies\SalePolicy;
 use Illuminate\Auth\Events\Registered;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
@@ -33,6 +35,11 @@ class AppServiceProvider extends ServiceProvider
     {
         // Paginação: usa tema Bootstrap 5
         Paginator::useBootstrapFive();
+
+        // Garante que o Cashier use 'App\\Models\\Company' como billable_type
+        Relation::morphMap([
+            'company' => Company::class,
+        ]);
 
         // Observers — Audit Log
         Sale::observe(SaleObserver::class);

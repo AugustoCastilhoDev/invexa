@@ -12,6 +12,13 @@ class Company extends Model
 
     protected $primaryKey = 'id';
 
+    // Sobrescreve o relacionamento padrão do Cashier para usar billable_id
+    public function subscriptions()
+    {
+        return $this->hasMany(\Laravel\Cashier\Subscription::class, 'billable_id')
+                    ->orderBy('created_at', 'desc');
+    }
+
     protected $fillable = [
         'name', 'email', 'phone', 'document', 'address',
         'plan', 'active', 'trial_ends_at',
@@ -34,7 +41,6 @@ class Company extends Model
 
     public function isOnTrial(): bool
     {
-        // Trial só vale se ainda não tem assinatura paga ativa
         if ($this->hasActiveSubscription()) return false;
         return $this->trial_ends_at !== null && $this->trial_ends_at->isFuture();
     }
@@ -66,10 +72,6 @@ class Company extends Model
         return $this->hasActiveSubscription();
     }
 
-    /**
-     * Sincroniza o campo `plan` local com o Price ID da assinatura Stripe.
-     * Também zera o trial quando uma assinatura paga está ativa.
-     */
     public function syncPlanFromSubscription(): void
     {
         try {
@@ -90,14 +92,12 @@ class Company extends Model
                 config('cashier.prices.business')   => 'business',
             ];
 
-            $plan = $map[$priceId] ?? 'free';
-
             $this->update([
-                'plan'          => $plan,
+                'plan'          => $map[$priceId] ?? 'free',
                 'trial_ends_at' => null,
             ]);
         } catch (\Exception $e) {
-            // Silencia erro se tabela não existir ainda
+            //
         }
     }
 
