@@ -57,7 +57,7 @@ class SaleController extends Controller
     public function store(Request $request)
     {
         $company = auth()->user()->company;
-        if ($company && ! $company->canAddProduct()) {
+        if ($company && ! $company->canAdd('products')) {
             return redirect()->route('products.index')->with('error', 'Limite de produtos do seu plano atingido.');
         }
 
@@ -74,13 +74,12 @@ class SaleController extends Controller
             'items.*.price'      => ['required', 'numeric', 'min:0'],
         ], [
             'customer_id.required' => 'Selecione um cliente cadastrado.',
-            'customer_id.exists'   => 'Cliente inv\u00e1lido.',
+            'customer_id.exists'   => 'Cliente inválido.',
         ]);
 
         $customer     = Customer::findOrFail($validated['customer_id']);
         $customerName = $customer->name;
 
-        // Preserva a data escolhida mas usa a hora atual do registro
         $saleDateTime = Carbon::parse($validated['sale_date'])->setTimeFrom(now());
 
         try {
@@ -101,7 +100,7 @@ class SaleController extends Controller
                     $product = Product::lockForUpdate()->findOrFail($item['product_id']);
 
                     if ($product->quantity < $item['quantity']) {
-                        throw new \Exception("Estoque insuficiente para \"{$product->name}\". Dispon\u00edvel: {$product->quantity} un.");
+                        throw new \Exception("Estoque insuficiente para \"{$product->name}\". Disponível: {$product->quantity} un.");
                     }
 
                     $before = $product->quantity;
@@ -126,19 +125,18 @@ class SaleController extends Controller
                         'quantity_before' => $before,
                         'quantity_after'  => $after,
                         'reason'          => 'venda',
-                        'notes'           => "Venda #{$sale->id} \u2014 {$customerName}",
+                        'notes'           => "Venda #{$sale->id} — {$customerName}",
                         'source_type'     => Sale::class,
                         'source_id'       => $sale->id,
                     ]);
                 }
 
-                // Vínculo automático: venda concluída → conta a receber
                 if ($sale->status === 'concluida') {
                     Receivable::create([
                         'company_id'  => $companyId,
                         'customer_id' => $sale->customer_id,
                         'sale_id'     => $sale->id,
-                        'description' => "Venda #{$sale->id} \u2014 {$customerName}",
+                        'description' => "Venda #{$sale->id} — {$customerName}",
                         'amount'      => $total,
                         'due_date'    => $sale->sale_date,
                         'status'      => 'pendente',
@@ -181,13 +179,12 @@ class SaleController extends Controller
             'items.*.price'      => ['required', 'numeric', 'min:0'],
         ], [
             'customer_id.required' => 'Selecione um cliente cadastrado.',
-            'customer_id.exists'   => 'Cliente inv\u00e1lido.',
+            'customer_id.exists'   => 'Cliente inválido.',
         ]);
 
         $customer     = Customer::findOrFail($validated['customer_id']);
         $customerName = $customer->name;
 
-        // Preserva data original, mas atualiza a hora para o momento da edição
         $existingTime = $sale->sale_date ? $sale->sale_date : now();
         $saleDateTime = Carbon::parse($validated['sale_date'])
             ->setHour($existingTime->hour)
@@ -217,7 +214,7 @@ class SaleController extends Controller
                         'product_id' => $oldProduct->id, 'company_id' => $companyId,
                         'user_id' => auth()->id(), 'type' => 'entrada',
                         'quantity' => $netQty, 'quantity_before' => $before, 'quantity_after' => $after,
-                        'reason' => 'devolucao', 'notes' => "Estorno da edi\u00e7\u00e3o da Venda #{$sale->id}",
+                        'reason' => 'devolucao', 'notes' => "Estorno da edição da Venda #{$sale->id}",
                         'source_type' => Sale::class, 'source_id' => $sale->id,
                     ]);
                 }
@@ -253,18 +250,17 @@ class SaleController extends Controller
                         'product_id' => $product->id, 'company_id' => $companyId,
                         'user_id' => auth()->id(), 'type' => 'saida',
                         'quantity' => -$item['quantity'], 'quantity_before' => $before, 'quantity_after' => $after,
-                        'reason' => 'venda', 'notes' => "Venda #{$sale->id} (editada) \u2014 {$customerName}",
+                        'reason' => 'venda', 'notes' => "Venda #{$sale->id} (editada) — {$customerName}",
                         'source_type' => Sale::class, 'source_id' => $sale->id,
                     ]);
                 }
 
-                // Vínculo: se tornou concluída e não tem receivable ainda
                 if ($validated['status'] === 'concluida' && $prevStatus !== 'concluida' && !$sale->receivable) {
                     Receivable::create([
                         'company_id'  => $companyId,
                         'customer_id' => $sale->customer_id,
                         'sale_id'     => $sale->id,
-                        'description' => "Venda #{$sale->id} \u2014 {$customerName}",
+                        'description' => "Venda #{$sale->id} — {$customerName}",
                         'amount'      => $total,
                         'due_date'    => $sale->sale_date,
                         'status'      => 'pendente',
@@ -281,7 +277,7 @@ class SaleController extends Controller
     public function cancel(Sale $sale)
     {
         if ($sale->status === 'cancelada') {
-            return back()->with('error', 'Esta venda j\u00e1 est\u00e1 cancelada.');
+            return back()->with('error', 'Esta venda já está cancelada.');
         }
         $companyId = auth()->user()->company_id;
         try {
@@ -333,7 +329,7 @@ class SaleController extends Controller
                     StockMovement::create([
                         'product_id' => $product->id, 'company_id' => $companyId, 'user_id' => auth()->id(),
                         'type' => 'entrada', 'quantity' => $netQty, 'quantity_before' => $before, 'quantity_after' => $after,
-                        'reason' => 'devolucao', 'notes' => "Estorno por exclus\u00e3o da Venda #{$sale->id}",
+                        'reason' => 'devolucao', 'notes' => "Estorno por exclusão da Venda #{$sale->id}",
                         'source_type' => Sale::class, 'source_id' => $sale->id,
                     ]);
                 }
@@ -354,7 +350,7 @@ class SaleController extends Controller
     {
         $sale = Sale::onlyTrashed()->where('company_id', auth()->user()->company_id)->findOrFail($id);
         $sale->forceDelete();
-        return redirect()->route('sales.index', ['trashed' => 1])->with('success', 'Venda exclu\u00edda permanentemente.');
+        return redirect()->route('sales.index', ['trashed' => 1])->with('success', 'Venda excluída permanentemente.');
     }
 
     public function invoice(Sale $sale)
