@@ -8,5 +8,7 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-// Alertas financeiros e de estoque — roda todo dia às 08:00
-Schedule::command('invexa:check-alerts')->dailyAt('08:00');
+// ── Agendamentos Invexa
+Schedule::command('invexa:expire-trials')->dailyAt('01:00');
+Schedule::command('invexa:sync-subscriptions')->dailyAt('02:00');
+Schedule::command('notifications:send-due-bills')->dailyAt('08:00');
