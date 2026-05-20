@@ -10,13 +10,8 @@ class Company extends Model
 {
     use HasFactory, Billable;
 
-    /**
-     * Cashier usa billable_id por padrão.
-     * Sobrescrevemos para que as queries usem o nome correto.
-     */
     protected $primaryKey = 'id';
 
-    // Diz ao Cashier qual coluna usar na tabela subscriptions
     public function subscriptions()
     {
         return $this->hasMany(\Laravel\Cashier\Subscription::class, 'billable_id')->orderBy('created_at', 'desc');
@@ -34,41 +29,25 @@ class Company extends Model
 
     // ── Relacionamentos
 
-    public function users()
-    {
-        return $this->hasMany(User::class);
-    }
-
-    public function products()
-    {
-        return $this->hasMany(Product::class);
-    }
-
-    public function customers()
-    {
-        return $this->hasMany(Customer::class);
-    }
-
-    public function suppliers()
-    {
-        return $this->hasMany(Supplier::class);
-    }
-
-    public function sales()
-    {
-        return $this->hasMany(Sale::class);
-    }
+    public function users()         { return $this->hasMany(User::class); }
+    public function products()      { return $this->hasMany(Product::class); }
+    public function customers()     { return $this->hasMany(Customer::class); }
+    public function suppliers()     { return $this->hasMany(Supplier::class); }
+    public function sales()         { return $this->hasMany(Sale::class); }
 
     // ── Acesso / Trial
 
     public function isOnTrial(): bool
     {
+        // Trial só vale se ainda não tem assinatura paga ativa
+        if ($this->hasActiveSubscription()) return false;
+
         return $this->trial_ends_at !== null && $this->trial_ends_at->isFuture();
     }
 
     public function trialDaysLeft(): int
     {
-        if (!$this->isOnTrial()) return 0;
+        if (! $this->isOnTrial()) return 0;
         return (int) now()->diffInDays($this->trial_ends_at);
     }
 
@@ -82,14 +61,10 @@ class Company extends Model
         try {
             return $this->subscribed('default');
         } catch (\Exception $e) {
-            // Tabela subscriptions ainda não existe ou coluna incorreta
             return false;
         }
     }
 
-    /**
-     * Empresa acessível = trial ainda válido OU assinatura ativa OU plano free.
-     */
     public function isAccessible(): bool
     {
         if ($this->isOnTrial()) return true;
@@ -99,22 +74,35 @@ class Company extends Model
 
     /**
      * Sincroniza o campo `plan` local com o Price ID da assinatura Stripe.
+     * Também zera o trial quando uma assinatura paga está ativa.
      */
     public function syncPlanFromSubscription(): void
     {
         try {
             $sub = $this->subscription('default');
-            if (!$sub || !$sub->active()) {
+
+            if (! $sub || ! $sub->active()) {
                 $this->update(['plan' => 'free']);
                 return;
             }
-            $priceId = $sub->stripe_price;
+
+            $priceId = $sub->items()->first()?->stripe_price
+                     ?? $sub->stripe_price
+                     ?? null;
+
             $map = [
                 config('cashier.prices.pro')        => 'pro',
                 config('cashier.prices.pro_launch') => 'pro',
                 config('cashier.prices.business')   => 'business',
             ];
-            $this->update(['plan' => $map[$priceId] ?? 'free']);
+
+            $plan = $map[$priceId] ?? 'free';
+
+            // Zera o trial ao confirmar assinatura paga
+            $this->update([
+                'plan'          => $plan,
+                'trial_ends_at' => null,
+            ]);
         } catch (\Exception $e) {
             // Silencia erro se tabela não existir ainda
         }
@@ -125,34 +113,10 @@ class Company extends Model
     public function planLimits(): array
     {
         return match ($this->plan) {
-            'free'     => [
-                'products'        => 50,
-                'customers'       => 100,
-                'suppliers'       => 10,
-                'users'           => 2,
-                'purchase_orders' => 20,
-            ],
-            'pro'      => [
-                'products'        => 500,
-                'customers'       => 1000,
-                'suppliers'       => 100,
-                'users'           => 10,
-                'purchase_orders' => 200,
-            ],
-            'business' => [
-                'products'        => PHP_INT_MAX,
-                'customers'       => PHP_INT_MAX,
-                'suppliers'       => PHP_INT_MAX,
-                'users'           => PHP_INT_MAX,
-                'purchase_orders' => PHP_INT_MAX,
-            ],
-            default    => [
-                'products'        => 50,
-                'customers'       => 100,
-                'suppliers'       => 10,
-                'users'           => 2,
-                'purchase_orders' => 20,
-            ],
+            'free'     => ['products' => 50,           'customers' => 100,           'suppliers' => 10,  'users' => 2,           'purchase_orders' => 20],
+            'pro'      => ['products' => 500,          'customers' => 1000,          'suppliers' => 100, 'users' => 10,          'purchase_orders' => 200],
+            'business' => ['products' => PHP_INT_MAX,  'customers' => PHP_INT_MAX,   'suppliers' => PHP_INT_MAX, 'users' => PHP_INT_MAX, 'purchase_orders' => PHP_INT_MAX],
+            default    => ['products' => 50,           'customers' => 100,           'suppliers' => 10,  'users' => 2,           'purchase_orders' => 20],
         };
     }
 
@@ -177,10 +141,7 @@ class Company extends Model
     }
 
     /** @deprecated Use canAdd('users') */
-    public function canAddUser(): bool
-    {
-        return $this->canAdd('users');
-    }
+    public function canAddUser(): bool { return $this->canAdd('users'); }
 
     public function usagePercent(string $resource): int
     {
