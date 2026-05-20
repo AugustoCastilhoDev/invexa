@@ -17,10 +17,11 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->alias([
-            'role'       => \App\Http\Middleware\CheckRole::class,
-            'company'    => \App\Http\Middleware\CompanyMiddleware::class,
-            'trial'      => \App\Http\Middleware\CheckCompanyAccess::class,
-            'superadmin' => \App\Http\Middleware\SuperAdminMiddleware::class,
+            'role'        => \App\Http\Middleware\CheckRole::class,
+            'company'     => \App\Http\Middleware\CompanyMiddleware::class,
+            'trial'       => \App\Http\Middleware\CheckCompanyAccess::class,
+            'superadmin'  => \App\Http\Middleware\SuperAdminMiddleware::class,
+            'onboarding'  => \App\Http\Middleware\CheckOnboarding::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
