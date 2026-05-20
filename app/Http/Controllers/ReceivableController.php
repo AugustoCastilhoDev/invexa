@@ -10,6 +10,13 @@ use Illuminate\Support\Facades\DB;
 
 class ReceivableController extends Controller
 {
+    private array $categories = [
+        'vendas'      => 'Vendas',
+        'servicos'    => 'Serviços',
+        'assinaturas' => 'Assinaturas',
+        'outros'      => 'Outros',
+    ];
+
     public function index(Request $request)
     {
         $companyId = auth()->user()->company_id;
@@ -36,13 +43,7 @@ class ReceivableController extends Controller
             'cancelada' => 'Cancelada',
         ];
 
-        $categories = [
-            'vendas'      => 'Vendas',
-            'servicos'    => 'Servi\u00e7os',
-            'assinaturas' => 'Assinaturas',
-            'outros'      => 'Outros',
-        ];
-
+        $categories  = $this->categories;
         $receivables = $query->orderBy('due_date')->paginate(15)->withQueryString();
 
         return view('receivables.index', compact(
@@ -55,8 +56,9 @@ class ReceivableController extends Controller
 
     public function create()
     {
-        $customers = Customer::where('company_id', auth()->user()->company_id)->orderBy('name')->get();
-        return view('receivables.create', compact('customers'));
+        $customers  = Customer::where('company_id', auth()->user()->company_id)->orderBy('name')->get();
+        $categories = $this->categories;
+        return view('receivables.create', compact('customers', 'categories'));
     }
 
     public function store(Request $request)
@@ -118,8 +120,9 @@ class ReceivableController extends Controller
 
     public function edit(Receivable $receivable)
     {
-        $customers = Customer::where('company_id', auth()->user()->company_id)->orderBy('name')->get();
-        return view('receivables.edit', compact('receivable','customers'));
+        $customers  = Customer::where('company_id', auth()->user()->company_id)->orderBy('name')->get();
+        $categories = $this->categories;
+        return view('receivables.edit', compact('receivable', 'customers', 'categories'));
     }
 
     public function update(Request $request, Receivable $receivable)
@@ -134,13 +137,11 @@ class ReceivableController extends Controller
             'notes'          => ['nullable','string'],
         ]);
 
-        // Se status mudou para recebida, preenche amount_received e received_at
         if ($validated['status'] === 'recebida' && $receivable->status !== 'recebida') {
             $validated['amount_received'] = $validated['amount'];
             $validated['received_at']     = now();
         }
 
-        // Se foi reaberta (de recebida para pendente/cancelada), zera os campos
         if ($validated['status'] !== 'recebida' && $receivable->status === 'recebida') {
             $validated['amount_received'] = null;
             $validated['received_at']     = null;
@@ -159,7 +160,7 @@ class ReceivableController extends Controller
     public function receive(Receivable $receivable)
     {
         if ($receivable->status === 'recebida') {
-            return back()->with('error', 'J\u00e1 recebida.');
+            return back()->with('error', 'Já recebida.');
         }
         $receivable->update([
             'status'          => 'recebida',

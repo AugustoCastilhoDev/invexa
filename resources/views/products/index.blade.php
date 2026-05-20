@@ -18,7 +18,7 @@
 
 @php
     $company = auth()->user()->company;
-    $limits  = $company ? $company->limits() : ['products' => 50];
+    $limits  = $company ? $company->planLimits() : ['products' => 50];
     $isLowStockFilter = request('low_stock') === '1';
 @endphp
 <div class="alert d-flex align-items-center gap-3 mb-4"
@@ -78,7 +78,6 @@
             </div>
             <div class="col-12 col-md-4">
                 @if($isLowStockFilter)
-                    {{-- Filtro ativo: card clicável para remover o filtro --}}
                     <a href="{{ route('products.index') }}" class="text-decoration-none d-block h-100">
                         <div class="card dashboard-card text-white border-0 shadow-sm h-100"
                              style="background:linear-gradient(135deg,#991b1b,#dc2626);cursor:pointer;">
@@ -92,7 +91,6 @@
                         </div>
                     </a>
                 @else
-                    {{-- Filtro inativo: card clicável para ativar o filtro --}}
                     <a href="{{ route('products.index', ['low_stock' => '1']) }}" class="text-decoration-none d-block h-100">
                         <div class="card dashboard-card text-white border-0 shadow-sm h-100"
                              style="background:linear-gradient(135deg,#dc2626,#ef4444);cursor:pointer;">
