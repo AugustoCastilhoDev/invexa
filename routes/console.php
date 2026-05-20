@@ -12,3 +12,4 @@ Artisan::command('inspire', function () {
 Schedule::command('invexa:expire-trials')->dailyAt('01:00');
 Schedule::command('invexa:sync-subscriptions')->dailyAt('02:00');
 Schedule::command('notifications:send-due-bills')->dailyAt('08:00');
+Schedule::command('invexa:trial-ending-emails')->dailyAt('09:00');

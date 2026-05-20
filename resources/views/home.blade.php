@@ -74,7 +74,6 @@
         letter-spacing: .1em; color: rgba(14,165,233,.7); margin-bottom: .6rem;
     }
 
-    /* Card Plano */
     .plan-card {
         background: rgba(13,25,41,.75);
         border: 1px solid rgba(14,165,233,.12);
@@ -115,8 +114,8 @@
             <div class="home-sub">O que vamos fazer hoje?</div>
         </div>
         <div class="ms-auto text-end d-none d-md-block">
-            <div class="home-date">{{ now()->locale('pt_BR')->isoFormat('dddd, D [de] MMMM [de] YYYY') }}</div>
-            <div style="font-size:.78rem; color:rgba(148,163,184,.5);">{{ now()->format('H:i') }}</div>
+            <div class="home-date" id="liveClock"></div>
+            <div id="liveTime" style="font-size:.78rem; color:rgba(148,163,184,.5);"></div>
         </div>
     </div>
 </div>
@@ -287,7 +286,6 @@
         </a>
         @endif
 
-        {{-- Card Meu Plano — somente admin da empresa --}}
         @if(Auth::check() && Auth::user()->hasRole('admin'))
         <a href="{{ route('upgrade') }}" class="module-card" style="border-color:rgba(14,165,233,.18);">
             <div class="module-card-icon" style="background:rgba(14,165,233,.12); color:#38BDF8;"><i class="bi bi-rocket-takeoff"></i></div>
@@ -307,3 +305,28 @@
 </div>
 
 @endsection
+
+@push('scripts')
+<script>
+// ── Relógio em tempo real
+(function () {
+    const DAYS   = ['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
+    const MONTHS = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+
+    function pad(n) { return String(n).padStart(2, '0'); }
+
+    function tick() {
+        const now  = new Date();
+        const date = `${DAYS[now.getDay()]}, ${now.getDate()} de ${MONTHS[now.getMonth()]} de ${now.getFullYear()}`;
+        const time = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+        const clockEl = document.getElementById('liveClock');
+        const timeEl  = document.getElementById('liveTime');
+        if (clockEl) clockEl.textContent = date;
+        if (timeEl)  timeEl.textContent  = time;
+    }
+
+    tick();
+    setInterval(tick, 1000);
+})();
+</script>
+@endpush
