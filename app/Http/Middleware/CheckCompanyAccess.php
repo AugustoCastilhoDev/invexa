@@ -30,6 +30,11 @@ class CheckCompanyAccess
             return $next($request);
         }
 
+        // Modo suporte (impersonate) — SuperAdmin nunca é bloqueado por trial/plano
+        if (session()->has('impersonator_id')) {
+            return $next($request);
+        }
+
         // fresh() garante dados atualizados do banco, sem cache de relacionamento
         $company = $user->company()->first();
 
