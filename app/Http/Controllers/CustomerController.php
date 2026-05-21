@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Customer;
+use App\Models\Sale;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -43,12 +44,12 @@ class CustomerController extends Controller
         }
 
         $request->validate([
-            'name'    => ['required', 'string', 'max:255'],
-            'email'   => ['nullable', 'email', 'max:255'],
-            'phone'   => ['nullable', 'string', 'max:30'],
-            'document'=> ['nullable', 'string', 'max:30'],
-            'address' => ['nullable', 'string', 'max:500'],
-            'notes'   => ['nullable', 'string'],
+            'name'     => ['required', 'string', 'max:255'],
+            'email'    => ['nullable', 'email', 'max:255'],
+            'phone'    => ['nullable', 'string', 'max:30'],
+            'document' => ['nullable', 'string', 'max:30'],
+            'address'  => ['nullable', 'string', 'max:500'],
+            'notes'    => ['nullable', 'string'],
         ]);
 
         Customer::create(array_merge($request->all(), [
@@ -58,10 +59,54 @@ class CustomerController extends Controller
         return redirect()->route('customers.index')->with('success', 'Cliente criado com sucesso.');
     }
 
-    public function show(Customer $customer)
+    public function show(Request $request, Customer $customer)
     {
         $this->authorize($customer);
-        return view('customers.show', compact('customer'));
+
+        // ── Filtros ──────────────────────────────────────────────────
+        $from   = $request->input('from');
+        $to     = $request->input('to');
+        $status = $request->input('status');
+
+        // ── Query base de vendas do cliente ─────────────────────────
+        $baseQuery = Sale::with(['items.product'])
+            ->where('company_id', Auth::user()->company_id)
+            ->where('customer_id', $customer->id);
+
+        if ($from)   { $baseQuery->whereDate('sale_date', '>=', $from); }
+        if ($to)     { $baseQuery->whereDate('sale_date', '<=', $to); }
+        if ($status) { $baseQuery->where('status', $status); }
+
+        // ── Listagem paginada (para tabela de histórico) ─────────────
+        $sales = (clone $baseQuery)->latest('sale_date')->paginate(15)->withQueryString();
+
+        // ── KPIs (sempre sobre todas as vendas sem filtro de status) ─
+        $allSalesQuery = Sale::where('company_id', Auth::user()->company_id)
+            ->where('customer_id', $customer->id)
+            ->whereIn('status', ['concluida', 'pendente']);
+
+        $totalSales  = $allSalesQuery->count();
+        $totalSpent  = $allSalesQuery->sum('total');
+        $lastSale    = $allSalesQuery->latest('sale_date')->first();
+        $avgTicket   = $totalSales > 0 ? $totalSpent / $totalSales : 0;
+
+        // ── Devoluções do cliente ────────────────────────────────────
+        $returnsQuery = \App\Models\SaleReturn::whereHas('sale', function ($q) use ($customer) {
+            $q->where('customer_id', $customer->id)
+              ->where('company_id', Auth::user()->company_id);
+        });
+        $returnsCount = $returnsQuery->count();
+        $returnsTotal = $returnsQuery->sum('total');
+
+        $netSpent = $totalSpent - $returnsTotal;
+
+        return view('customers.show', compact(
+            'customer',
+            'sales',
+            'from', 'to', 'status',
+            'totalSales', 'totalSpent', 'lastSale', 'avgTicket',
+            'returnsCount', 'returnsTotal', 'netSpent'
+        ));
     }
 
     public function edit(Customer $customer)
@@ -75,12 +120,12 @@ class CustomerController extends Controller
         $this->authorize($customer);
 
         $request->validate([
-            'name'    => ['required', 'string', 'max:255'],
-            'email'   => ['nullable', 'email', 'max:255'],
-            'phone'   => ['nullable', 'string', 'max:30'],
-            'document'=> ['nullable', 'string', 'max:30'],
-            'address' => ['nullable', 'string', 'max:500'],
-            'notes'   => ['nullable', 'string'],
+            'name'     => ['required', 'string', 'max:255'],
+            'email'    => ['nullable', 'email', 'max:255'],
+            'phone'    => ['nullable', 'string', 'max:30'],
+            'document' => ['nullable', 'string', 'max:30'],
+            'address'  => ['nullable', 'string', 'max:500'],
+            'notes'    => ['nullable', 'string'],
         ]);
 
         $customer->update($request->all());
@@ -112,6 +157,6 @@ class CustomerController extends Controller
     private function limitMessage(string $nome, int $limite): string
     {
         $plano = strtoupper(Auth::user()->company->plan);
-        return "Limite de {$nome} do plano {$plano} atingido ({$limite}).  ✨ Faça upgrade para continuar.";
+        return "Limite de {$nome} do plano {$plano} atingido ({$limite}).  ✨ Faça upgrade para continuar.";
     }
 }
