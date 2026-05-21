@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Laravel\Cashier\Exceptions\IncompletePayment;
+use Stripe\Exception\InvalidRequestException as StripeInvalidRequestException;
 
 class SubscriptionController extends Controller
 {
@@ -21,6 +22,24 @@ class SubscriptionController extends Controller
         $request->validate(['plan' => 'required|in:pro,pro_launch,business']);
 
         $company = auth()->user()->company;
+
+        // Guard: detecta mismatch de ambiente Stripe (test vs live).
+        // Se o customer_id salvo no banco pertence a um ambiente diferente da
+        // chave atual, o Stripe lança InvalidRequestException com a mensagem
+        // "a similar object exists in test/live mode". Nesse caso zeramos o
+        // stripe_id para que o Cashier crie um novo customer no ambiente correto.
+        if ($company->stripe_id) {
+            try {
+                $company->asStripeCustomer();
+            } catch (StripeInvalidRequestException $e) {
+                if (str_contains($e->getMessage(), 'a similar object exists in')) {
+                    $company->update(['stripe_id' => null]);
+                } else {
+                    throw $e;
+                }
+            }
+        }
+
         $priceId = config('cashier.prices.' . $request->plan);
 
         $checkoutParams = [
