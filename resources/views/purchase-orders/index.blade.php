@@ -4,13 +4,6 @@
 
 @push('styles')
 <style>
-/*
- * Paleta padrão — purchase-orders/index
- * Enviada  = Amarelo #fbbf24
- * Recebida = Verde   #4ade80
- * Pendente = Laranja #fb923c
- * Cancelada= Vermelho#f87171
- */
 .po-filters .form-control,
 .po-filters .form-select {
     background: rgba(13,20,35,.92) !important;
@@ -76,10 +69,10 @@
     <div class="col-12 col-md-3">
         <select name="status" class="form-select">
             <option value="">Todos os status</option>
-            <option value="pending"   @selected(request('status') === 'pending')>Pendente</option>
-            <option value="sent"      @selected(request('status') === 'sent')>Enviada</option>
-            <option value="received"  @selected(request('status') === 'received')>Recebida</option>
-            <option value="cancelled" @selected(request('status') === 'cancelled')>Cancelada</option>
+            <option value="pendente"  @selected(request('status') === 'pendente')>Pendente</option>
+            <option value="enviada"   @selected(request('status') === 'enviada')>Enviada</option>
+            <option value="recebida"  @selected(request('status') === 'recebida')>Recebida</option>
+            <option value="cancelada" @selected(request('status') === 'cancelada')>Cancelada</option>
         </select>
     </div>
     <div class="col-12 col-md-2 d-flex gap-2">
@@ -106,19 +99,16 @@
                 <tr>
                     <td class="ps-4" style="color:#94a3b8;">#{{ $order->id }}</td>
                     <td class="fw-semibold text-white">{{ $order->supplier?->name ?? '&mdash;' }}</td>
-                    <td>{{ \Carbon\Carbon::parse($order->ordered_at)->format('d/m/Y') }}</td>
+                    <td>{{ \Carbon\Carbon::parse($order->order_date)->format('d/m/Y') }}</td>
                     <td class="fw-semibold" style="color:#4ade80;">R$ {{ number_format($order->total, 2, ',', '.') }}</td>
                     <td>
                         @php
-                            /*
-                             * Enviada  = Amarelo | Recebida = Verde
-                             * Pendente = Laranja | Cancelada = Vermelho
-                             */
+                            /* Chaves em português — valores reais do banco */
                             $statusMap = [
-                                'pending'   => ['Pendente',  '#fb923c', 'rgba(251,146,60,.12)',  'rgba(251,146,60,.30)'],
-                                'sent'      => ['Enviada',   '#fbbf24', 'rgba(251,191,36,.12)',  'rgba(251,191,36,.30)'],
-                                'received'  => ['Recebida',  '#4ade80', 'rgba(74,222,128,.12)',  'rgba(74,222,128,.30)'],
-                                'cancelled' => ['Cancelada', '#f87171', 'rgba(248,113,113,.12)', 'rgba(248,113,113,.30)'],
+                                'pendente'  => ['Pendente',  '#fb923c', 'rgba(251,146,60,.12)',  'rgba(251,146,60,.30)'],
+                                'enviada'   => ['Enviada',   '#fbbf24', 'rgba(251,191,36,.12)',  'rgba(251,191,36,.30)'],
+                                'recebida'  => ['Recebida',  '#4ade80', 'rgba(74,222,128,.12)',  'rgba(74,222,128,.30)'],
+                                'cancelada' => ['Cancelada', '#f87171', 'rgba(248,113,113,.12)', 'rgba(248,113,113,.30)'],
                             ];
                             [$sLabel, $sColor, $sBg, $sBorder] = $statusMap[$order->status]
                                 ?? [$order->status, '#94a3b8', 'rgba(148,163,184,.10)', 'rgba(148,163,184,.22)'];
@@ -136,11 +126,13 @@
                                class="btn btn-sm btn-outline-light" title="Ver">
                                 <i class="bi bi-eye"></i>
                             </a>
-                            @if($order->status === 'pending')
+                            @if($order->canSend())
                                 <a href="{{ route('purchase-orders.edit', $order) }}"
                                    class="btn btn-sm btn-outline-warning" title="Editar">
                                     <i class="bi bi-pencil"></i>
                                 </a>
+                            @endif
+                            @if($order->canReceive())
                                 <form action="{{ route('purchase-orders.receive', $order) }}" method="POST">
                                     @csrf
                                     <button type="submit" class="btn btn-sm btn-outline-success" title="Marcar como Recebida"
@@ -148,6 +140,8 @@
                                         <i class="bi bi-check2-circle"></i>
                                     </button>
                                 </form>
+                            @endif
+                            @if($order->canCancel())
                                 <form action="{{ route('purchase-orders.destroy', $order) }}" method="POST">
                                     @csrf @method('DELETE')
                                     <button type="submit" class="btn btn-sm btn-outline-danger" title="Excluir"

@@ -5,13 +5,9 @@
     <title>Nota de Venda #{{ str_pad($sale->id, 6, '0', STR_PAD_LEFT) }}</title>
     <style>
         /*
-         * DomPDF: @page define as margens — o wrapper .page NAO usa padding.
-         * Margens generosas para o texto nao ficar colado na borda.
+         * Margens controladas via setOptions() no controller (margin_top/right/bottom/left).
+         * Aqui usamos apenas padding no body como fallback visual.
          */
-        @page {
-            margin: 22mm 20mm 22mm 20mm;
-        }
-
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'DejaVu Sans', Arial, sans-serif;
@@ -22,7 +18,7 @@
 
         .page { width: 100%; }
 
-        /* Cabeçalho via <table> (DomPDF nao suporta flexbox) */
+        /* Cabeçalho via <table> — DomPDF nao suporta flexbox */
         .header-table {
             width: 100%;
             border-collapse: collapse;
@@ -48,7 +44,6 @@
         .customer-name  { font-size: 13px; font-weight: bold; }
         .customer-info  { font-size: 10px; color: #555; line-height: 1.6; }
 
-        /* Tabela de itens com table-layout:fixed para evitar overflow */
         table.items {
             width: 100%;
             border-collapse: collapse;
@@ -198,7 +193,7 @@
     </table>
 
     <div class="footer">
-        Documento gerado eletronicamente pelo sistema Invexa &mdash; {{ now()->format('d/m/Y \\\u00e0s H:i') }}
+        Documento gerado eletronicamente pelo sistema Invexa &mdash; {{ now()->format('d/m/Y às H:i') }}
     </div>
 </div>
 </body>

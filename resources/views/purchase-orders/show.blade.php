@@ -4,14 +4,6 @@
 
 @push('styles')
 <style>
-/*
- * Paleta padrão — purchase-orders/show
- * Verde #4ade80 | Vermelho #f87171 | Amarelo #fbbf24 | Cinza #94a3b8
- * Enviada  = Amarelo #fbbf24
- * Recebida = Verde   #4ade80
- * Pendente = Laranja #fb923c
- * Cancelada= Vermelho#f87171
- */
 .po-show-card {
     background: rgba(13,20,35,.92);
     border: 1px solid rgba(148,163,184,.10);
@@ -36,7 +28,6 @@
 .po-value    { font-size: .92rem; font-weight: 600; color: #f1f5f9; }
 .po-value-lg { font-size: 1.25rem; font-weight: 700; color: #4ade80; }
 .po-sub      { font-size: .75rem; color: rgba(148,163,184,.6); margin-top: .15rem; }
-/* Tabela de itens */
 .po-table thead th {
     font-size: .62rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
     color: rgba(148,163,184,.75) !important;
@@ -58,7 +49,6 @@
 }
 .po-table tfoot .total-val { color: #4ade80 !important; font-size: 1rem; }
 .po-table tbody tr:hover td { background: rgba(96,165,250,.04) !important; }
-/* Notas */
 .po-notes {
     background: rgba(15,23,42,.85);
     border-left: 3px solid rgba(148,163,184,.3);
@@ -72,15 +62,12 @@
 @section('content')
 
 @php
-    /*
-     * Enviada  (#fbbf24 amarelo) | Recebida (#4ade80 verde)
-     * Pendente (#fb923c laranja) | Cancelada (#f87171 vermelho)
-     */
+    /* Chaves em português — valores reais do banco */
     $statusMap = [
-        'pending'   => ['Pendente',  '#fb923c', 'rgba(251,146,60,.12)',  'rgba(251,146,60,.30)'],
-        'sent'      => ['Enviada',   '#fbbf24', 'rgba(251,191,36,.12)',  'rgba(251,191,36,.30)'],
-        'received'  => ['Recebida',  '#4ade80', 'rgba(74,222,128,.12)',  'rgba(74,222,128,.30)'],
-        'cancelled' => ['Cancelada', '#f87171', 'rgba(248,113,113,.12)', 'rgba(248,113,113,.30)'],
+        'pendente'  => ['Pendente',  '#fb923c', 'rgba(251,146,60,.12)',  'rgba(251,146,60,.30)'],
+        'enviada'   => ['Enviada',   '#fbbf24', 'rgba(251,191,36,.12)',  'rgba(251,191,36,.30)'],
+        'recebida'  => ['Recebida',  '#4ade80', 'rgba(74,222,128,.12)',  'rgba(74,222,128,.30)'],
+        'cancelada' => ['Cancelada', '#f87171', 'rgba(248,113,113,.12)', 'rgba(248,113,113,.30)'],
     ];
     [$sLabel, $sColor, $sBg, $sBorder] = $statusMap[$purchaseOrder->status]
         ?? [$purchaseOrder->status, '#94a3b8', 'rgba(148,163,184,.10)', 'rgba(148,163,184,.22)'];
@@ -88,12 +75,11 @@
 
 <div class="po-show-card">
 
-    {{-- Header --}}
     <div class="po-show-header d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
         <div>
             <h4 class="mb-1 text-white">Ordem de Compra #{{ $purchaseOrder->id }}</h4>
             <div style="font-size:.78rem;color:rgba(148,163,184,.65);">
-                Criada em {{ \Carbon\Carbon::parse($purchaseOrder->ordered_at)->format('d/m/Y') }}
+                Criada em {{ \Carbon\Carbon::parse($purchaseOrder->order_date)->format('d/m/Y') }}
                 &middot;
                 <span style="display:inline-flex;align-items:center;gap:.25rem;font-size:.68rem;font-weight:600;
                              padding:.2rem .6rem;border-radius:999px;vertical-align:middle;
@@ -107,11 +93,15 @@
             <a href="{{ route('purchase-orders.index') }}" class="btn btn-sm btn-outline-light">
                 <i class="bi bi-arrow-left me-1"></i>Voltar
             </a>
-            @if($purchaseOrder->status === 'pending')
+            @if($purchaseOrder->canSend())
                 @if(auth()->user()->hasRole(['admin','gerente']))
                     <a href="{{ route('purchase-orders.edit', $purchaseOrder) }}" class="btn btn-sm btn-outline-warning">
                         <i class="bi bi-pencil me-1"></i>Editar
                     </a>
+                @endif
+            @endif
+            @if($purchaseOrder->canReceive())
+                @if(auth()->user()->hasRole(['admin','gerente']))
                     <form method="POST" action="{{ route('purchase-orders.receive', $purchaseOrder) }}"
                           onsubmit="return confirm('Confirmar recebimento e atualizar estoque?')">
                         @csrf
@@ -120,6 +110,10 @@
                             <i class="bi bi-box-arrow-in-down me-1"></i>Receber
                         </button>
                     </form>
+                @endif
+            @endif
+            @if($purchaseOrder->canCancel())
+                @if(auth()->user()->hasRole(['admin','gerente']))
                     <form method="POST" action="{{ route('purchase-orders.destroy', $purchaseOrder) }}"
                           onsubmit="return confirm('Excluir esta ordem?')">
                         @csrf @method('DELETE')
@@ -149,7 +143,6 @@
             </div>
         @endif
 
-        {{-- Info cards --}}
         <div class="row g-3 mb-4">
             <div class="col-12 col-md-6">
                 <div class="po-info-card h-100">
@@ -166,7 +159,7 @@
             <div class="col-12 col-md-3">
                 <div class="po-info-card h-100">
                     <div class="po-label">Data do Pedido</div>
-                    <div class="po-value">{{ \Carbon\Carbon::parse($purchaseOrder->ordered_at)->format('d/m/Y') }}</div>
+                    <div class="po-value">{{ \Carbon\Carbon::parse($purchaseOrder->order_date)->format('d/m/Y') }}</div>
                     @if($purchaseOrder->received_at)
                         <div class="po-sub">Recebido em {{ \Carbon\Carbon::parse($purchaseOrder->received_at)->format('d/m/Y') }}</div>
                     @endif
@@ -187,7 +180,6 @@
         </div>
         @endif
 
-        {{-- Itens --}}
         <div style="font-size:.62rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
                     color:rgba(148,163,184,.65);margin-bottom:.6rem;">
             <i class="bi bi-list-ul me-1"></i>Itens
