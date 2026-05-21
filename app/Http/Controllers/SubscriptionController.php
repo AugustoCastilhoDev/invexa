@@ -33,7 +33,22 @@ class SubscriptionController extends Controller
         ];
 
         if (! $company->stripe_id) {
+            // Novo customer: define nome e e-mail para aparecer nas faturas
             $checkoutParams['customer_email'] = $company->email;
+            $checkoutParams['customer_creation'] = 'always';
+            $checkoutParams['customer_update'] = null;
+
+            // Cria o customer no Stripe com nome antes do checkout
+            $company->createOrGetStripeCustomer([
+                'name'  => $company->name,
+                'email' => $company->email,
+            ]);
+        } else {
+            // Customer existente: garante que o nome está atualizado
+            $company->updateStripeCustomer([
+                'name'  => $company->name,
+                'email' => $company->email,
+            ]);
         }
 
         try {
