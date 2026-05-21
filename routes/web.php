@@ -19,10 +19,11 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SaleController;
 use App\Http\Controllers\SaleReturnController;
 use App\Http\Controllers\StockMovementController;
-use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\StripeWebhookController;
+use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\SuperAdmin\SuperAdminController;
+use App\Http\Controllers\TwoFactorController;
 use App\Http\Controllers\UpgradeController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
@@ -47,6 +48,10 @@ Route::get('/register',  [RegisteredUserController::class, 'create'])->name('reg
 Route::post('/register', [RegisteredUserController::class, 'store'])
     ->middleware('throttle:5,1')
     ->name('register.store');
+
+// ── 2FA — verificação pós-login (pública, sem auth)
+Route::get('/two-factor/verify',    [TwoFactorController::class, 'verify'])->name('two-factor.verify');
+Route::post('/two-factor/validate', [TwoFactorController::class, 'validateCode'])->name('two-factor.validate')->middleware('throttle:10,1');
 
 // ── Onboarding (autenticado, sem trial check)
 Route::middleware(['auth', 'company'])->prefix('onboarding')->name('onboarding.')->group(function () {
@@ -82,6 +87,13 @@ Route::middleware(['auth', 'company'])->prefix('settings')->name('subscription.'
     Route::get('/subscription/invoice/{invoice}', function (string $invoice) {
         return auth()->user()->company->downloadInvoice($invoice);
     })->name('invoice');
+});
+
+// ── 2FA — configurações (autenticado)
+Route::middleware(['auth', 'company'])->prefix('settings')->name('settings.')->group(function () {
+    Route::get('/security',            [TwoFactorController::class, 'show'])->name('two-factor');
+    Route::post('/security/confirm',   [TwoFactorController::class, 'confirm'])->name('two-factor.confirm');
+    Route::delete('/security/disable', [TwoFactorController::class, 'disable'])->name('two-factor.disable');
 });
 
 // ── Perfil da Empresa (autenticado, apenas admin)

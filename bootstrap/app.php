@@ -22,6 +22,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'trial'       => \App\Http\Middleware\CheckCompanyAccess::class,
             'superadmin'  => \App\Http\Middleware\SuperAdminMiddleware::class,
             'onboarding'  => \App\Http\Middleware\CheckOnboarding::class,
+            'two-factor'  => \App\Http\Middleware\TwoFactorMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
