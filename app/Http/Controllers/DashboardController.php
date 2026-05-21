@@ -146,14 +146,34 @@ class DashboardController extends Controller
 
         $latestSales = Sale::where('company_id', $companyId)->latest()->limit(5)->get();
 
-        $topSellingProducts = Product::select('products.id', 'products.name', 'products.quantity')
-            ->selectRaw('COALESCE(SUM(sale_items.quantity), 0) as total_sold')
-            ->leftJoin('sale_items', 'sale_items.product_id', '=', 'products.id')
-            ->where('products.company_id', $companyId)
-            ->groupBy('products.id', 'products.name', 'products.quantity')
+        // ── Top 5 Produtos mais vendidos (respeitando filtro de período) ──
+        $topQuery = DB::table('sale_items')
+            ->join('sales', 'sales.id', '=', 'sale_items.sale_id')
+            ->join('products', 'products.id', '=', 'sale_items.product_id')
+            ->where('sales.company_id', $companyId)
+            ->where('sales.status', '!=', 'cancelada')
+            ->select(
+                'products.id',
+                'products.name',
+                DB::raw('SUM(sale_items.quantity) as total_sold'),
+                DB::raw('SUM(sale_items.quantity * sale_items.unit_price) as total_revenue')
+            )
+            ->groupBy('products.id', 'products.name')
             ->orderByDesc('total_sold')
-            ->limit(5)
-            ->get();
+            ->limit(5);
+
+        if ($from && $to) {
+            $topQuery->whereBetween('sales.sale_date', [
+                Carbon::parse($from, $this->tz)->startOfDay(),
+                Carbon::parse($to,   $this->tz)->endOfDay(),
+            ]);
+        }
+
+        $topSellingProducts = $topQuery->get();
+
+        $topChartLabels  = $topSellingProducts->pluck('name');
+        $topChartData    = $topSellingProducts->pluck('total_sold')->map(fn($v) => (int) $v);
+        $topChartRevenue = $topSellingProducts->pluck('total_revenue')->map(fn($v) => round((float) $v, 2));
 
         $latestReturns = SaleReturn::with('sale')
             ->where('company_id', $companyId)
@@ -264,8 +284,6 @@ class DashboardController extends Controller
         $cfFromDt = Carbon::parse($cfFrom, $this->tz)->startOfDay();
         $cfToDt   = Carbon::parse($cfTo,   $this->tz)->endOfDay();
 
-        // Série 1: Recebíveis PENDENTES/VENCIDOS agrupados por created_at
-        // (dia em que a venda/recebível foi gerado, não o vencimento)
         $cfRecPendente = Receivable::where('company_id', $companyId)
             ->whereIn('status', ['pendente', 'vencida'])
             ->whereBetween('created_at', [$cfFromDt, $cfToDt])
@@ -274,7 +292,6 @@ class DashboardController extends Controller
             ->pluck('total', 'day')
             ->map(fn($v) => (float) $v);
 
-        // Série 2: Recebíveis JÁ RECEBIDOS → por received_at (ou due_date se nulo)
         $cfRecRecebida = Receivable::where('company_id', $companyId)
             ->where('status', 'recebida')
             ->where(function ($q) use ($cfFromDt, $cfToDt) {
@@ -289,7 +306,6 @@ class DashboardController extends Controller
             ->pluck('total', 'day')
             ->map(fn($v) => (float) $v);
 
-        // Série 3a: Contas a pagar PENDENTES/VENCIDAS → por due_date
         $cfPayPendente = Bill::where('company_id', $companyId)
             ->whereIn('status', ['pendente', 'vencida'])
             ->whereBetween('due_date', [$cfFrom, $cfTo])
@@ -298,7 +314,6 @@ class DashboardController extends Controller
             ->pluck('total', 'day')
             ->map(fn($v) => (float) $v);
 
-        // Série 3b: Contas a pagar PAGAS → por paid_at (ou due_date se nulo)
         $cfPayPaga = Bill::where('company_id', $companyId)
             ->where('status', 'paga')
             ->where(function ($q) use ($cfFromDt, $cfToDt) {
@@ -313,7 +328,6 @@ class DashboardController extends Controller
             ->pluck('total', 'day')
             ->map(fn($v) => (float) $v);
 
-        // Unifica os dias de todas as séries
         $cfAllDays = collect($cfRecPendente->keys())
             ->merge($cfRecRecebida->keys())
             ->merge($cfPayPendente->keys())
@@ -329,7 +343,6 @@ class DashboardController extends Controller
         $cfDataPayPend  = $cfAllDays->map(fn($d) => (float)($cfPayPendente[$d] ?? 0));
         $cfDataPayPaga  = $cfAllDays->map(fn($d) => (float)($cfPayPaga[$d] ?? 0));
 
-        // Saldo acumulado diário
         $cfDataBalance  = collect();
         $runningBalance = 0.0;
         foreach ($cfAllDays as $d) {
@@ -359,6 +372,7 @@ class DashboardController extends Controller
             'averageTicket', 'salesToday', 'salesTodayNet',
             'lowStockProducts', 'criticalStockProducts',
             'latestSales', 'topSellingProducts',
+            'topChartLabels', 'topChartData', 'topChartRevenue',
             'chartLabels', 'chartData', 'chartReturnsData', 'chartNetData',
             'from', 'to', 'interval',
             'periodSalesCount', 'periodRevenue', 'periodAverageTicket',
