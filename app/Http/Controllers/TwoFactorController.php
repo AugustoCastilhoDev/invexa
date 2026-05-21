@@ -3,22 +3,20 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use PragmaRX\Google2FALaravel\Support\Authenticator;
 
 class TwoFactorController extends Controller
 {
     // ── Exibe a tela de setup (QR Code)
     public function show()
     {
-        $user   = auth()->user();
+        $user      = auth()->user();
         $google2fa = app('pragmarx.google2fa');
 
-        // Se já tem secret, usa o existente; senão gera um novo
         if (! $user->two_factor_secret) {
             $secret = $google2fa->generateSecretKey();
             $user->update(['two_factor_secret' => encrypt($secret)]);
         } else {
-            $secret = decrypt($user->two_factor_secret);
+            $secret = $this->decryptSecret($user);
         }
 
         $qrCodeUrl = $google2fa->getQRCodeUrl(
@@ -44,7 +42,7 @@ class TwoFactorController extends Controller
 
         $user      = auth()->user();
         $google2fa = app('pragmarx.google2fa');
-        $secret    = decrypt($user->two_factor_secret);
+        $secret    = $this->decryptSecret($user);
 
         $valid = $google2fa->verifyKey($secret, $request->code);
 
@@ -99,7 +97,7 @@ class TwoFactorController extends Controller
 
         $user      = \App\Models\User::findOrFail($userId);
         $google2fa = app('pragmarx.google2fa');
-        $secret    = decrypt($user->two_factor_secret);
+        $secret    = $this->decryptSecret($user);
 
         $valid = $google2fa->verifyKey($secret, $request->code);
 
@@ -111,5 +109,22 @@ class TwoFactorController extends Controller
         auth()->login($user);
 
         return redirect()->intended(route('dashboard'));
+    }
+
+    // ── Helper: tenta decrypt; se falhar (payload inválido), regenera o secret
+    private function decryptSecret(\App\Models\User $user): string
+    {
+        try {
+            return decrypt($user->two_factor_secret);
+        } catch (\Illuminate\Contracts\Encryption\DecryptException) {
+            // Secret foi salvo sem encrypt (sessão anterior) — regenera
+            $google2fa = app('pragmarx.google2fa');
+            $secret    = $google2fa->generateSecretKey();
+            $user->update([
+                'two_factor_secret'       => encrypt($secret),
+                'two_factor_confirmed_at' => null,
+            ]);
+            return $secret;
+        }
     }
 }
