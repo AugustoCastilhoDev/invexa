@@ -39,10 +39,14 @@ Route::post('/stripe/webhook', [StripeWebhookController::class, 'handleWebhook']
 
 // ── Autenticação (pública)
 Route::get('/login',  [AuthenticatedSessionController::class, 'create'])->name('login');
-Route::post('/login', [AuthenticatedSessionController::class, 'store'])->name('login.post');
+Route::post('/login', [AuthenticatedSessionController::class, 'store'])
+    ->middleware('throttle:10,1')
+    ->name('login.post');
 Route::post('/logout',[AuthenticatedSessionController::class, 'destroy'])->name('logout');
 Route::get('/register',  [RegisteredUserController::class, 'create'])->name('register');
-Route::post('/register', [RegisteredUserController::class, 'store'])->name('register.store');
+Route::post('/register', [RegisteredUserController::class, 'store'])
+    ->middleware('throttle:5,1')
+    ->name('register.store');
 
 // ── Onboarding (autenticado, sem trial check)
 Route::middleware(['auth', 'company'])->prefix('onboarding')->name('onboarding.')->group(function () {
