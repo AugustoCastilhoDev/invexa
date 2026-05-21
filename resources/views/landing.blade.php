@@ -371,7 +371,7 @@
             </div>
             <div class="col-sm-6 col-lg-4">
                 <div class="feature-card">
-                    <div class="feature-icon"><i class="bi bi-shield-person"></i></div>
+                    <div class="feature-icon"><i class="bi bi-person-lock"></i></div>
                     <h5>Controle de Acesso</h5>
                     <p>Perfis Admin, Gerente e Vendedor com permissões distintas para cada área do sistema.</p>
                 </div>
