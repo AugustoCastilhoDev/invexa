@@ -26,16 +26,22 @@
 
 <table>
   <thead>
-    <tr><th>Produto</th><th>Categoria</th><th class="text-end">Qtd. Atual</th><th class="text-end">Est. Mínimo</th><th>Situação</th></tr>
+    <tr>
+      <th>Produto</th>
+      <th>Categoria</th>
+      <th class="text-end">Qtd. Atual</th>
+      <th class="text-end">Est. Mínimo</th>
+      <th>Situação</th>
+    </tr>
   </thead>
   <tbody>
     @foreach($products as $p)
     @php
-      $qty = $p->current_stock ?? $p->stock_quantity ?? 0;
-      $min = $p->min_stock ?? 0;
-      if ($qty <= 0)       { $cls = 'out'; $lbl = 'Sem Estoque'; }
-      elseif ($qty <= $min){ $cls = 'low'; $lbl = 'Estoque Baixo'; }
-      else                 { $cls = 'ok';  $lbl = 'Normal'; }
+      $qty = (int) ($p->quantity ?? 0);
+      $min = (int) ($p->min_stock ?? 0);
+      if ($qty <= 0)        { $cls = 'out'; $lbl = 'Sem Estoque'; }
+      elseif ($qty <= $min) { $cls = 'low'; $lbl = 'Estoque Baixo'; }
+      else                  { $cls = 'ok';  $lbl = 'Normal'; }
     @endphp
     <tr>
       <td>{{ $p->name }}</td>
