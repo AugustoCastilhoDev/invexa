@@ -56,6 +56,25 @@ body {
 @endpush
 
 @section('content')
+
+{{-- Filtro de período --}}
+<form method="GET" action="{{ route('dashboard') }}" class="mb-4">
+    <div class="d-flex flex-wrap gap-2 align-items-center">
+        <button type="submit" name="interval" value="today" class="btn btn-sm {{ ($interval ?? '') === 'today' ? 'btn-primary' : 'btn-outline-secondary' }}">Hoje</button>
+        <button type="submit" name="interval" value="7d"    class="btn btn-sm {{ ($interval ?? '') === '7d'    ? 'btn-primary' : 'btn-outline-secondary' }}">7 dias</button>
+        <button type="submit" name="interval" value="month" class="btn btn-sm {{ ($interval ?? '') === 'month' ? 'btn-primary' : 'btn-outline-secondary' }}">Este mês</button>
+        <div class="d-flex align-items-center gap-2 ms-2">
+            <input type="date" name="from" value="{{ $from ?? '' }}" class="form-control form-control-sm" style="background:#0f172a;border-color:#334155;color:#e2e8f0;max-width:145px;">
+            <span class="text-soft">até</span>
+            <input type="date" name="to"   value="{{ $to ?? '' }}"   class="form-control form-control-sm" style="background:#0f172a;border-color:#334155;color:#e2e8f0;max-width:145px;">
+            <button type="submit" class="btn btn-sm btn-outline-info">Filtrar</button>
+        </div>
+        @if($from || $to || $interval)
+            <a href="{{ route('dashboard') }}" class="btn btn-sm btn-outline-danger">Limpar</a>
+        @endif
+    </div>
+</form>
+
 <div class="d-flex justify-content-between align-items-start mb-4 gap-3 flex-column flex-md-row">
     <div>
         <h1 class="h3 mb-1 text-white">Dashboard</h1>
@@ -226,9 +245,7 @@ body {
 
 @endif {{-- fim isGerente --}}
 
-{{-- ═══════════════════════════════════════════════════════════════
-     SEÇÃO: TOP 5 PRODUTOS + GRÁFICO DE PIZZA
-═══════════════════════════════════════════════════════════════ --}}
+{{-- ═══ TOP 5 PRODUTOS + GRÁFICO DE PIZZA ═══ --}}
 @if($topSellingProducts->count() > 0)
 <div class="mb-2 mt-2">
     <h5 class="text-white mb-1"><i class="bi bi-trophy me-2 text-warning"></i>Top 5 Produtos Mais Vendidos</h5>
@@ -236,7 +253,6 @@ body {
 </div>
 
 <div class="row g-3 mb-4">
-    {{-- Gráfico de Pizza --}}
     <div class="col-12 col-lg-5">
         <div class="card card-dark-bg h-100" style="border-color:rgba(251,191,36,.15);">
             <div class="card-body d-flex flex-column align-items-center justify-content-center py-4">
@@ -251,8 +267,6 @@ body {
             </div>
         </div>
     </div>
-
-    {{-- Ranking em lista --}}
     <div class="col-12 col-lg-7">
         <div class="card card-dark-bg h-100" style="border-color:rgba(251,191,36,.15);">
             <div class="card-header card-header-dark d-flex align-items-center justify-content-between py-3 px-4">
@@ -281,8 +295,7 @@ body {
                         <div class="top-rank {{ $rankClass }}">{{ $i + 1 }}</div>
                         <div style="flex:1;min-width:0;">
                             <div class="d-flex align-items-center justify-content-between">
-                                <span style="font-size:.875rem;font-weight:600;color:#e2e8f0;
-                                    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:55%;">
+                                <span style="font-size:.875rem;font-weight:600;color:#e2e8f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:55%;">
                                     {{ $prod->name }}
                                 </span>
                                 <div class="d-flex align-items-center gap-2">
@@ -305,12 +318,328 @@ body {
         </div>
     </div>
 </div>
-@endif {{-- fim top produtos --}}
+@endif
 
-{{-- restante do dashboard (gráfico de linha, tabelas, etc.) --}}
+{{-- ═══ GRÁFICO DE LINHA — VENDAS POR DIA ═══ --}}
+<div class="row g-3 mb-4">
+    <div class="col-12">
+        <div class="card card-dark-bg dashboard-card">
+            <div class="card-header card-header-dark d-flex align-items-center justify-content-between py-3 px-4">
+                <span class="fw-semibold text-white" style="font-size:.9rem;">
+                    <i class="bi bi-graph-up-arrow me-2 text-success"></i>Evolução de Vendas
+                </span>
+                <div class="d-flex gap-3" style="font-size:.75rem;">
+                    <span style="color:#4ade80;"><span style="display:inline-block;width:10px;height:3px;background:#4ade80;border-radius:2px;vertical-align:middle;margin-right:4px;"></span>Vendas</span>
+                    <span style="color:#f87171;"><span style="display:inline-block;width:10px;height:3px;background:#f87171;border-radius:2px;vertical-align:middle;margin-right:4px;"></span>Devoluções</span>
+                    <span style="color:#60a5fa;"><span style="display:inline-block;width:10px;height:3px;background:#60a5fa;border-radius:2px;vertical-align:middle;margin-right:4px;"></span>Líquido</span>
+                </div>
+            </div>
+            <div class="card-body px-3 py-3">
+                <canvas id="salesChart" height="90"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- ═══ FLUXO DE CAIXA (só Gerente) ═══ --}}
+@if(Auth::user()->isGerente())
+<div class="row g-3 mb-4">
+    <div class="col-12">
+        <div class="card card-dark-bg dashboard-card">
+            <div class="card-header card-header-dark d-flex align-items-center justify-content-between py-3 px-4">
+                <span class="fw-semibold text-white" style="font-size:.9rem;">
+                    <i class="bi bi-cash-stack me-2 text-info"></i>Fluxo de Caixa
+                    <span style="font-size:.72rem;color:rgba(148,163,184,.6);margin-left:.5rem;">{{ $cfPeriodLabel }}</span>
+                </span>
+                <div class="d-flex gap-3" style="font-size:.73rem;">
+                    <span style="color:#4ade80;"><span style="display:inline-block;width:10px;height:3px;background:#4ade80;border-radius:2px;vertical-align:middle;margin-right:3px;"></span>A receber</span>
+                    <span style="color:#34d399;"><span style="display:inline-block;width:10px;height:3px;background:#34d399;border-radius:2px;vertical-align:middle;margin-right:3px;"></span>Recebido</span>
+                    <span style="color:#f87171;"><span style="display:inline-block;width:10px;height:3px;background:#f87171;border-radius:2px;vertical-align:middle;margin-right:3px;"></span>A pagar</span>
+                    <span style="color:#60a5fa;"><span style="display:inline-block;width:10px;height:3px;background:#60a5fa;border-radius:2px;vertical-align:middle;margin-right:3px;"></span>Saldo</span>
+                </div>
+            </div>
+            <div class="card-body px-3 py-3">
+                <canvas id="cashflowChart" height="90"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+@endif
+
+{{-- ═══ TABELAS: Últimas vendas + Estoque crítico ═══ --}}
+<div class="row g-3 mb-4">
+    <div class="col-12 col-xl-7">
+        <div class="card card-dark-bg dashboard-card h-100">
+            <div class="card-header card-header-dark d-flex align-items-center justify-content-between py-3 px-4">
+                <span class="fw-semibold text-white" style="font-size:.9rem;"><i class="bi bi-receipt me-2 text-success"></i>Últimas Vendas</span>
+                <a href="{{ route('sales.index') }}" style="font-size:.75rem;color:#38BDF8;text-decoration:none;">Ver todas <i class="bi bi-arrow-right"></i></a>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-dark-custom mb-0">
+                        <thead><tr>
+                            <th class="ps-4">#</th>
+                            <th>Cliente</th>
+                            <th>Status</th>
+                            <th class="pe-4 text-end">Total</th>
+                        </tr></thead>
+                        <tbody>
+                        @forelse($latestSales as $sale)
+                        <tr>
+                            <td class="ps-4">{{ $sale->id }}</td>
+                            <td>{{ $sale->customer_name ?: '—' }}</td>
+                            <td>
+                                @php
+                                    $badgeClass = match($sale->status) {
+                                        'concluida' => 'badge-concluida',
+                                        'pendente'  => 'badge-pendente',
+                                        'cancelada' => 'badge-cancelada',
+                                        default     => 'badge-default',
+                                    };
+                                @endphp
+                                <span class="badge-status {{ $badgeClass }}">{{ ucfirst($sale->status) }}</span>
+                            </td>
+                            <td class="pe-4 text-end fw-semibold" style="color:#4ade80;">R$ {{ number_format($sale->total,2,',','.') }}</td>
+                        </tr>
+                        @empty
+                        <tr><td colspan="4" class="text-center text-soft py-4">Nenhuma venda registrada.</td></tr>
+                        @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-xl-5">
+        <div class="card card-dark-bg dashboard-card h-100">
+            <div class="card-header card-header-dark d-flex align-items-center justify-content-between py-3 px-4">
+                <span class="fw-semibold text-white" style="font-size:.9rem;"><i class="bi bi-exclamation-triangle me-2 text-warning"></i>Estoque Crítico</span>
+                <a href="{{ route('products.index') }}" style="font-size:.75rem;color:#38BDF8;text-decoration:none;">Ver todos <i class="bi bi-arrow-right"></i></a>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-dark-custom mb-0">
+                        <thead><tr>
+                            <th class="ps-4">Produto</th>
+                            <th>Categoria</th>
+                            <th class="pe-4 text-end">Qtd</th>
+                        </tr></thead>
+                        <tbody>
+                        @forelse($lowStockProducts as $product)
+                        <tr>
+                            <td class="ps-4" style="font-size:.83rem;">{{ $product->name }}</td>
+                            <td style="font-size:.8rem;color:rgba(148,163,184,.7);">{{ optional($product->category)->name ?? '—' }}</td>
+                            <td class="pe-4 text-end">
+                                <span class="fw-bold" style="color:#f87171;">{{ $product->quantity }}</span>
+                                <span style="font-size:.7rem;color:rgba(148,163,184,.5);"> / {{ $product->min_quantity }}</span>
+                            </td>
+                        </tr>
+                        @empty
+                        <tr><td colspan="3" class="text-center text-soft py-4">Nenhum produto em estoque crítico.</td></tr>
+                        @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- ═══ Últimas Devoluções ═══ --}}
+@if($latestReturns->count() > 0)
+<div class="row g-3 mb-4">
+    <div class="col-12">
+        <div class="card card-dark-bg dashboard-card">
+            <div class="card-header card-header-dark d-flex align-items-center justify-content-between py-3 px-4">
+                <span class="fw-semibold text-white" style="font-size:.9rem;"><i class="bi bi-arrow-return-left me-2 text-danger"></i>Últimas Devoluções</span>
+                <a href="{{ route('sale-returns.index') }}" style="font-size:.75rem;color:#38BDF8;text-decoration:none;">Ver todas <i class="bi bi-arrow-right"></i></a>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-dark-custom mb-0">
+                        <thead><tr>
+                            <th class="ps-4">#</th>
+                            <th>Venda</th>
+                            <th>Motivo</th>
+                            <th>Data</th>
+                            <th class="pe-4 text-end">Total</th>
+                        </tr></thead>
+                        <tbody>
+                        @foreach($latestReturns as $ret)
+                        <tr>
+                            <td class="ps-4">{{ $ret->id }}</td>
+                            <td>#{{ optional($ret->sale)->id ?? '—' }}</td>
+                            <td style="font-size:.82rem;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ $ret->reason ?: '—' }}</td>
+                            <td style="font-size:.82rem;">{{ $ret->created_at->timezone('America/Sao_Paulo')->format('d/m/Y H:i') }}</td>
+                            <td class="pe-4 text-end fw-semibold" style="color:#f87171;">R$ {{ number_format($ret->total,2,',','.') }}</td>
+                        </tr>
+                        @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+@endif
+
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script>
+// ── Gráfico de Linha — Evolução de Vendas ───────────────────────
+(function () {
+    const labels      = @json($chartLabels);
+    const sales       = @json($chartData);
+    const returns     = @json($chartReturnsData);
+    const net         = @json($chartNetData);
+
+    const ctx = document.getElementById('salesChart');
+    if (!ctx) return;
+
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels,
+            datasets: [
+                {
+                    label: 'Vendas',
+                    data: sales,
+                    borderColor: '#4ade80',
+                    backgroundColor: 'rgba(74,222,128,.08)',
+                    borderWidth: 2,
+                    pointRadius: 3,
+                    pointHoverRadius: 5,
+                    fill: true,
+                    tension: .35,
+                },
+                {
+                    label: 'Devoluções',
+                    data: returns,
+                    borderColor: '#f87171',
+                    backgroundColor: 'rgba(248,113,113,.06)',
+                    borderWidth: 2,
+                    pointRadius: 3,
+                    pointHoverRadius: 5,
+                    fill: true,
+                    tension: .35,
+                },
+                {
+                    label: 'Líquido',
+                    data: net,
+                    borderColor: '#60a5fa',
+                    backgroundColor: 'rgba(96,165,250,.06)',
+                    borderWidth: 2,
+                    borderDash: [5,4],
+                    pointRadius: 2,
+                    pointHoverRadius: 4,
+                    fill: false,
+                    tension: .35,
+                },
+            ]
+        },
+        options: {
+            responsive: true,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: 'rgba(8,13,26,.95)',
+                    borderColor: 'rgba(14,165,233,.2)',
+                    borderWidth: 1,
+                    titleColor: '#e2e8f0',
+                    bodyColor: 'rgba(148,163,184,.9)',
+                    padding: 10,
+                    callbacks: {
+                        label: ctx => ` ${ctx.dataset.label}: R$ ${ctx.parsed.y.toLocaleString('pt-BR',{minimumFractionDigits:2})}`
+                    }
+                }
+            },
+            scales: {
+                x: { grid: { color: 'rgba(148,163,184,.06)' }, ticks: { color: 'rgba(148,163,184,.6)', font: { size: 11 } } },
+                y: {
+                    grid: { color: 'rgba(148,163,184,.06)' },
+                    ticks: {
+                        color: 'rgba(148,163,184,.6)',
+                        font: { size: 11 },
+                        callback: v => 'R$ ' + v.toLocaleString('pt-BR',{minimumFractionDigits:2})
+                    }
+                }
+            }
+        }
+    });
+})();
+
+// ── Gráfico de Fluxo de Caixa ───────────────────────────────────
+@if(Auth::user()->isGerente())
+(function () {
+    const labels    = @json($cfLabels);
+    const recPend   = @json($cfDataRecPend);
+    const recReceb  = @json($cfDataRecReceb);
+    const payPend   = @json($cfDataPayPend);
+    const payPaga   = @json($cfDataPayPaga);
+    const balance   = @json($cfDataBalance);
+
+    const ctx = document.getElementById('cashflowChart');
+    if (!ctx) return;
+
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels,
+            datasets: [
+                { label: 'A receber (pend.)', data: recPend,  backgroundColor: 'rgba(74,222,128,.5)',  borderColor: '#4ade80', borderWidth:1 },
+                { label: 'Recebido',          data: recReceb, backgroundColor: 'rgba(52,211,153,.4)',  borderColor: '#34d399', borderWidth:1 },
+                { label: 'A pagar',           data: payPend,  backgroundColor: 'rgba(248,113,113,.45)', borderColor: '#f87171', borderWidth:1 },
+                { label: 'Pago',              data: payPaga,  backgroundColor: 'rgba(248,113,113,.25)', borderColor: '#fca5a5', borderWidth:1 },
+                {
+                    type: 'line',
+                    label: 'Saldo acum.',
+                    data: balance,
+                    borderColor: '#60a5fa',
+                    backgroundColor: 'rgba(96,165,250,.06)',
+                    borderWidth: 2,
+                    pointRadius: 3,
+                    tension: .3,
+                    fill: false,
+                    yAxisID: 'y',
+                },
+            ]
+        },
+        options: {
+            responsive: true,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: 'rgba(8,13,26,.95)',
+                    borderColor: 'rgba(14,165,233,.2)',
+                    borderWidth: 1,
+                    titleColor: '#e2e8f0',
+                    bodyColor: 'rgba(148,163,184,.9)',
+                    padding: 10,
+                    callbacks: {
+                        label: ctx => ` ${ctx.dataset.label}: R$ ${ctx.parsed.y.toLocaleString('pt-BR',{minimumFractionDigits:2})}`
+                    }
+                }
+            },
+            scales: {
+                x: { stacked: true, grid: { color: 'rgba(148,163,184,.06)' }, ticks: { color: 'rgba(148,163,184,.6)', font: { size: 11 } } },
+                y: {
+                    stacked: false,
+                    grid: { color: 'rgba(148,163,184,.06)' },
+                    ticks: {
+                        color: 'rgba(148,163,184,.6)',
+                        font: { size: 11 },
+                        callback: v => 'R$ ' + v.toLocaleString('pt-BR',{minimumFractionDigits:2})
+                    }
+                }
+            }
+        }
+    });
+})();
+@endif
+
 // ── Gráfico de Pizza — Top Produtos ─────────────────────────────
 @if($topSellingProducts->count() > 0)
 (function () {
@@ -362,19 +691,15 @@ body {
         }
     });
 
-    // Centro dinâmico ao hover
     const centerVal = document.getElementById('topChartCenterVal');
     ctx.addEventListener('mousemove', function (e) {
         const pts = chart.getElementsAtEventForMode(e, 'nearest', { intersect: true }, false);
-        if (pts.length && centerVal) {
-            centerVal.textContent = sold[pts[0].index];
-        }
+        if (pts.length && centerVal) centerVal.textContent = sold[pts[0].index];
     });
     ctx.addEventListener('mouseleave', function () {
         if (centerVal) centerVal.textContent = total;
     });
 
-    // Legenda customizada
     const legendEl = document.getElementById('topChartLegend');
     if (legendEl) {
         labels.forEach((label, i) => {
