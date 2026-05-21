@@ -4,15 +4,18 @@
 
 @push('styles')
 <style>
-{{-- ══ Paleta padrão do app ══
-     Verde  : #4ade80  (vendas / positivo)
-     Vermelho: #f87171 (devoluções / negativo / danger)
-     Azul   : #60a5fa  (líquido / links / neutro)
-     Amarelo: #fbbf24  (aviso / rank #1)
-     Cinza  : #94a3b8  (muted / rank #2)
-     Marrom : #c97a3a  (rank #3)
-     Roxo   : #6366f1  (rank #4)
---}}
+/*
+ * ══════════════════════════════════════════════════
+ * Paleta padrão do app — única fonte de verdade CSS
+ * Verde    #4ade80  vendas / positivo
+ * Vermelho #f87171  devoluções / negativo / danger
+ * Azul     #60a5fa  líquido / links / neutro
+ * Amarelo  #fbbf24  aviso / rank #1
+ * Cinza    #94a3b8  muted / rank #2
+ * Marrom   #c97a3a  rank #3
+ * Roxo     #6366f1  rank #4
+ * ══════════════════════════════════════════════════
+ */
 body {
     background: radial-gradient(circle at top left, rgba(96,165,250,.09), transparent 22%),
                 radial-gradient(circle at bottom right, rgba(34,197,94,.10), transparent 20%),
@@ -43,18 +46,33 @@ body {
 /* ── Chart wrappers ── */
 .chart-card { border-radius:.7rem; }
 .chart-header { font-size:.78rem; font-weight:600; color:#e2e8f0; display:flex; align-items:center; justify-content:space-between; padding:.65rem 1rem; border-bottom:1px solid rgba(148,163,184,.08); }
-.chart-legend-dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:3px; vertical-align:middle; }
+/* ── Toggle de legenda dos gráficos ── */
+.chart-toggle { display:inline-flex; align-items:center; gap:.3rem; font-size:.68rem; font-weight:600;
+    padding:.2rem .55rem; border-radius:999px; cursor:pointer; user-select:none;
+    border:1px solid transparent; transition:opacity .2s,border-color .2s; }
+.chart-toggle:hover { opacity:.85; }
+.chart-toggle.active { opacity:1; }
+.chart-toggle.inactive { opacity:.35; border-style:dashed; }
+.chart-toggle-dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; display:inline-block; }
 /* ── Tables ── */
-.tbl th { font-size:.62rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:rgba(148,163,184,.75) !important; border-bottom:1px solid rgba(148,163,184,.18) !important; padding:.55rem .75rem; white-space:nowrap; }
-.tbl td { font-size:.8rem; color:#cbd5e1; border-color:rgba(148,163,184,.06); vertical-align:middle; padding:.5rem .75rem; }
-.tbl tr:last-child td { border-bottom:0; }
-/* ── Badge status ── */
-.bs { display:inline-flex; align-items:center; gap:.3rem; font-size:.68rem; font-weight:600; padding:.25rem .6rem; border-radius:999px; text-transform:capitalize; }
+.tbl th { font-size:.62rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
+    color:rgba(148,163,184,.75) !important; border-bottom:1px solid rgba(148,163,184,.18) !important;
+    padding:.55rem .75rem; white-space:nowrap; background:transparent !important; }
+.tbl td { font-size:.8rem; color:#cbd5e1 !important; border-color:rgba(148,163,184,.06) !important;
+    vertical-align:middle; padding:.5rem .75rem; background:transparent !important; }
+.tbl tr:last-child td { border-bottom:0 !important; }
+/* ── Badge status — forçar sobre Bootstrap ── */
+.bs { display:inline-flex !important; align-items:center; gap:.3rem; font-size:.68rem !important; font-weight:600 !important;
+    padding:.25rem .6rem !important; border-radius:999px !important; text-transform:capitalize !important; }
 .bs::before { content:''; width:5px; height:5px; border-radius:50%; flex-shrink:0; }
-.bs-ok  { background:rgba(25,135,84,.18); color:#4ade80; border:1px solid rgba(25,135,84,.22); } .bs-ok::before  { background:#4ade80; }
-.bs-pen { background:rgba(255,193,7,.14); color:#facc15; border:1px solid rgba(255,193,7,.22); } .bs-pen::before { background:#facc15; }
-.bs-can { background:rgba(220,53,69,.13); color:#f87171; border:1px solid rgba(220,53,69,.20); } .bs-can::before { background:#f87171; }
-.bs-def { background:rgba(148,163,184,.09); color:#94a3b8; border:1px solid rgba(148,163,184,.16); } .bs-def::before { background:#94a3b8; }
+.bs-ok  { background:rgba(74,222,128,.12) !important; color:#4ade80 !important; border:1px solid rgba(74,222,128,.28) !important; }
+.bs-ok::before  { background:#4ade80; }
+.bs-pen { background:rgba(251,191,36,.12) !important; color:#fbbf24 !important; border:1px solid rgba(251,191,36,.28) !important; }
+.bs-pen::before { background:#fbbf24; }
+.bs-can { background:rgba(248,113,113,.12) !important; color:#f87171 !important; border:1px solid rgba(248,113,113,.28) !important; }
+.bs-can::before { background:#f87171; }
+.bs-def { background:rgba(148,163,184,.09) !important; color:#94a3b8 !important; border:1px solid rgba(148,163,184,.18) !important; }
+.bs-def::before { background:#94a3b8; }
 /* ── Top rank ── */
 .rk { width:1.4rem;height:1.4rem;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;flex-shrink:0; }
 .rk1{background:rgba(251,191,36,.18);color:#fbbf24;border:1px solid rgba(251,191,36,.3);}
@@ -66,9 +84,12 @@ body {
 /* ── Filter bar ── */
 .filter-bar .btn-sm { font-size:.72rem; padding:.3rem .7rem; border-radius:.45rem; }
 .filter-bar input[type=date] { background:#0d1424;border-color:#1e293b;color:#e2e8f0;font-size:.72rem;border-radius:.45rem; }
-/* ── Link padrão do app ── */
-.app-link { font-size:.68rem; color:#60a5fa; text-decoration:none; }
-.app-link:hover { color:#93c5fd; }
+/* ── Link padrão do app — forçar sobre Bootstrap ── */
+a.app-link, .app-link { font-size:.68rem !important; color:#60a5fa !important; text-decoration:none !important; }
+a.app-link:hover, .app-link:hover { color:#93c5fd !important; }
+/* ── Valor negativo / devolução ── */
+.val-neg { color:#f87171 !important; }
+.val-pos { color:#4ade80 !important; }
 </style>
 @endpush
 
@@ -166,9 +187,9 @@ body {
     <div class="col-6 col-xl-3">
         <div class="fin-card h-100">
             <div class="fin-lbl text-muted-soft mb-1">A Receber</div>
-            <div class="fin-val" style="color:#4ade80;">R$ {{ number_format($finReceivablePending,2,',','.') }}</div>
+            <div class="fin-val val-pos">R$ {{ number_format($finReceivablePending,2,',','.') }}</div>
             @if($finReceivableOverdue>0)
-                <small style="color:#f87171;font-size:.68rem;"><i class="bi bi-exclamation-triangle-fill me-1"></i>Vencido: R$ {{ number_format($finReceivableOverdue,2,',','.') }}</small>
+                <small class="val-neg" style="font-size:.68rem;"><i class="bi bi-exclamation-triangle-fill me-1"></i>Vencido: R$ {{ number_format($finReceivableOverdue,2,',','.') }}</small>
             @else
                 <small class="text-muted-soft" style="font-size:.68rem;">Sem atrasos</small>
             @endif
@@ -178,9 +199,9 @@ body {
     <div class="col-6 col-xl-3">
         <div class="fin-card h-100">
             <div class="fin-lbl text-muted-soft mb-1">A Pagar</div>
-            <div class="fin-val" style="color:#f87171;">R$ {{ number_format($finPayablePending,2,',','.') }}</div>
+            <div class="fin-val val-neg">R$ {{ number_format($finPayablePending,2,',','.') }}</div>
             @if($finPayableOverdue>0)
-                <small style="color:#f87171;font-size:.68rem;"><i class="bi bi-exclamation-triangle-fill me-1"></i>Vencido: R$ {{ number_format($finPayableOverdue,2,',','.') }}</small>
+                <small class="val-neg" style="font-size:.68rem;"><i class="bi bi-exclamation-triangle-fill me-1"></i>Vencido: R$ {{ number_format($finPayableOverdue,2,',','.') }}</small>
             @else
                 <small class="text-muted-soft" style="font-size:.68rem;">Sem atrasos</small>
             @endif
@@ -190,9 +211,9 @@ body {
     <div class="col-6 col-xl-3">
         <div class="fin-card h-100">
             <div class="fin-lbl text-muted-soft mb-1">Saldo Previsto</div>
-            <div class="fin-val" style="color:{{ $balPos?'#fbbf24':'#f87171' }};">{{ $balPos?'':'&minus;' }}R$ {{ number_format(abs($finCashBalance),2,',','.') }}</div>
+            <div class="fin-val {{ $balPos?'val-pos':'val-neg' }}">{{ $balPos?'':'&minus;' }}R$ {{ number_format(abs($finCashBalance),2,',','.') }}</div>
             <small class="text-muted-soft" style="font-size:.68rem;">Receber menos Pagar</small>
-            <div class="mt-2"><span style="font-size:.68rem;color:{{ $balPos?'#fbbf24':'#f87171' }};"><i class="bi bi-{{ $balPos?'arrow-up-circle':'arrow-down-circle' }} me-1"></i>{{ $balPos?'Positivo':'Negativo' }}</span></div>
+            <div class="mt-2"><span style="font-size:.68rem;" class="{{ $balPos?'val-pos':'val-neg' }}"><i class="bi bi-{{ $balPos?'arrow-up-circle':'arrow-down-circle' }} me-1"></i>{{ $balPos?'Positivo':'Negativo' }}</span></div>
         </div>
     </div>
     <div class="col-6 col-xl-3">
@@ -202,10 +223,9 @@ body {
         @endphp
         <div class="fin-card h-100">
             <div class="fin-lbl text-muted-soft mb-1">Vencimentos</div>
-            {{-- Cor unificada: azul padrão (era #818cf8 indigo fora do padrão) --}}
             <div class="fin-val" style="color:#60a5fa;">{{ $duePayTotal }} a pagar</div>
             @if($duePayToday>0)
-                <small style="color:#f87171;font-size:.68rem;"><i class="bi bi-alarm-fill me-1"></i>{{ $duePayToday }} vence(m) hoje</small>
+                <small class="val-neg" style="font-size:.68rem;"><i class="bi bi-alarm-fill me-1"></i>{{ $duePayToday }} vence(m) hoje</small>
             @else
                 <small class="text-muted-soft" style="font-size:.68rem;">Próximos 7 dias</small>
             @endif
@@ -221,10 +241,17 @@ body {
         <div class="card-dark chart-card h-100">
             <div class="chart-header">
                 <span><i class="bi bi-bar-chart-fill me-2" style="color:#4ade80;"></i>Evolução de Vendas</span>
-                <div class="d-flex gap-3" style="font-size:.68rem;">
-                    <span><span class="chart-legend-dot" style="background:#4ade80;"></span>Vendas</span>
-                    <span><span class="chart-legend-dot" style="background:#f87171;"></span>Devoluções</span>
-                    <span><span class="chart-legend-dot" style="background:#60a5fa;border-radius:2px;height:3px;width:14px;display:inline-block;vertical-align:middle;margin-bottom:1px;"></span>Líquido</span>
+                {{-- Legenda clicável para toggle de datasets --}}
+                <div class="d-flex gap-2 flex-wrap" id="salesLegend">
+                    <span class="chart-toggle active" data-chart="salesChart" data-index="0" style="border-color:rgba(74,222,128,.3);">
+                        <span class="chart-toggle-dot" style="background:#4ade80;"></span>Vendas
+                    </span>
+                    <span class="chart-toggle active" data-chart="salesChart" data-index="1" style="border-color:rgba(248,113,113,.3);">
+                        <span class="chart-toggle-dot" style="background:#f87171;"></span>Devoluções
+                    </span>
+                    <span class="chart-toggle active" data-chart="salesChart" data-index="2" style="border-color:rgba(96,165,250,.3);">
+                        <span class="chart-toggle-dot" style="background:#60a5fa;"></span>Líquido
+                    </span>
                 </div>
             </div>
             <div class="p-2">
@@ -264,12 +291,23 @@ body {
         <div class="card-dark chart-card h-100">
             <div class="chart-header">
                 <span><i class="bi bi-bar-chart-line-fill me-2" style="color:#60a5fa;"></i>Fluxo de Caixa <small class="text-muted-soft ms-1" style="font-size:.65rem;">{{ $cfPeriodLabel }}</small></span>
-                <div class="d-flex gap-3" style="font-size:.65rem;">
-                    <span><span class="chart-legend-dot" style="background:#4ade80;"></span>A receber</span>
-                    <span><span class="chart-legend-dot" style="background:rgba(74,222,128,.45);border:1px solid #4ade80;"></span>Recebido</span>
-                    <span><span class="chart-legend-dot" style="background:#f87171;"></span>A pagar</span>
-                    <span><span class="chart-legend-dot" style="background:rgba(248,113,113,.4);border:1px solid #f87171;"></span>Pago</span>
-                    <span><span class="chart-legend-dot" style="background:#60a5fa;border-radius:2px;height:3px;width:14px;display:inline-block;vertical-align:middle;margin-bottom:1px;"></span>Saldo</span>
+                {{-- Legenda clicável para toggle de datasets --}}
+                <div class="d-flex gap-2 flex-wrap" id="cashflowLegend">
+                    <span class="chart-toggle active" data-chart="cashflowChart" data-index="0" style="border-color:rgba(74,222,128,.35);">
+                        <span class="chart-toggle-dot" style="background:#4ade80;"></span>A receber
+                    </span>
+                    <span class="chart-toggle active" data-chart="cashflowChart" data-index="1" style="border-color:rgba(74,222,128,.2);">
+                        <span class="chart-toggle-dot" style="background:rgba(74,222,128,.5);border:1px solid #4ade80;"></span>Recebido
+                    </span>
+                    <span class="chart-toggle active" data-chart="cashflowChart" data-index="2" style="border-color:rgba(248,113,113,.35);">
+                        <span class="chart-toggle-dot" style="background:#f87171;"></span>A pagar
+                    </span>
+                    <span class="chart-toggle active" data-chart="cashflowChart" data-index="3" style="border-color:rgba(248,113,113,.2);">
+                        <span class="chart-toggle-dot" style="background:rgba(248,113,113,.5);border:1px solid #f87171;"></span>Pago
+                    </span>
+                    <span class="chart-toggle active" data-chart="cashflowChart" data-index="4" style="border-color:rgba(96,165,250,.3);">
+                        <span class="chart-toggle-dot" style="background:#60a5fa;"></span>Saldo
+                    </span>
                 </div>
             </div>
             <div class="p-2">
@@ -309,7 +347,7 @@ body {
                                     <span style="font-size:.72rem;color:{{ $color }};font-weight:700;">{{ (int)$prod->total_sold }} un.</span>
                                     <span style="font-size:.65rem;color:rgba(148,163,184,.45);">{{ $totalPct }}%</span>
                                     @if(isset($prod->total_revenue)&&$prod->total_revenue>0)
-                                        <span style="font-size:.68rem;color:#4ade80;">R$ {{ number_format($prod->total_revenue,2,',','.') }}</span>
+                                        <span class="val-pos" style="font-size:.68rem;">R$ {{ number_format($prod->total_revenue,2,',','.') }}</span>
                                     @endif
                                 </div>
                             </div>
@@ -352,10 +390,10 @@ body {
                                 'concluida'=>'bs-ok','pendente'=>'bs-pen','cancelada'=>'bs-can',default=>'bs-def'
                             };
                         @endphp<span class="bs {{ $bc }}">{{ ucfirst($sale->status) }}</span></td>
-                        <td class="pe-3 text-end fw-semibold" style="color:#4ade80;">R$ {{ number_format($sale->total,2,',','.') }}</td>
+                        <td class="pe-3 text-end fw-semibold val-pos">R$ {{ number_format($sale->total,2,',','.') }}</td>
                     </tr>
                     @empty
-                    <tr><td colspan="4" class="text-center py-4" style="color:rgba(148,163,184,.5);">Nenhuma venda registrada.</td></tr>
+                    <tr><td colspan="4" class="text-center py-4 text-muted-soft">Nenhuma venda registrada.</td></tr>
                     @endforelse
                     </tbody>
                 </table>
@@ -381,12 +419,12 @@ body {
                         <td class="ps-3" style="font-size:.77rem;">{{ $product->name }}</td>
                         <td style="color:rgba(148,163,184,.6);">{{ optional($product->category)->name ?? '—' }}</td>
                         <td class="pe-3 text-end">
-                            <span class="fw-bold" style="color:#f87171;">{{ $product->quantity }}</span>
+                            <span class="fw-bold val-neg">{{ $product->quantity }}</span>
                             <span style="font-size:.65rem;color:rgba(148,163,184,.4);"> / {{ $product->min_quantity }}</span>
                         </td>
                     </tr>
                     @empty
-                    <tr><td colspan="3" class="text-center py-4" style="color:rgba(148,163,184,.5);">Nenhum produto crítico.</td></tr>
+                    <tr><td colspan="3" class="text-center py-4 text-muted-soft">Nenhum produto crítico.</td></tr>
                     @endforelse
                     </tbody>
                 </table>
@@ -420,7 +458,7 @@ body {
                         <td>#{{ optional($ret->sale)->id??'—' }}</td>
                         <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ $ret->reason??'—' }}</td>
                         <td>{{ $ret->created_at->timezone('America/Sao_Paulo')->format('d/m/Y H:i') }}</td>
-                        <td class="pe-3 text-end fw-semibold" style="color:#f87171;">R$ {{ number_format($ret->total,2,',','.') }}</td>
+                        <td class="pe-3 text-end fw-semibold val-neg">R$ {{ number_format($ret->total,2,',','.') }}</td>
                     </tr>
                     @endforeach
                     </tbody>
@@ -435,7 +473,7 @@ body {
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script>
 /* ═══════════════════════════════════════════════════════════
-   Paleta centralizada — única fonte de verdade para os gráficos
+   Paleta centralizada — única fonte de verdade JS
    ═══════════════════════════════════════════════════════════ */
 const APP = {
     green  : '#4ade80',
@@ -445,31 +483,54 @@ const APP = {
     gray   : '#94a3b8',
     brown  : '#c97a3a',
     purple : '#6366f1',
-    greenBg: 'rgba(74,222,128,.35)',
-    redBg  : 'rgba(248,113,113,.35)',
-    blueBg : 'rgba(96,165,250,.15)',
+    greenBg     : 'rgba(74,222,128,.35)',
     greenBgLight: 'rgba(74,222,128,.15)',
-    redBgLight  : 'rgba(248,113,113,.12)',
+    redBg       : 'rgba(248,113,113,.35)',
+    redBgLight  : 'rgba(248,113,113,.15)',
+    blueBg      : 'rgba(96,165,250,.35)',
+    blueBgLight : 'rgba(96,165,250,.15)',
 };
 const CHART = {
     tooltip: {
-        backgroundColor:'rgba(8,13,26,.96)',
-        borderColor:'rgba(96,165,250,.2)',
-        borderWidth:1,
-        titleColor:'#e2e8f0',
-        bodyColor:'rgba(148,163,184,.85)',
-        padding:10,
+        backgroundColor : 'rgba(8,13,26,.96)',
+        borderColor     : 'rgba(96,165,250,.2)',
+        borderWidth     : 1,
+        titleColor      : '#e2e8f0',
+        bodyColor       : 'rgba(148,163,184,.85)',
+        padding         : 10,
     },
     grid : 'rgba(148,163,184,.05)',
     tick : 'rgba(148,163,184,.55)',
     font : { size:10 },
 };
-const fmtBRL = v => 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits:2 });
+const fmtBRL = v => 'R$ ' + Number(v).toLocaleString('pt-BR', { minimumFractionDigits:2 });
 
-/* ─── Evolução de Vendas — Barras agrupadas + linha Líquido ──── */
+/* ─── Registro global de instâncias de Chart.js para o toggle ─── */
+const _charts = {};
+
+/* ─── Toggle de datasets ao clicar na legenda ────────────────── */
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.chart-toggle').forEach(el => {
+        el.addEventListener('click', function() {
+            const chartId = this.dataset.chart;
+            const idx     = parseInt(this.dataset.index);
+            const chart   = _charts[chartId];
+            if (!chart) return;
+
+            const meta = chart.getDatasetMeta(idx);
+            meta.hidden = !meta.hidden;
+            chart.update();
+
+            this.classList.toggle('active',   !meta.hidden);
+            this.classList.toggle('inactive',  meta.hidden);
+        });
+    });
+});
+
+/* ─── Evolução de Vendas — todas as séries em barras ─────────── */
 (function(){
     const ctx = document.getElementById('salesChart'); if(!ctx) return;
-    new Chart(ctx, {
+    const chart = new Chart(ctx, {
         data: {
             labels: @json($chartLabels),
             datasets: [
@@ -481,7 +542,7 @@ const fmtBRL = v => 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits:2 
                     borderColor: APP.green,
                     borderWidth: 1.5,
                     borderRadius: 3,
-                    order: 2,
+                    order: 3,
                 },
                 {
                     type: 'bar',
@@ -491,21 +552,17 @@ const fmtBRL = v => 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits:2 
                     borderColor: APP.red,
                     borderWidth: 1.5,
                     borderRadius: 3,
-                    order: 2,
+                    order: 3,
                 },
                 {
-                    type: 'line',
+                    type: 'bar',
                     label: 'Líquido',
                     data: @json($chartNetData),
-                    borderColor: APP.blue,
                     backgroundColor: APP.blueBg,
-                    borderWidth: 2,
-                    pointRadius: 3,
-                    pointBackgroundColor: APP.blue,
-                    fill: false,
-                    tension: .35,
-                    borderDash: [5, 3],
-                    order: 1,
+                    borderColor: APP.blue,
+                    borderWidth: 1.5,
+                    borderRadius: 3,
+                    order: 3,
                 },
             ]
         },
@@ -519,17 +576,18 @@ const fmtBRL = v => 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits:2 
             },
             scales: {
                 x: { grid:{ color:CHART.grid }, ticks:{ color:CHART.tick, font:CHART.font, maxTicksLimit:10 } },
-                y: { grid:{ color:CHART.grid }, ticks:{ color:CHART.tick, font:CHART.font, callback: v => 'R$'+v.toLocaleString('pt-BR',{minimumFractionDigits:0}) } }
+                y: { grid:{ color:CHART.grid }, ticks:{ color:CHART.tick, font:CHART.font, callback: v => 'R$'+Number(v).toLocaleString('pt-BR',{minimumFractionDigits:0}) } }
             }
         }
     });
+    _charts['salesChart'] = chart;
 })();
 
-/* ─── Fluxo de Caixa — Barras agrupadas + linha Saldo ────────── */
+/* ─── Fluxo de Caixa — todas as séries em barras ────────────── */
 @if(Auth::user()->isGerente())
 (function(){
     const ctx = document.getElementById('cashflowChart'); if(!ctx) return;
-    new Chart(ctx, {
+    const chart = new Chart(ctx, {
         data: {
             labels: @json($cfLabels),
             datasets: [
@@ -541,7 +599,7 @@ const fmtBRL = v => 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits:2 
                     borderColor: APP.green,
                     borderWidth: 1.5,
                     borderRadius: 3,
-                    order: 2,
+                    order: 3,
                 },
                 {
                     type: 'bar',
@@ -551,8 +609,7 @@ const fmtBRL = v => 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits:2 
                     borderColor: APP.green,
                     borderWidth: 1,
                     borderRadius: 3,
-                    borderDash: [3,2],
-                    order: 2,
+                    order: 3,
                 },
                 {
                     type: 'bar',
@@ -562,7 +619,7 @@ const fmtBRL = v => 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits:2 
                     borderColor: APP.red,
                     borderWidth: 1.5,
                     borderRadius: 3,
-                    order: 2,
+                    order: 3,
                 },
                 {
                     type: 'bar',
@@ -572,21 +629,17 @@ const fmtBRL = v => 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits:2 
                     borderColor: APP.red,
                     borderWidth: 1,
                     borderRadius: 3,
-                    order: 2,
+                    order: 3,
                 },
                 {
-                    type: 'line',
+                    type: 'bar',
                     label: 'Saldo',
                     data: @json($cfDataBalance),
-                    borderColor: APP.blue,
                     backgroundColor: APP.blueBg,
-                    borderWidth: 2,
-                    pointRadius: 3,
-                    pointBackgroundColor: APP.blue,
-                    fill: false,
-                    tension: .3,
-                    borderDash: [5, 3],
-                    order: 1,
+                    borderColor: APP.blue,
+                    borderWidth: 1.5,
+                    borderRadius: 3,
+                    order: 3,
                 },
             ]
         },
@@ -600,10 +653,11 @@ const fmtBRL = v => 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits:2 
             },
             scales: {
                 x: { grid:{ color:CHART.grid }, ticks:{ color:CHART.tick, font:CHART.font, maxTicksLimit:10 } },
-                y: { grid:{ color:CHART.grid }, ticks:{ color:CHART.tick, font:CHART.font, callback: v => 'R$'+v.toLocaleString('pt-BR',{minimumFractionDigits:0}) } }
+                y: { grid:{ color:CHART.grid }, ticks:{ color:CHART.tick, font:CHART.font, callback: v => 'R$'+Number(v).toLocaleString('pt-BR',{minimumFractionDigits:0}) } }
             }
         }
     });
+    _charts['cashflowChart'] = chart;
 })();
 @endif
 
