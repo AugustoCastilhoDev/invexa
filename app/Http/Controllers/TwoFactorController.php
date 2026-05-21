@@ -14,7 +14,6 @@ class TwoFactorController extends Controller
         $user      = auth()->user();
         $google2fa = app('pragmarx.google2fa');
 
-        // Sempre regenera um secret fresco e salva encriptado + na session
         $secret = $google2fa->generateSecretKey();
         $user->update([
             'two_factor_secret'       => encrypt($secret),
@@ -45,9 +44,7 @@ class TwoFactorController extends Controller
 
         $user      = auth()->user();
         $google2fa = app('pragmarx.google2fa');
-
-        // Usa o secret da session (mesmo que foi exibido no QR)
-        $secret = session('2fa_setup_secret');
+        $secret    = session('2fa_setup_secret');
 
         if (! $secret) {
             return redirect()->route('settings.two-factor')
@@ -60,14 +57,13 @@ class TwoFactorController extends Controller
             return back()->withErrors(['code' => 'Código inválido. Aguarde o próximo código e tente novamente.']);
         }
 
-        // Confirma: salva o secret definitivo encriptado
         $user->update([
             'two_factor_secret'       => encrypt($secret),
             'two_factor_confirmed_at' => now(),
         ]);
         session()->forget('2fa_setup_secret');
 
-        return redirect()->route('settings.two-factor')
+        return redirect()->route('dashboard')
             ->with('success', '2FA ativado com sucesso! Sua conta está mais segura. 🔐');
     }
 
