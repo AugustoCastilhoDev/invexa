@@ -45,9 +45,14 @@
   <tbody>
     @foreach($returns as $r)
     @php
-      $statusMap = ['pendente'=>'warning','aprovada'=>'success','rejeitada'=>'danger','concluida'=>'info'];
-      $sc = $statusMap[$r->status] ?? 'warning';
-      $val = $r->items->sum(fn($i) => $i->quantity * $i->unit_price);
+      $statusMap = [
+          'pendente'  => ['warning', 'Pendente'],
+          'aprovada'  => ['success', 'Aprovada'],
+          'rejeitada' => ['danger',  'Rejeitada'],
+          'concluida' => ['info',    'Concluída'],
+      ];
+      [$sc, $sl] = $statusMap[$r->status] ?? ['warning', ucfirst($r->status)];
+      $val = $r->items->sum(fn($i) => $i->quantity * $i->price);
     @endphp
     <tr>
       <td>#{{ $r->id }}</td>
@@ -57,7 +62,7 @@
       <td>{{ ucfirst($r->reason ?? '—') }}</td>
       <td>{{ $r->items->sum('quantity') }}</td>
       <td class="text-end">R$ {{ number_format($val, 2, ',', '.') }}</td>
-      <td><span class="badge badge-{{ $sc }}">{{ ucfirst($r->status) }}</span></td>
+      <td><span class="badge badge-{{ $sc }}">{{ $sl }}</span></td>
     </tr>
     @endforeach
   </tbody>
