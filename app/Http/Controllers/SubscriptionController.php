@@ -25,8 +25,23 @@ class SubscriptionController extends Controller
         $company = auth()->user()->company;
         $priceId = config('cashier.prices.' . $request->plan);
 
+        // Garante customer válido no ambiente atual antes de qualquer operação.
+        // Após este método, $company->stripe_id está sempre correto (ou null).
         $this->resolveStripeCustomer($company);
 
+        // Sempre garante que o customer existe e está atualizado no Stripe.
+        // createOrGetStripeCustomer() é idempotente: cria se não existir,
+        // ou retorna o existente se stripe_id já estiver preenchido.
+        $company->createOrGetStripeCustomer([
+            'name'  => $company->name,
+            'email' => $company->email,
+        ]);
+
+        // Recarrega o modelo para garantir que stripe_id esteja na instância
+        $company->refresh();
+
+        // Não passar customer_email aqui: o Cashier já vincula o customer pelo
+        // stripe_id do modelo. Passar os dois causaria InvalidRequestException.
         $checkoutParams = [
             'success_url' => route('subscription.success') . '?session_id={CHECKOUT_SESSION_ID}',
             'cancel_url'  => route('pricing'),
@@ -35,22 +50,6 @@ class SubscriptionController extends Controller
                 'plan'       => $request->plan,
             ],
         ];
-
-        if (! $company->stripe_id) {
-            $checkoutParams['customer_email']    = $company->email;
-            $checkoutParams['customer_creation'] = 'always';
-            $checkoutParams['customer_update']   = null;
-
-            $company->createOrGetStripeCustomer([
-                'name'  => $company->name,
-                'email' => $company->email,
-            ]);
-        } else {
-            $company->updateStripeCustomer([
-                'name'  => $company->name,
-                'email' => $company->email,
-            ]);
-        }
 
         try {
             return $company
@@ -65,12 +64,8 @@ class SubscriptionController extends Controller
     }
 
     /**
-     * Garante que o stripe_id salvo no banco pertence ao ambiente atual (test/live).
-     *
-     * O Stripe não permite usar um customer criado em test mode com chave live
-     * e vice-versa. Quando isso ocorre, a API retorna InvalidRequestException
-     * com "a similar object exists in [outro ambiente]". Zeramos o stripe_id
-     * para que o Cashier recrie o customer no ambiente correto automaticamente.
+     * Detecta mismatch de ambiente Stripe (test vs live) e zera o stripe_id
+     * na instância e no banco caso o customer pertença a outro ambiente.
      */
     private function resolveStripeCustomer(Company $company): void
     {
@@ -79,7 +74,6 @@ class SubscriptionController extends Controller
         }
 
         try {
-            // Tenta buscar o customer — falha se o ID pertence a outro ambiente
             $stripe = new \Stripe\StripeClient(config('cashier.secret'));
             $stripe->customers->retrieve($company->stripe_id);
         } catch (StripeInvalidRequestException $e) {
@@ -125,7 +119,6 @@ class SubscriptionController extends Controller
             }
         }
 
-        // Atualiza plano e encerra o trial — assinatura paga substitui o trial
         $company->update([
             'plan'          => $plan,
             'trial_ends_at' => null,
