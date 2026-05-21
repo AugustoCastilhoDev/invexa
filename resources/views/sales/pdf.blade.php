@@ -5,11 +5,11 @@
     <title>Nota de Venda #{{ str_pad($sale->id, 6, '0', STR_PAD_LEFT) }}</title>
     <style>
         /*
-         * DomPDF: use @page para definir margens — NÃO use padding no wrapper.
-         * Assim o motor de renderização respeita os limites A4 sem overflow lateral.
+         * DomPDF: @page define as margens — o wrapper .page NAO usa padding.
+         * Margens generosas para o texto nao ficar colado na borda.
          */
         @page {
-            margin: 18mm 16mm 18mm 16mm;
+            margin: 22mm 20mm 22mm 20mm;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -20,10 +20,9 @@
             background: #fff;
         }
 
-        /* Wrapper sem padding — as margens vêm do @page */
         .page { width: 100%; }
 
-        /* Cabeçalho via <table> (DomPDF não suporta flexbox) */
+        /* Cabeçalho via <table> (DomPDF nao suporta flexbox) */
         .header-table {
             width: 100%;
             border-collapse: collapse;
@@ -38,20 +37,18 @@
         .invoice-title { font-size: 19px; font-weight: bold; color: #1a56db; }
         .invoice-meta  { font-size: 10px; color: #555; margin-top: 4px; line-height: 1.6; }
 
-        /* Badges */
         .badge           { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 9px; font-weight: bold; }
         .badge-success   { background: #d1fae5; color: #065f46; }
         .badge-warning   { background: #fef3c7; color: #92400e; }
         .badge-danger    { background: #fee2e2; color: #991b1b; }
         .badge-secondary { background: #f1f5f9; color: #475569; }
 
-        /* Seções */
         .section-title  { font-size: 9px; text-transform: uppercase; color: #888; font-weight: bold; letter-spacing: 1px; margin-bottom: 6px; }
         .customer-block { margin-bottom: 20px; }
         .customer-name  { font-size: 13px; font-weight: bold; }
         .customer-info  { font-size: 10px; color: #555; line-height: 1.6; }
 
-        /* Tabela de itens — table-layout:fixed + colgroup evita overflow */
+        /* Tabela de itens com table-layout:fixed para evitar overflow */
         table.items {
             width: 100%;
             border-collapse: collapse;
@@ -90,7 +87,6 @@
         .text-center { text-align: center; }
         .total-row   { font-size: 13px; color: #1a56db; }
 
-        /* Notas */
         .notes-block {
             background: #f9fafb;
             border-left: 3px solid #d1d5db;
@@ -100,7 +96,6 @@
             color: #555;
         }
 
-        /* Rodapé */
         .footer {
             text-align: center;
             font-size: 9px;

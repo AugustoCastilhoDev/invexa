@@ -6,15 +6,11 @@
 <style>
 /*
  * Paleta padrão — purchase-orders/index
- * Verde  #4ade80 | Vermelho #f87171 | Azul #60a5fa | Amarelo #fbbf24 | Cinza #94a3b8
+ * Enviada  = Amarelo #fbbf24
+ * Recebida = Verde   #4ade80
+ * Pendente = Laranja #fb923c
+ * Cancelada= Vermelho#f87171
  */
-.po-page-bg {
-    background: radial-gradient(circle at top left, rgba(96,165,250,.08), transparent 20%),
-                radial-gradient(circle at bottom right, rgba(34,197,94,.09), transparent 18%),
-                #08101d;
-    min-height: 100vh;
-}
-/* Inputs / selects no padrão dark */
 .po-filters .form-control,
 .po-filters .form-select {
     background: rgba(13,20,35,.92) !important;
@@ -31,14 +27,12 @@
     background: rgba(13,20,35,.98) !important;
 }
 .po-filters option { background: #0d1424; color: #e2e8f0; }
-/* Card container */
 .po-card {
     background: rgba(13,20,35,.92);
     border: 1px solid rgba(148,163,184,.10);
     border-radius: .75rem;
     overflow: hidden;
 }
-/* Table */
 .po-table thead th {
     font-size: .62rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
     color: rgba(148,163,184,.75) !important;
@@ -55,7 +49,6 @@
 .po-table tbody tr { border-color: rgba(148,163,184,.06) !important; }
 .po-table tbody tr:hover td { background: rgba(96,165,250,.04) !important; }
 .po-table tbody tr:last-child td { border-bottom: 0 !important; }
-/* Empty state */
 .po-empty { padding: 3rem 1rem; text-align: center; color: rgba(148,163,184,.5); }
 </style>
 @endpush
@@ -117,11 +110,15 @@
                     <td class="fw-semibold" style="color:#4ade80;">R$ {{ number_format($order->total, 2, ',', '.') }}</td>
                     <td>
                         @php
+                            /*
+                             * Enviada  = Amarelo | Recebida = Verde
+                             * Pendente = Laranja | Cancelada = Vermelho
+                             */
                             $statusMap = [
-                                'pending'   => ['Pendente',  '#fbbf24', 'rgba(251,191,36,.12)',  'rgba(251,191,36,.28)'],
-                                'sent'      => ['Enviada',   '#60a5fa', 'rgba(96,165,250,.12)',  'rgba(96,165,250,.28)'],
-                                'received'  => ['Recebida',  '#4ade80', 'rgba(74,222,128,.12)',  'rgba(74,222,128,.28)'],
-                                'cancelled' => ['Cancelada', '#f87171', 'rgba(248,113,113,.12)', 'rgba(248,113,113,.28)'],
+                                'pending'   => ['Pendente',  '#fb923c', 'rgba(251,146,60,.12)',  'rgba(251,146,60,.30)'],
+                                'sent'      => ['Enviada',   '#fbbf24', 'rgba(251,191,36,.12)',  'rgba(251,191,36,.30)'],
+                                'received'  => ['Recebida',  '#4ade80', 'rgba(74,222,128,.12)',  'rgba(74,222,128,.30)'],
+                                'cancelled' => ['Cancelada', '#f87171', 'rgba(248,113,113,.12)', 'rgba(248,113,113,.30)'],
                             ];
                             [$sLabel, $sColor, $sBg, $sBorder] = $statusMap[$order->status]
                                 ?? [$order->status, '#94a3b8', 'rgba(148,163,184,.10)', 'rgba(148,163,184,.22)'];
