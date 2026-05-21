@@ -2,16 +2,19 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\PaymentFailedMail;
+use App\Mail\SubscriptionConfirmedMail;
 use App\Models\Company;
 use App\Notifications\PaymentFailed;
 use App\Notifications\SubscriptionTrialEnding;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Laravel\Cashier\Http\Controllers\WebhookController as CashierWebhook;
 
 class StripeWebhookController extends CashierWebhook
 {
     /**
-     * Fatura paga com sucesso → garante que o plano está ativo.
+     * Fatura paga com sucesso → garante que o plano está ativo e envia e-mail de confirmação.
      */
     public function handleInvoicePaid(array $payload): void
     {
@@ -19,11 +22,22 @@ class StripeWebhookController extends CashierWebhook
         if (! $company) return;
 
         $company->syncPlanFromSubscription();
+
+        // Envia e-mail de assinatura confirmada para o admin da empresa
+        $admin = $company->users()->where('role', 'admin')->first();
+        if ($admin) {
+            try {
+                Mail::to($admin->email)->send(new SubscriptionConfirmedMail($company, $company->plan));
+            } catch (\Throwable $e) {
+                Log::warning('[Webhook] SubscriptionConfirmedMail não enviado para empresa #' . $company->id . ': ' . $e->getMessage());
+            }
+        }
+
         Log::info('[Webhook] invoice.paid → empresa #' . $company->id . ' sincronizada.');
     }
 
     /**
-     * Falha no pagamento → notifica o admin.
+     * Falha no pagamento → notifica o admin por notificação interna e e-mail.
      */
     public function handleInvoicePaymentFailed(array $payload): void
     {
@@ -31,7 +45,19 @@ class StripeWebhookController extends CashierWebhook
         if (! $company) return;
 
         $admin = $company->users()->where('role', 'admin')->first();
+
+        // Notificação interna
         $admin?->notify(new PaymentFailed($company));
+
+        // E-mail de falha no pagamento
+        if ($admin) {
+            try {
+                Mail::to($admin->email)->send(new PaymentFailedMail($company));
+            } catch (\Throwable $e) {
+                Log::warning('[Webhook] PaymentFailedMail não enviado para empresa #' . $company->id . ': ' . $e->getMessage());
+            }
+        }
+
         Log::warning('[Webhook] invoice.payment_failed → empresa #' . $company->id);
     }
 
