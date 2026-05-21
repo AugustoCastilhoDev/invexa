@@ -453,7 +453,7 @@ body {
         <div class="card card-dark-bg dashboard-card">
             <div class="card-header card-header-dark d-flex align-items-center justify-content-between py-3 px-4">
                 <span class="fw-semibold text-white" style="font-size:.9rem;"><i class="bi bi-arrow-return-left me-2 text-danger"></i>Últimas Devoluções</span>
-                <a href="{{ route('sale-returns.index') }}" style="font-size:.75rem;color:#38BDF8;text-decoration:none;">Ver todas <i class="bi bi-arrow-right"></i></a>
+                <a href="{{ route('returns.index') }}" style="font-size:.75rem;color:#38BDF8;text-decoration:none;">Ver todas <i class="bi bi-arrow-right"></i></a>
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
