@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ApiTokenController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\BillController;
@@ -94,6 +95,13 @@ Route::middleware(['auth', 'company'])->prefix('settings')->name('settings.')->g
     Route::get('/security',            [TwoFactorController::class, 'show'])->name('two-factor');
     Route::post('/security/confirm',   [TwoFactorController::class, 'confirm'])->name('two-factor.confirm');
     Route::delete('/security/disable', [TwoFactorController::class, 'disable'])->name('two-factor.disable');
+});
+
+// ── Tokens de API
+Route::middleware(['auth', 'company'])->prefix('settings')->name('settings.')->group(function () {
+    Route::get('/api',                        [ApiTokenController::class, 'index'])->name('api');
+    Route::post('/api/tokens',                [ApiTokenController::class, 'store'])->name('api.tokens.store');
+    Route::delete('/api/tokens/{tokenId}',    [ApiTokenController::class, 'destroy'])->name('api.tokens.destroy');
 });
 
 // ── Perfil da Empresa (autenticado, apenas admin)
