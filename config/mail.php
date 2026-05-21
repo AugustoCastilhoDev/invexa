@@ -6,19 +6,19 @@ return [
 
     'mailers' => [
 
-        'resend' => [
-            'transport' => 'resend',
-        ],
-
         'smtp' => [
             'transport'  => 'smtp',
             'url'        => env('MAIL_URL'),
-            'host'       => env('MAIL_HOST', 'smtp.mailgun.org'),
+            'host'       => env('MAIL_HOST', 'smtp-relay.brevo.com'),
             'port'       => env('MAIL_PORT', 587),
             'encryption' => env('MAIL_ENCRYPTION', 'tls'),
             'username'   => env('MAIL_USERNAME'),
             'password'   => env('MAIL_PASSWORD'),
             'timeout'    => null,
+        ],
+
+        'resend' => [
+            'transport' => 'resend',
         ],
 
         'log' => [
@@ -32,13 +32,13 @@ return [
 
         'failover' => [
             'transport' => 'failover',
-            'mailers'   => ['resend', 'log'],
+            'mailers'   => ['smtp', 'log'],
         ],
 
     ],
 
     'from' => [
-        'address' => env('MAIL_FROM_ADDRESS', 'noreply@invexa.offerjetshop.net'),
+        'address' => env('MAIL_FROM_ADDRESS', 'noreply@offerjetshop.net'),
         'name'    => env('MAIL_FROM_NAME', 'Invexa'),
     ],
 
