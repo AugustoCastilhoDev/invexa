@@ -50,10 +50,10 @@ class PurchaseOrderController extends Controller
         }
 
         $request->validate([
-            'supplier_id' => ['required', 'exists:suppliers,id'],
-            'ordered_at'  => ['required', 'date'],
-            'notes'       => ['nullable', 'string'],
-            'items'       => ['required', 'array', 'min:1'],
+            'supplier_id'        => ['required', 'exists:suppliers,id'],
+            'order_date'         => ['required', 'date'],
+            'notes'              => ['nullable', 'string'],
+            'items'              => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['required', 'exists:products,id'],
             'items.*.quantity'   => ['required', 'integer', 'min:1'],
             'items.*.unit_price' => ['required', 'numeric', 'min:0'],
@@ -63,9 +63,9 @@ class PurchaseOrderController extends Controller
             $order = PurchaseOrder::create([
                 'company_id'  => Auth::user()->company_id,
                 'supplier_id' => $request->supplier_id,
-                'ordered_at'  => $request->ordered_at,
+                'order_date'  => $request->order_date,
                 'notes'       => $request->notes,
-                'status'      => 'pending',
+                'status'      => 'pendente',
                 'total'       => 0,
             ]);
 
@@ -97,7 +97,7 @@ class PurchaseOrderController extends Controller
     public function edit(PurchaseOrder $purchaseOrder)
     {
         $this->authorize($purchaseOrder);
-        if ($purchaseOrder->status !== 'pending') {
+        if ($purchaseOrder->status !== 'pendente') {
             return redirect()->route('purchase-orders.show', $purchaseOrder)
                 ->with('error', 'Apenas ordens pendentes podem ser editadas.');
         }
@@ -112,10 +112,10 @@ class PurchaseOrderController extends Controller
         $this->authorize($purchaseOrder);
 
         $request->validate([
-            'supplier_id' => ['required', 'exists:suppliers,id'],
-            'ordered_at'  => ['required', 'date'],
-            'notes'       => ['nullable', 'string'],
-            'items'       => ['required', 'array', 'min:1'],
+            'supplier_id'        => ['required', 'exists:suppliers,id'],
+            'order_date'         => ['required', 'date'],
+            'notes'              => ['nullable', 'string'],
+            'items'              => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['required', 'exists:products,id'],
             'items.*.quantity'   => ['required', 'integer', 'min:1'],
             'items.*.unit_price' => ['required', 'numeric', 'min:0'],
@@ -124,7 +124,7 @@ class PurchaseOrderController extends Controller
         DB::transaction(function () use ($request, $purchaseOrder) {
             $purchaseOrder->update([
                 'supplier_id' => $request->supplier_id,
-                'ordered_at'  => $request->ordered_at,
+                'order_date'  => $request->order_date,
                 'notes'       => $request->notes,
             ]);
 
@@ -150,24 +150,29 @@ class PurchaseOrderController extends Controller
     {
         $this->authorize($purchaseOrder);
 
-        if ($purchaseOrder->status !== 'pending') {
-            return back()->with('error', 'Apenas ordens pendentes podem ser recebidas.');
+        if (!$purchaseOrder->canReceive()) {
+            return back()->with('error', 'Esta ordem não pode ser recebida.');
         }
 
         DB::transaction(function () use ($purchaseOrder) {
+            $purchaseOrder->load('items.product');
             foreach ($purchaseOrder->items as $item) {
                 $item->product->increment('quantity', $item->quantity);
             }
-            $purchaseOrder->update(['status' => 'received', 'received_at' => now()]);
+            $purchaseOrder->update([
+                'status'      => 'recebida',
+                'received_at' => now(),
+            ]);
         });
 
-        return redirect()->route('purchase-orders.show', $purchaseOrder)->with('success', 'Ordem recebida e estoque atualizado.');
+        return redirect()->route('purchase-orders.show', $purchaseOrder)
+            ->with('success', 'Ordem recebida e estoque atualizado.');
     }
 
     public function destroy(PurchaseOrder $purchaseOrder)
     {
         $this->authorize($purchaseOrder);
-        if ($purchaseOrder->status !== 'pending') {
+        if ($purchaseOrder->status !== 'pendente') {
             return back()->with('error', 'Apenas ordens pendentes podem ser excluídas.');
         }
         $purchaseOrder->delete();
@@ -182,6 +187,6 @@ class PurchaseOrderController extends Controller
     private function limitMessage(string $nome, int $limite): string
     {
         $plano = strtoupper(Auth::user()->company->plan);
-        return "Limite de {$nome} do plano {$plano} atingido ({$limite}).  ✨ Faça upgrade para continuar.";
+        return "Limite de {$nome} do plano {$plano} atingido ({$limite}).  ✨ Faça upgrade para continuar.";
     }
 }
