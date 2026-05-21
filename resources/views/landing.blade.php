@@ -392,19 +392,19 @@
         </div>
         <div class="row g-4 justify-content-center">
 
-            {{-- Free --}}
+            {{-- FREE --}}
             <div class="col-md-4">
                 <div class="plan-card">
                     <div class="plan-name">Free</div>
                     <div class="plan-price">R$ 0 <span>/mês</span></div>
-                    <p class="plan-desc">14 dias de acesso completo</p>
+                    <p class="plan-desc">Para começar sem custo.</p>
                     <ul class="list-unstyled plan-features">
-                        <li><i class="bi bi-check-circle-fill"></i> 1 usuário</li>
                         <li><i class="bi bi-check-circle-fill"></i> Até 50 produtos</li>
                         <li><i class="bi bi-check-circle-fill"></i> Até 100 clientes</li>
-                        <li><i class="bi bi-check-circle-fill"></i> Todos os módulos no trial</li>
+                        <li><i class="bi bi-check-circle-fill"></i> 2 usuários</li>
+                        <li><i class="bi bi-check-circle-fill"></i> Relatórios básicos</li>
+                        <li class="disabled"><i class="bi bi-x-circle-fill"></i> PDV avançado</li>
                         <li class="disabled"><i class="bi bi-x-circle-fill"></i> Suporte prioritário</li>
-                        <li class="disabled"><i class="bi bi-x-circle-fill"></i> Usuários adicionais</li>
                     </ul>
                     <a href="{{ route('register') }}" class="btn btn-outline-primary w-100 mt-4">
                         Começar grátis
@@ -412,7 +412,7 @@
                 </div>
             </div>
 
-            {{-- Pro --}}
+            {{-- PRO --}}
             <div class="col-md-4">
                 <div class="plan-card featured">
                     <span class="plan-badge">Mais popular</span>
@@ -420,37 +420,37 @@
                     <div class="plan-offer-badge"><i class="bi bi-lightning-fill"></i> Oferta de Lançamento</div>
                     <div class="plan-price-old">R$ 59,90/mês</div>
                     <div class="plan-price">R$ 39,90 <span>/mês</span></div>
-                    <p class="plan-desc">Para empresas em crescimento</p>
+                    <p class="plan-desc">Para negócios em crescimento.</p>
                     <ul class="list-unstyled plan-features">
-                        <li><i class="bi bi-check-circle-fill"></i> Até 5 usuários</li>
                         <li><i class="bi bi-check-circle-fill"></i> Até 500 produtos</li>
-                        <li><i class="bi bi-check-circle-fill"></i> Até 2.000 clientes</li>
-                        <li><i class="bi bi-check-circle-fill"></i> Até 200 fornecedores</li>
-                        <li><i class="bi bi-check-circle-fill"></i> Todos os relatórios</li>
-                        <li><i class="bi bi-check-circle-fill"></i> Suporte prioritário</li>
+                        <li><i class="bi bi-check-circle-fill"></i> Até 1.000 clientes</li>
+                        <li><i class="bi bi-check-circle-fill"></i> 10 usuários</li>
+                        <li><i class="bi bi-check-circle-fill"></i> Todos os relatórios + PDF/CSV</li>
+                        <li><i class="bi bi-check-circle-fill"></i> PDV completo</li>
+                        <li><i class="bi bi-check-circle-fill"></i> Suporte por e-mail</li>
                     </ul>
                     <a href="{{ route('register') }}" class="btn btn-primary w-100 mt-4" style="background:var(--sky); border:none; font-weight:700;">
-                        Assinar Pro
+                        Assinar Pro — R$ 39,90/mês
                     </a>
                 </div>
             </div>
 
-            {{-- Business --}}
+            {{-- BUSINESS --}}
             <div class="col-md-4">
                 <div class="plan-card">
                     <div class="plan-name">Business</div>
                     <div class="plan-price">R$ 119,90 <span>/mês</span></div>
-                    <p class="plan-desc">Para empresas sem limites</p>
+                    <p class="plan-desc">Para empresas sem limites.</p>
                     <ul class="list-unstyled plan-features">
-                        <li><i class="bi bi-check-circle-fill"></i> Usuários ilimitados</li>
                         <li><i class="bi bi-check-circle-fill"></i> Produtos ilimitados</li>
                         <li><i class="bi bi-check-circle-fill"></i> Clientes ilimitados</li>
-                        <li><i class="bi bi-check-circle-fill"></i> Fornecedores ilimitados</li>
-                        <li><i class="bi bi-check-circle-fill"></i> API de integração</li>
-                        <li><i class="bi bi-check-circle-fill"></i> Gerente de conta dedicado</li>
+                        <li><i class="bi bi-check-circle-fill"></i> Usuários ilimitados</li>
+                        <li><i class="bi bi-check-circle-fill"></i> Todos os recursos Pro</li>
+                        <li><i class="bi bi-check-circle-fill"></i> API REST (em breve)</li>
+                        <li><i class="bi bi-check-circle-fill"></i> Suporte prioritário</li>
                     </ul>
                     <a href="{{ route('register') }}" class="btn btn-outline-primary w-100 mt-4">
-                        Assinar Business
+                        Assinar Business — R$ 119,90/mês
                     </a>
                 </div>
             </div>
