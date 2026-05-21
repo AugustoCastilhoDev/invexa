@@ -82,8 +82,89 @@ body {
 .bar-track{height:3px;border-radius:999px;background:rgba(255,255,255,.05);overflow:hidden;margin-top:3px;}
 .bar-fill {height:100%;border-radius:999px;transition:width .7s cubic-bezier(.4,0,.2,1);}
 /* ── Filter bar ── */
-.filter-bar .btn-sm { font-size:.72rem; padding:.3rem .7rem; border-radius:.45rem; }
-.filter-bar input[type=date] { background:#0d1424;border-color:#1e293b;color:#e2e8f0;font-size:.72rem;border-radius:.45rem; }
+.filter-bar {
+    background: rgba(13,20,35,.85);
+    border: 1px solid rgba(148,163,184,.10);
+    border-radius: .65rem;
+    padding: .55rem .85rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .5rem;
+}
+.filter-bar .btn-period {
+    font-size: .72rem;
+    padding: .28rem .75rem;
+    border-radius: .4rem;
+    font-weight: 600;
+    border: 1px solid rgba(148,163,184,.22);
+    background: transparent;
+    color: rgba(148,163,184,.8);
+    cursor: pointer;
+    transition: background .15s, color .15s, border-color .15s;
+    white-space: nowrap;
+}
+.filter-bar .btn-period:hover {
+    background: rgba(96,165,250,.10);
+    border-color: rgba(96,165,250,.35);
+    color: #e2e8f0;
+}
+.filter-bar .btn-period.active {
+    background: rgba(96,165,250,.18);
+    border-color: rgba(96,165,250,.5);
+    color: #60a5fa;
+}
+.filter-bar .filter-sep {
+    width: 1px;
+    height: 18px;
+    background: rgba(148,163,184,.15);
+    flex-shrink: 0;
+}
+.filter-bar input[type=date] {
+    background: rgba(8,13,26,.8);
+    border: 1px solid rgba(148,163,184,.22);
+    color: #e2e8f0;
+    font-size: .72rem;
+    border-radius: .4rem;
+    padding: .28rem .55rem;
+    height: 28px;
+    width: 120px;
+    outline: none;
+}
+.filter-bar input[type=date]:focus {
+    border-color: rgba(96,165,250,.45);
+    box-shadow: 0 0 0 .15rem rgba(96,165,250,.12);
+}
+.filter-bar .btn-filter {
+    font-size: .72rem;
+    padding: .28rem .65rem;
+    border-radius: .4rem;
+    font-weight: 600;
+    border: 1px solid rgba(96,165,250,.3);
+    background: rgba(96,165,250,.12);
+    color: #60a5fa;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.filter-bar .btn-filter:hover { background: rgba(96,165,250,.22); }
+.filter-bar .btn-clear {
+    font-size: .72rem;
+    padding: .28rem .65rem;
+    border-radius: .4rem;
+    font-weight: 600;
+    border: 1px solid rgba(248,113,113,.25);
+    background: rgba(248,113,113,.08);
+    color: #f87171;
+    text-decoration: none;
+    white-space: nowrap;
+    line-height: 1.4;
+}
+.filter-bar .btn-clear:hover { background: rgba(248,113,113,.16); color: #f87171; }
+.filter-date-label {
+    font-size: .68rem;
+    color: rgba(148,163,184,.55);
+    white-space: nowrap;
+}
 /* ── Link padrão do app — forçar sobre Bootstrap ── */
 a.app-link, .app-link { font-size:.68rem !important; color:#60a5fa !important; text-decoration:none !important; }
 a.app-link:hover, .app-link:hover { color:#93c5fd !important; }
@@ -96,29 +177,54 @@ a.app-link:hover, .app-link:hover { color:#93c5fd !important; }
 @section('content')
 
 {{-- ── Filtro de período ── --}}
-<div class="filter-bar d-flex flex-wrap gap-2 align-items-center mb-3">
-    <form method="GET" action="{{ route('dashboard') }}" class="d-contents">
-        <button type="submit" name="interval" value="today" class="btn btn-sm {{ ($interval??'')==='today'?'btn-primary':'btn-outline-secondary' }}">Hoje</button>
-        <button type="submit" name="interval" value="7d"    class="btn btn-sm {{ ($interval??'')==='7d'   ?'btn-primary':'btn-outline-secondary' }}">7 dias</button>
-        <button type="submit" name="interval" value="month" class="btn btn-sm {{ ($interval??'')==='month'?'btn-primary':'btn-outline-secondary' }}">Este mês</button>
-        <div class="d-flex align-items-center gap-2 ms-1">
-            <input type="date" name="from" value="{{ $from??'' }}" class="form-control form-control-sm" style="max-width:130px;">
-            <span class="text-muted-soft" style="font-size:.72rem;">até</span>
-            <input type="date" name="to"   value="{{ $to??'' }}"   class="form-control form-control-sm" style="max-width:130px;">
-            <button type="submit" class="btn btn-sm btn-outline-secondary">Filtrar</button>
-        </div>
-        @if($from||$to||$interval)
-            <a href="{{ route('dashboard') }}" class="btn btn-sm btn-outline-danger">Limpar</a>
-        @endif
-    </form>
-    <div class="ms-auto d-flex gap-2">
-        @if(Auth::user()->isGerente())
-            <a href="{{ route('products.index') }}"   class="btn btn-sm btn-outline-light">Produtos</a>
-            <a href="{{ route('categories.index') }}" class="btn btn-sm btn-outline-light">Categorias</a>
-        @endif
-        <a href="{{ route('sales.index') }}" class="btn btn-sm btn-outline-light">Vendas</a>
+<form method="GET" action="{{ route('dashboard') }}" class="filter-bar mb-3">
+
+    {{-- Atalhos de período --}}
+    <div class="d-flex align-items-center gap-1 flex-wrap">
+        <button type="submit" name="interval" value="today"
+                class="btn-period {{ ($interval??'')==='today' ? 'active' : '' }}">
+            <i class="bi bi-sun me-1" style="font-size:.65rem;"></i>Hoje
+        </button>
+        <button type="submit" name="interval" value="7d"
+                class="btn-period {{ ($interval??'')==='7d' ? 'active' : '' }}">
+            <i class="bi bi-calendar-week me-1" style="font-size:.65rem;"></i>7 dias
+        </button>
+        <button type="submit" name="interval" value="month"
+                class="btn-period {{ ($interval??'')==='month' ? 'active' : '' }}">
+            <i class="bi bi-calendar-month me-1" style="font-size:.65rem;"></i>Este mês
+        </button>
     </div>
-</div>
+
+    <div class="filter-sep d-none d-md-block"></div>
+
+    {{-- Filtro de datas personalizado --}}
+    <div class="d-flex align-items-center gap-2 flex-wrap">
+        <span class="filter-date-label">De</span>
+        <input type="date" name="from" value="{{ $from??'' }}">
+        <span class="filter-date-label">até</span>
+        <input type="date" name="to"   value="{{ $to??'' }}">
+        <button type="submit" class="btn-filter">
+            <i class="bi bi-funnel me-1"></i>Filtrar
+        </button>
+    </div>
+
+    {{-- Limpar --}}
+    @if($from||$to||$interval)
+        <a href="{{ route('dashboard') }}" class="btn-clear">
+            <i class="bi bi-x-circle me-1"></i>Limpar
+        </a>
+    @endif
+
+    {{-- Links de atalho (direita) --}}
+    <div class="ms-auto d-flex align-items-center gap-2 flex-wrap">
+        @if(Auth::user()->isGerente())
+            <a href="{{ route('products.index') }}"   class="btn-period">Produtos</a>
+            <a href="{{ route('categories.index') }}" class="btn-period">Categorias</a>
+        @endif
+        <a href="{{ route('sales.index') }}" class="btn-period">Vendas</a>
+    </div>
+
+</form>
 
 <h1 class="h5 fw-bold text-white mb-1">Dashboard</h1>
 <p class="mb-3" style="font-size:.78rem;color:rgba(148,163,184,.65);">Visão geral de estoque, vendas e desempenho comercial.</p>
@@ -241,7 +347,6 @@ a.app-link:hover, .app-link:hover { color:#93c5fd !important; }
         <div class="card-dark chart-card h-100">
             <div class="chart-header">
                 <span><i class="bi bi-bar-chart-fill me-2" style="color:#4ade80;"></i>Evolução de Vendas</span>
-                {{-- Legenda clicável para toggle de datasets --}}
                 <div class="d-flex gap-2 flex-wrap" id="salesLegend">
                     <span class="chart-toggle active" data-chart="salesChart" data-index="0" style="border-color:rgba(74,222,128,.3);">
                         <span class="chart-toggle-dot" style="background:#4ade80;"></span>Vendas
@@ -291,7 +396,6 @@ a.app-link:hover, .app-link:hover { color:#93c5fd !important; }
         <div class="card-dark chart-card h-100">
             <div class="chart-header">
                 <span><i class="bi bi-bar-chart-line-fill me-2" style="color:#60a5fa;"></i>Fluxo de Caixa <small class="text-muted-soft ms-1" style="font-size:.65rem;">{{ $cfPeriodLabel }}</small></span>
-                {{-- Legenda clicável para toggle de datasets --}}
                 <div class="d-flex gap-2 flex-wrap" id="cashflowLegend">
                     <span class="chart-toggle active" data-chart="cashflowChart" data-index="0" style="border-color:rgba(74,222,128,.35);">
                         <span class="chart-toggle-dot" style="background:#4ade80;"></span>A receber
@@ -472,9 +576,6 @@ a.app-link:hover, .app-link:hover { color:#93c5fd !important; }
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script>
-/* ═══════════════════════════════════════════════════════════
-   Paleta centralizada — única fonte de verdade JS
-   ═══════════════════════════════════════════════════════════ */
 const APP = {
     green  : '#4ade80',
     red    : '#f87171',
@@ -504,11 +605,8 @@ const CHART = {
     font : { size:10 },
 };
 const fmtBRL = v => 'R$ ' + Number(v).toLocaleString('pt-BR', { minimumFractionDigits:2 });
-
-/* ─── Registro global de instâncias de Chart.js para o toggle ─── */
 const _charts = {};
 
-/* ─── Toggle de datasets ao clicar na legenda ────────────────── */
 document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.chart-toggle').forEach(el => {
         el.addEventListener('click', function() {
@@ -516,74 +614,39 @@ document.addEventListener('DOMContentLoaded', () => {
             const idx     = parseInt(this.dataset.index);
             const chart   = _charts[chartId];
             if (!chart) return;
-
             const meta = chart.getDatasetMeta(idx);
             meta.hidden = !meta.hidden;
             chart.update();
-
             this.classList.toggle('active',   !meta.hidden);
             this.classList.toggle('inactive',  meta.hidden);
         });
     });
 });
 
-/* ─── Evolução de Vendas — todas as séries em barras ─────────── */
 (function(){
     const ctx = document.getElementById('salesChart'); if(!ctx) return;
     const chart = new Chart(ctx, {
         data: {
             labels: @json($chartLabels),
             datasets: [
-                {
-                    type: 'bar',
-                    label: 'Vendas',
-                    data: @json($chartData),
-                    backgroundColor: APP.greenBg,
-                    borderColor: APP.green,
-                    borderWidth: 1.5,
-                    borderRadius: 3,
-                    order: 3,
-                },
-                {
-                    type: 'bar',
-                    label: 'Devoluções',
-                    data: @json($chartReturnsData),
-                    backgroundColor: APP.redBg,
-                    borderColor: APP.red,
-                    borderWidth: 1.5,
-                    borderRadius: 3,
-                    order: 3,
-                },
-                {
-                    type: 'bar',
-                    label: 'Líquido',
-                    data: @json($chartNetData),
-                    backgroundColor: APP.blueBg,
-                    borderColor: APP.blue,
-                    borderWidth: 1.5,
-                    borderRadius: 3,
-                    order: 3,
-                },
+                { type:'bar', label:'Vendas',     data:@json($chartData),        backgroundColor:APP.greenBg,  borderColor:APP.green, borderWidth:1.5, borderRadius:3, order:3 },
+                { type:'bar', label:'Devoluções', data:@json($chartReturnsData),  backgroundColor:APP.redBg,    borderColor:APP.red,   borderWidth:1.5, borderRadius:3, order:3 },
+                { type:'bar', label:'Líquido',    data:@json($chartNetData),      backgroundColor:APP.blueBg,   borderColor:APP.blue,  borderWidth:1.5, borderRadius:3, order:3 },
             ]
         },
         options: {
-            responsive: true,
-            maintainAspectRatio: true,
-            interaction: { mode:'index', intersect:false },
-            plugins: {
-                legend: { display:false },
-                tooltip: { ...CHART.tooltip, callbacks: { label: c => ` ${c.dataset.label}: ${fmtBRL(c.parsed.y)}` } }
-            },
-            scales: {
-                x: { grid:{ color:CHART.grid }, ticks:{ color:CHART.tick, font:CHART.font, maxTicksLimit:10 } },
-                y: { grid:{ color:CHART.grid }, ticks:{ color:CHART.tick, font:CHART.font, callback: v => 'R$'+Number(v).toLocaleString('pt-BR',{minimumFractionDigits:0}) } }
+            responsive:true, maintainAspectRatio:true,
+            interaction:{ mode:'index', intersect:false },
+            plugins:{ legend:{ display:false }, tooltip:{ ...CHART.tooltip, callbacks:{ label: c => ` ${c.dataset.label}: ${fmtBRL(c.parsed.y)}` }}},
+            scales:{
+                x:{ grid:{ color:CHART.grid }, ticks:{ color:CHART.tick, font:CHART.font, maxTicksLimit:10 }},
+                y:{ grid:{ color:CHART.grid }, ticks:{ color:CHART.tick, font:CHART.font, callback: v => 'R$'+Number(v).toLocaleString('pt-BR',{minimumFractionDigits:0}) }}
             }
         }
     });
     _charts['salesChart'] = chart;
 })();
 
-/* ─── Fluxo de Caixa — todas as séries em barras ────────────── */
 @if(Auth::user()->isGerente())
 (function(){
     const ctx = document.getElementById('cashflowChart'); if(!ctx) return;
@@ -591,69 +654,20 @@ document.addEventListener('DOMContentLoaded', () => {
         data: {
             labels: @json($cfLabels),
             datasets: [
-                {
-                    type: 'bar',
-                    label: 'A receber',
-                    data: @json($cfDataRecPend),
-                    backgroundColor: APP.greenBg,
-                    borderColor: APP.green,
-                    borderWidth: 1.5,
-                    borderRadius: 3,
-                    order: 3,
-                },
-                {
-                    type: 'bar',
-                    label: 'Recebido',
-                    data: @json($cfDataRecReceb),
-                    backgroundColor: APP.greenBgLight,
-                    borderColor: APP.green,
-                    borderWidth: 1,
-                    borderRadius: 3,
-                    order: 3,
-                },
-                {
-                    type: 'bar',
-                    label: 'A pagar',
-                    data: @json($cfDataPayPend),
-                    backgroundColor: APP.redBg,
-                    borderColor: APP.red,
-                    borderWidth: 1.5,
-                    borderRadius: 3,
-                    order: 3,
-                },
-                {
-                    type: 'bar',
-                    label: 'Pago',
-                    data: @json($cfDataPayPaga),
-                    backgroundColor: APP.redBgLight,
-                    borderColor: APP.red,
-                    borderWidth: 1,
-                    borderRadius: 3,
-                    order: 3,
-                },
-                {
-                    type: 'bar',
-                    label: 'Saldo',
-                    data: @json($cfDataBalance),
-                    backgroundColor: APP.blueBg,
-                    borderColor: APP.blue,
-                    borderWidth: 1.5,
-                    borderRadius: 3,
-                    order: 3,
-                },
+                { type:'bar', label:'A receber', data:@json($cfDataRecPend),   backgroundColor:APP.greenBg,      borderColor:APP.green, borderWidth:1.5, borderRadius:3, order:3 },
+                { type:'bar', label:'Recebido',  data:@json($cfDataRecReceb),  backgroundColor:APP.greenBgLight, borderColor:APP.green, borderWidth:1,   borderRadius:3, order:3 },
+                { type:'bar', label:'A pagar',   data:@json($cfDataPayPend),   backgroundColor:APP.redBg,        borderColor:APP.red,   borderWidth:1.5, borderRadius:3, order:3 },
+                { type:'bar', label:'Pago',      data:@json($cfDataPayPaga),   backgroundColor:APP.redBgLight,   borderColor:APP.red,   borderWidth:1,   borderRadius:3, order:3 },
+                { type:'bar', label:'Saldo',     data:@json($cfDataBalance),   backgroundColor:APP.blueBg,       borderColor:APP.blue,  borderWidth:1.5, borderRadius:3, order:3 },
             ]
         },
         options: {
-            responsive: true,
-            maintainAspectRatio: true,
-            interaction: { mode:'index', intersect:false },
-            plugins: {
-                legend: { display:false },
-                tooltip: { ...CHART.tooltip, callbacks: { label: c => ` ${c.dataset.label}: ${fmtBRL(c.parsed.y)}` } }
-            },
-            scales: {
-                x: { grid:{ color:CHART.grid }, ticks:{ color:CHART.tick, font:CHART.font, maxTicksLimit:10 } },
-                y: { grid:{ color:CHART.grid }, ticks:{ color:CHART.tick, font:CHART.font, callback: v => 'R$'+Number(v).toLocaleString('pt-BR',{minimumFractionDigits:0}) } }
+            responsive:true, maintainAspectRatio:true,
+            interaction:{ mode:'index', intersect:false },
+            plugins:{ legend:{ display:false }, tooltip:{ ...CHART.tooltip, callbacks:{ label: c => ` ${c.dataset.label}: ${fmtBRL(c.parsed.y)}` }}},
+            scales:{
+                x:{ grid:{ color:CHART.grid }, ticks:{ color:CHART.tick, font:CHART.font, maxTicksLimit:10 }},
+                y:{ grid:{ color:CHART.grid }, ticks:{ color:CHART.tick, font:CHART.font, callback: v => 'R$'+Number(v).toLocaleString('pt-BR',{minimumFractionDigits:0}) }}
             }
         }
     });
@@ -661,7 +675,6 @@ document.addEventListener('DOMContentLoaded', () => {
 })();
 @endif
 
-/* ─── Doughnut Top Produtos ──────────────────────────────────── */
 @if($topSellingProducts->count()>0)
 (function(){
     const labels  = @json($topChartLabels);
@@ -672,26 +685,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const ctx = document.getElementById('topProductsChart'); if(!ctx) return;
     const chart = new Chart(ctx, {
         type: 'doughnut',
-        data: {
-            labels,
-            datasets: [{
-                data: sold,
-                backgroundColor: colors.map(c => c + 'cc'),
-                borderColor: colors,
-                borderWidth: 2,
-                hoverOffset: 8,
-            }]
-        },
+        data: { labels, datasets: [{ data:sold, backgroundColor:colors.map(c=>c+'cc'), borderColor:colors, borderWidth:2, hoverOffset:8 }] },
         options: {
-            cutout: '65%',
-            responsive: true,
-            plugins: {
-                legend: { display:false },
-                tooltip: { ...CHART.tooltip, callbacks: { label: ctx => {
-                    const pct = total > 0 ? Math.round(ctx.parsed / total * 100) : 0;
-                    return [` ${ctx.parsed} un. (${pct}%)`, ` ${fmtBRL(revenue[ctx.dataIndex])}`];
-                }}}
-            }
+            cutout:'65%', responsive:true,
+            plugins:{ legend:{ display:false }, tooltip:{ ...CHART.tooltip, callbacks:{ label: ctx => {
+                const pct = total > 0 ? Math.round(ctx.parsed / total * 100) : 0;
+                return [` ${ctx.parsed} un. (${pct}%)`, ` ${fmtBRL(revenue[ctx.dataIndex])}`];
+            }}}}
         }
     });
     const cv = document.getElementById('topChartCenterVal');
