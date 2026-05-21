@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Company;
 use Illuminate\Http\Request;
 use Laravel\Cashier\Exceptions\IncompletePayment;
 use Stripe\Exception\InvalidRequestException as StripeInvalidRequestException;
@@ -22,25 +23,9 @@ class SubscriptionController extends Controller
         $request->validate(['plan' => 'required|in:pro,pro_launch,business']);
 
         $company = auth()->user()->company;
-
-        // Guard: detecta mismatch de ambiente Stripe (test vs live).
-        // Se o customer_id salvo no banco pertence a um ambiente diferente da
-        // chave atual, o Stripe lança InvalidRequestException com a mensagem
-        // "a similar object exists in test/live mode". Nesse caso zeramos o
-        // stripe_id para que o Cashier crie um novo customer no ambiente correto.
-        if ($company->stripe_id) {
-            try {
-                $company->asStripeCustomer();
-            } catch (StripeInvalidRequestException $e) {
-                if (str_contains($e->getMessage(), 'a similar object exists in')) {
-                    $company->update(['stripe_id' => null]);
-                } else {
-                    throw $e;
-                }
-            }
-        }
-
         $priceId = config('cashier.prices.' . $request->plan);
+
+        $this->resolveStripeCustomer($company);
 
         $checkoutParams = [
             'success_url' => route('subscription.success') . '?session_id={CHECKOUT_SESSION_ID}',
@@ -52,18 +37,15 @@ class SubscriptionController extends Controller
         ];
 
         if (! $company->stripe_id) {
-            // Novo customer: define nome e e-mail para aparecer nas faturas
-            $checkoutParams['customer_email'] = $company->email;
+            $checkoutParams['customer_email']    = $company->email;
             $checkoutParams['customer_creation'] = 'always';
-            $checkoutParams['customer_update'] = null;
+            $checkoutParams['customer_update']   = null;
 
-            // Cria o customer no Stripe com nome antes do checkout
             $company->createOrGetStripeCustomer([
                 'name'  => $company->name,
                 'email' => $company->email,
             ]);
         } else {
-            // Customer existente: garante que o nome está atualizado
             $company->updateStripeCustomer([
                 'name'  => $company->name,
                 'email' => $company->email,
@@ -79,6 +61,33 @@ class SubscriptionController extends Controller
                 $e->payment->id,
                 'redirect' => route('subscription.index'),
             ]);
+        }
+    }
+
+    /**
+     * Garante que o stripe_id salvo no banco pertence ao ambiente atual (test/live).
+     *
+     * O Stripe não permite usar um customer criado em test mode com chave live
+     * e vice-versa. Quando isso ocorre, a API retorna InvalidRequestException
+     * com "a similar object exists in [outro ambiente]". Zeramos o stripe_id
+     * para que o Cashier recrie o customer no ambiente correto automaticamente.
+     */
+    private function resolveStripeCustomer(Company $company): void
+    {
+        if (! $company->stripe_id) {
+            return;
+        }
+
+        try {
+            // Tenta buscar o customer — falha se o ID pertence a outro ambiente
+            $stripe = new \Stripe\StripeClient(config('cashier.secret'));
+            $stripe->customers->retrieve($company->stripe_id);
+        } catch (StripeInvalidRequestException $e) {
+            if (str_contains($e->getMessage(), 'a similar object exists in')) {
+                $company->forceFill(['stripe_id' => null])->save();
+            } else {
+                throw $e;
+            }
         }
     }
 
