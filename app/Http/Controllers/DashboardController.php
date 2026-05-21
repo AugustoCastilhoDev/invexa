@@ -113,7 +113,7 @@ class DashboardController extends Controller
         $todayStr = now($this->tz)->toDateString();
 
         $salesToday = (float) Sale::where('company_id', $companyId)
-            ->whereBetween('sale_date', [
+            ->whereBetween(DB::raw('COALESCE(sale_date, created_at)'), [
                 Carbon::parse($todayStr, $this->tz)->startOfDay(),
                 Carbon::parse($todayStr, $this->tz)->endOfDay(),
             ])
@@ -163,7 +163,7 @@ class DashboardController extends Controller
             ->limit(5);
 
         if ($from && $to) {
-            $topQuery->whereBetween('sales.sale_date', [
+            $topQuery->whereBetween(DB::raw('COALESCE(sales.sale_date, sales.created_at)'), [
                 Carbon::parse($from, $this->tz)->startOfDay(),
                 Carbon::parse($to,   $this->tz)->endOfDay(),
             ]);
@@ -191,8 +191,8 @@ class DashboardController extends Controller
 
         $chartQuery       = $this->filteredSalesQuery($request, $chartFrom, $chartTo);
         $salesByDayModule = $chartQuery
-            ->selectRaw('DATE(sale_date) as day, SUM(total) as total')
-            ->groupBy(DB::raw('DATE(sale_date)'))
+            ->selectRaw('DATE(COALESCE(sale_date, created_at)) as day, SUM(total) as total')
+            ->groupBy(DB::raw('DATE(COALESCE(sale_date, created_at))'))
             ->orderBy('day')
             ->pluck('total', 'day')
             ->map(fn($v) => (float) $v);
@@ -461,14 +461,17 @@ class DashboardController extends Controller
         $companyId = auth()->user()->company_id;
         $query     = Sale::where('company_id', $companyId);
         if ($from && $to) {
-            $query->whereBetween('sale_date', [
-                Carbon::parse($from, $this->tz)->startOfDay(),
-                Carbon::parse($to, $this->tz)->endOfDay(),
-            ]);
+            $query->whereBetween(
+                DB::raw('COALESCE(sale_date, created_at)'),
+                [
+                    Carbon::parse($from, $this->tz)->startOfDay(),
+                    Carbon::parse($to,   $this->tz)->endOfDay(),
+                ]
+            );
         } elseif ($from) {
-            $query->where('sale_date', '>=', Carbon::parse($from, $this->tz)->startOfDay());
+            $query->where(DB::raw('COALESCE(sale_date, created_at)'), '>=', Carbon::parse($from, $this->tz)->startOfDay());
         } elseif ($to) {
-            $query->where('sale_date', '<=', Carbon::parse($to, $this->tz)->endOfDay());
+            $query->where(DB::raw('COALESCE(sale_date, created_at)'), '<=', Carbon::parse($to, $this->tz)->endOfDay());
         }
         return $query;
     }
