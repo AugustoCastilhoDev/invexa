@@ -372,9 +372,21 @@ class SaleController extends Controller
     {
         $sale->load(['items.product', 'customer']);
         $company = auth()->user()->company;
+
         $pdf = Pdf::loadView('sales.pdf', compact('sale', 'company'))
             ->setPaper('a4', 'portrait')
-            ->setOptions(['defaultFont' => 'DejaVu Sans', 'isHtml5ParserEnabled' => true, 'isRemoteEnabled' => false, 'dpi' => 150]);
+            ->setOptions([
+                'defaultFont'        => 'DejaVu Sans',
+                'isHtml5ParserEnabled' => true,
+                'isRemoteEnabled'    => false,
+                'dpi'                => 150,
+                // Margens em pontos: 1mm ≈ 2.83pt  →  20mm ≈ 56pt | 22mm ≈ 62pt
+                'margin_top'         => 20,
+                'margin_right'       => 20,
+                'margin_bottom'      => 20,
+                'margin_left'        => 20,
+            ]);
+
         return $pdf->download('nf-venda-' . $sale->sale_number . '-' . now()->format('Ymd') . '.pdf');
     }
 }
