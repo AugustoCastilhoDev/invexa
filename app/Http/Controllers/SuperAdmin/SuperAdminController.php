@@ -23,7 +23,8 @@ class SuperAdminController extends Controller
             ->pluck('total', 'plan')
             ->toArray();
 
-        $prices = ['free' => 0, 'pro' => 79, 'business' => 149];
+        // Preços reais dos planos (R$)
+        $prices = ['free' => 0, 'pro' => 39.90, 'business' => 119.90];
         $mrr = 0;
         foreach ($planCounts as $plan => $count) {
             $mrr += ($prices[$plan] ?? 0) * $count;
@@ -53,7 +54,7 @@ class SuperAdminController extends Controller
 
     public function impersonate(Company $company)
     {
-        // Prioridade: admin > gerente > vendedor (compatível com MySQL e SQLite)
+        // Prioridade: admin > gerente > vendedor
         $roleOrder = ['admin', 'gerente', 'vendedor'];
 
         $target = null;
@@ -69,7 +70,6 @@ class SuperAdminController extends Controller
             return back()->with('error', 'Nenhum usuário ativo encontrado nesta empresa.');
         }
 
-        // Guarda o ID do superadmin na sessão para poder voltar
         session([
             'impersonator_id'      => Auth::id(),
             'impersonator_name'    => Auth::user()->name,

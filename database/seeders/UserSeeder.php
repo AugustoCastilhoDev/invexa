@@ -11,20 +11,21 @@ class UserSeeder extends Seeder
 {
     public function run(): void
     {
-        // Empresa demo sempre com plan=free para funcionar sem Stripe
+        // Empresa demo com trial "eterno" para não ser bloqueada pelo middleware
         $company = Company::firstOrCreate(
             ['slug' => 'empresa-demo'],
             [
-                'name'   => 'Empresa Demo',
-                'email'  => 'contato@empresademo.com',
-                'plan'   => 'free',
-                'active' => true,
+                'name'          => 'Empresa Demo',
+                'email'         => 'contato@empresademo.com',
+                'plan'          => 'free',
+                'active'        => true,
+                'trial_ends_at' => now()->addYears(10),
             ]
         );
 
-        // Garante que mesmo se já existir com plan errado, corrige
-        if ($company->plan !== 'free') {
-            $company->update(['plan' => 'free', 'trial_ends_at' => null]);
+        // Garante trial ativo mesmo se o registro já existia sem trial_ends_at
+        if (! $company->trial_ends_at || $company->trial_ends_at->isPast()) {
+            $company->update(['trial_ends_at' => now()->addYears(10)]);
         }
 
         User::firstOrCreate(
