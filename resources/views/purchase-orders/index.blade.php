@@ -99,11 +99,17 @@
                 <tr>
                     <td class="ps-4" style="color:#94a3b8;">#{{ $order->id }}</td>
                     <td class="fw-semibold text-white">{{ $order->supplier?->name ?? '&mdash;' }}</td>
-                    <td>{{ \Carbon\Carbon::parse($order->order_date)->format('d/m/Y') }}</td>
+                    <td>
+                        <div>{{ \Carbon\Carbon::parse($order->order_date)->format('d/m/Y') }}</div>
+                        @if($order->received_at)
+                            <div style="font-size:.72rem;color:#4ade80;margin-top:.2rem;">
+                                <i class="bi bi-check2-circle me-1"></i>Rec. {{ \Carbon\Carbon::parse($order->received_at)->format('d/m/Y') }}
+                            </div>
+                        @endif
+                    </td>
                     <td class="fw-semibold" style="color:#4ade80;">R$ {{ number_format($order->total, 2, ',', '.') }}</td>
                     <td>
                         @php
-                            /* Chaves em português — valores reais do banco */
                             $statusMap = [
                                 'pendente'  => ['Pendente',  '#fb923c', 'rgba(251,146,60,.12)',  'rgba(251,146,60,.30)'],
                                 'enviada'   => ['Enviada',   '#fbbf24', 'rgba(251,191,36,.12)',  'rgba(251,191,36,.30)'],
