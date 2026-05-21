@@ -4,68 +4,117 @@
     <meta charset="UTF-8">
     <title>Nota de Venda #{{ str_pad($sale->id, 6, '0', STR_PAD_LEFT) }}</title>
     <style>
-        /* ── Reset ── */
-        * { margin:0; padding:0; box-sizing:border-box; }
-        body { font-family:'DejaVu Sans', Arial, sans-serif; font-size:11px; color:#222; background:#fff; }
+        /*
+         * DomPDF: use @page para definir margens — NÃO use padding no wrapper.
+         * Assim o motor de renderização respeita os limites A4 sem overflow lateral.
+         */
+        @page {
+            margin: 18mm 16mm 18mm 16mm;
+        }
 
-        /* ── Página — margens generosas para o DomPDF não cortar ── */
-        .page { width:100%; padding:28px 32px; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'DejaVu Sans', Arial, sans-serif;
+            font-size: 11px;
+            color: #222;
+            background: #fff;
+        }
 
-        /* ── Cabeçalho via tabela (DomPDF não suporta flexbox/grid) ── */
-        .header-table { width:100%; border-collapse:collapse; border-bottom:2px solid #1a56db;
-            padding-bottom:14px; margin-bottom:20px; }
-        .header-table td { vertical-align:top; padding-bottom:14px; }
-        .header-table td.right { text-align:right; width:42%; }
-        .company-name  { font-size:15px; font-weight:bold; color:#1a56db; }
-        .company-info  { font-size:10px; color:#555; margin-top:4px; line-height:1.55; }
-        .invoice-title { font-size:19px; font-weight:bold; color:#1a56db; }
-        .invoice-meta  { font-size:10px; color:#555; margin-top:4px; line-height:1.6; }
+        /* Wrapper sem padding — as margens vêm do @page */
+        .page { width: 100%; }
 
-        /* ── Badges ── */
-        .badge { display:inline-block; padding:2px 8px; border-radius:4px; font-size:9px; font-weight:bold; }
-        .badge-success { background:#d1fae5; color:#065f46; }
-        .badge-warning { background:#fef3c7; color:#92400e; }
-        .badge-danger  { background:#fee2e2; color:#991b1b; }
+        /* Cabeçalho via <table> (DomPDF não suporta flexbox) */
+        .header-table {
+            width: 100%;
+            border-collapse: collapse;
+            border-bottom: 2px solid #1a56db;
+            margin-bottom: 20px;
+        }
+        .header-table td { vertical-align: top; padding-bottom: 14px; }
+        .header-table td.right { text-align: right; width: 44%; }
 
-        /* ── Seções ── */
-        .section-title { font-size:9px; text-transform:uppercase; color:#888;
-            font-weight:bold; letter-spacing:1px; margin-bottom:6px; }
-        .customer-block { margin-bottom:20px; }
-        .customer-name  { font-size:13px; font-weight:bold; }
-        .customer-info  { font-size:10px; color:#555; line-height:1.6; }
+        .company-name  { font-size: 15px; font-weight: bold; color: #1a56db; }
+        .company-info  { font-size: 10px; color: #555; margin-top: 4px; line-height: 1.55; }
+        .invoice-title { font-size: 19px; font-weight: bold; color: #1a56db; }
+        .invoice-meta  { font-size: 10px; color: #555; margin-top: 4px; line-height: 1.6; }
 
-        /* ── Tabela de itens ── */
-        table { width:100%; border-collapse:collapse; margin-bottom:20px; table-layout:fixed; }
-        thead th { background:#eff6ff; color:#1e40af; font-size:10px;
-            padding:8px 8px; border-bottom:1px solid #bfdbfe; white-space:nowrap; }
-        tbody td { padding:7px 8px; border-bottom:1px solid #f0f0f0; font-size:10px;
-            word-break:break-word; overflow-wrap:break-word; }
-        tfoot td { padding:8px 8px; background:#eff6ff; font-weight:bold; font-size:12px; }
+        /* Badges */
+        .badge           { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 9px; font-weight: bold; }
+        .badge-success   { background: #d1fae5; color: #065f46; }
+        .badge-warning   { background: #fef3c7; color: #92400e; }
+        .badge-danger    { background: #fee2e2; color: #991b1b; }
+        .badge-secondary { background: #f1f5f9; color: #475569; }
 
-        /* Larguras fixas para evitar overflow do lado direito */
-        col.col-num     { width:5%; }
-        col.col-produto { width:48%; }
-        col.col-qtd     { width:10%; }
-        col.col-unit    { width:18%; }
-        col.col-sub     { width:19%; }
+        /* Seções */
+        .section-title  { font-size: 9px; text-transform: uppercase; color: #888; font-weight: bold; letter-spacing: 1px; margin-bottom: 6px; }
+        .customer-block { margin-bottom: 20px; }
+        .customer-name  { font-size: 13px; font-weight: bold; }
+        .customer-info  { font-size: 10px; color: #555; line-height: 1.6; }
 
-        .text-right  { text-align:right; }
-        .text-center { text-align:center; }
-        .total-row   { font-size:13px; color:#1a56db; }
+        /* Tabela de itens — table-layout:fixed + colgroup evita overflow */
+        table.items {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            table-layout: fixed;
+        }
+        col.col-num     { width:  5%; }
+        col.col-produto { width: 46%; }
+        col.col-qtd     { width:  9%; }
+        col.col-unit    { width: 20%; }
+        col.col-sub     { width: 20%; }
 
-        /* ── Notas ── */
-        .notes-block { background:#f9fafb; border-left:3px solid #d1d5db;
-            padding:10px 14px; margin-bottom:20px; font-size:10px; color:#555; }
+        table.items thead th {
+            background: #eff6ff;
+            color: #1e40af;
+            font-size: 10px;
+            padding: 8px 6px;
+            border-bottom: 1px solid #bfdbfe;
+            white-space: nowrap;
+        }
+        table.items tbody td {
+            padding: 7px 6px;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 10px;
+            word-break: break-word;
+            overflow-wrap: break-word;
+        }
+        table.items tfoot td {
+            padding: 8px 6px;
+            background: #eff6ff;
+            font-weight: bold;
+            font-size: 12px;
+        }
 
-        /* ── Rodapé ── */
-        .footer { text-align:center; font-size:9px; color:#aaa;
-            border-top:1px solid #e5e7eb; padding-top:12px; margin-top:10px; }
+        .text-right  { text-align: right; }
+        .text-center { text-align: center; }
+        .total-row   { font-size: 13px; color: #1a56db; }
+
+        /* Notas */
+        .notes-block {
+            background: #f9fafb;
+            border-left: 3px solid #d1d5db;
+            padding: 10px 14px;
+            margin-bottom: 20px;
+            font-size: 10px;
+            color: #555;
+        }
+
+        /* Rodapé */
+        .footer {
+            text-align: center;
+            font-size: 9px;
+            color: #aaa;
+            border-top: 1px solid #e5e7eb;
+            padding-top: 12px;
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
 <div class="page">
 
-    {{-- Cabeçalho (tabela para DomPDF) --}}
+    {{-- Cabeçalho --}}
     <table class="header-table">
         <tr>
             <td>
@@ -89,7 +138,7 @@
                             'pendente'  => ['Pendente',  'warning'],
                             'cancelada' => ['Cancelada', 'danger'],
                         ];
-                        [$label, $cls] = $statusLabels[$sale->status] ?? ['—', 'secondary'];
+                        [$label, $cls] = $statusLabels[$sale->status] ?? [ucfirst($sale->status), 'secondary'];
                     @endphp
                     <span class="badge badge-{{ $cls }}">{{ $label }}</span>
                 </div>
@@ -117,7 +166,7 @@
 
     {{-- Itens --}}
     <div class="section-title">Itens da Venda</div>
-    <table>
+    <table class="items">
         <colgroup>
             <col class="col-num">
             <col class="col-produto">
@@ -154,7 +203,7 @@
     </table>
 
     <div class="footer">
-        Documento gerado eletronicamente pelo sistema Invexa &mdash; {{ now()->format('d/m/Y \\às H:i') }}
+        Documento gerado eletronicamente pelo sistema Invexa &mdash; {{ now()->format('d/m/Y \\\u00e0s H:i') }}
     </div>
 </div>
 </body>
