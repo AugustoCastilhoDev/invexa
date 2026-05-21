@@ -18,10 +18,10 @@ class DatabaseSeeder extends Seeder
 
         // 2. Super Admin (sem empresa, company_id = null)
         User::firstOrCreate(
-            ['email' => 'superadmin@invexa.com'],
+            ['email' => 'ac.castilho87@gmail.com'],
             [
-                'name'       => 'Super Admin',
-                'password'   => Hash::make('SuperAdmin@123'),
+                'name'       => 'Augusto Castilho',
+                'password'   => Hash::make('@12345'),
                 'role'       => 'superadmin',
                 'company_id' => null,
                 'active'     => true,
@@ -29,6 +29,6 @@ class DatabaseSeeder extends Seeder
         );
 
         $this->command->info('Super Admin criado:');
-        $this->command->line('   superadmin@invexa.com → SuperAdmin@123');
+        $this->command->line('   ac.castilho87@gmail.com → @12345');
     }
 }
