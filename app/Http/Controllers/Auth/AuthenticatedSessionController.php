@@ -3,8 +3,9 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
+use App\Http\Requests\Auth\LoginRequest;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 
@@ -15,36 +16,28 @@ class AuthenticatedSessionController extends Controller
         return view('auth.login');
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(LoginRequest $request): RedirectResponse
     {
-        $credentials = $request->validate([
-            'email'    => ['required', 'email'],
-            'password' => ['required'],
-        ]);
-
-        if (!Auth::attempt($credentials, $request->boolean('remember'))) {
-            return back()->withErrors([
-                'email' => 'E-mail ou senha inválidos.',
-            ])->onlyInput('email');
-        }
-
+        $request->authenticate();
         $request->session()->regenerate();
 
-        // SuperAdmin vai direto para o painel de controle
-        if (Auth::user()->isSuperAdmin()) {
-            return redirect()->route('admin.index');
+        $user = Auth::user();
+
+        // Se o usuário tem 2FA ativo, faz logout temporário e redireciona para verificação
+        if ($user->two_factor_secret && $user->two_factor_confirmed_at) {
+            session(['2fa_user_id' => $user->id]);
+            Auth::logout();
+            return redirect()->route('two-factor.verify');
         }
 
-        return redirect()->intended(route('home'));
+        return redirect()->intended(route('dashboard'));
     }
 
     public function destroy(Request $request): RedirectResponse
     {
         Auth::guard('web')->logout();
-
         $request->session()->invalidate();
         $request->session()->regenerateToken();
-
-        return redirect()->route('login');
+        return redirect('/');
     }
 }
