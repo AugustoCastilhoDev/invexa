@@ -74,10 +74,15 @@ class Company extends Model
         }
     }
 
+    /**
+     * Empresa tem acesso pleno ao app?
+     * - Trial ativo: sim
+     * - Assinatura paga ativa: sim
+     * - Free sem trial ou com trial expirado: NÃO (exige upgrade)
+     */
     public function isAccessible(): bool
     {
         if ($this->isOnTrial()) return true;
-        if ($this->plan === 'free') return true;
         return $this->hasActiveSubscription();
     }
 

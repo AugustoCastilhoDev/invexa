@@ -49,12 +49,7 @@ class CheckCompanyAccess
             return $next($request);
         }
 
-        // Plano free sempre tem acesso
-        if ($company->plan === 'free') {
-            return $next($request);
-        }
-
-        // Trial ativo: passa
+        // Trial ativo: passa (vale para free e pagos no período de trial)
         if ($company->isOnTrial()) {
             return $next($request);
         }
@@ -64,7 +59,8 @@ class CheckCompanyAccess
             return $next($request);
         }
 
-        // Nenhuma condição satisfeita: upgrade
-        return redirect()->route('upgrade');
+        // Trial expirado ou plano free sem assinatura ativa: bloqueia e exige upgrade
+        return redirect()->route('upgrade')
+            ->with('error', 'Seu período de avaliação encerrou. Escolha um plano para continuar usando o Invexa.');
     }
 }
