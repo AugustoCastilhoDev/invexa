@@ -284,11 +284,12 @@ class DashboardController extends Controller
         $cfFromDt = Carbon::parse($cfFrom, $this->tz)->startOfDay();
         $cfToDt   = Carbon::parse($cfTo,   $this->tz)->endOfDay();
 
+        // Recebíveis pendentes/vencidos: filtra por due_date (data de vencimento)
         $cfRecPendente = Receivable::where('company_id', $companyId)
             ->whereIn('status', ['pendente', 'vencida'])
-            ->whereBetween('created_at', [$cfFromDt, $cfToDt])
-            ->selectRaw('DATE(CONVERT_TZ(created_at, \'+00:00\', \'' . $this->tzOffset . '\')) as day, SUM(amount) as total')
-            ->groupBy(DB::raw('DATE(CONVERT_TZ(created_at, \'+00:00\', \'' . $this->tzOffset . '\'))'))
+            ->whereBetween('due_date', [$cfFrom, $cfTo])
+            ->selectRaw('DATE(due_date) as day, SUM(amount) as total')
+            ->groupBy(DB::raw('DATE(due_date)'))
             ->pluck('total', 'day')
             ->map(fn($v) => (float) $v);
 
