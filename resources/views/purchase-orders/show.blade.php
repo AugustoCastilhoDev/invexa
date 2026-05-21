@@ -161,7 +161,10 @@
                     <div class="po-label">Data do Pedido</div>
                     <div class="po-value">{{ \Carbon\Carbon::parse($purchaseOrder->order_date)->format('d/m/Y') }}</div>
                     @if($purchaseOrder->received_at)
-                        <div class="po-sub">Recebido em {{ \Carbon\Carbon::parse($purchaseOrder->received_at)->format('d/m/Y') }}</div>
+                        <div class="po-sub" style="color:#4ade80;margin-top:.4rem;">
+                            <i class="bi bi-check2-circle me-1"></i>
+                            Recebido em {{ \Carbon\Carbon::parse($purchaseOrder->received_at)->format('d/m/Y \\\u00e0s H:i') }}
+                        </div>
                     @endif
                 </div>
             </div>
@@ -200,7 +203,7 @@
                     <tr>
                         <td class="ps-3">{{ $item->product->name }}</td>
                         <td class="text-end">{{ $item->quantity }}</td>
-                        <td class="text-end">R$ {{ number_format($item->unit_price, 2, ',', '.') }}</td>
+                        <td class="text-end">R$ {{ number_format($item->unit_cost, 2, ',', '.') }}</td>
                         <td class="text-end pe-3">R$ {{ number_format($item->subtotal, 2, ',', '.') }}</td>
                     </tr>
                     @endforeach

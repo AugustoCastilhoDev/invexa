@@ -75,7 +75,7 @@ class PurchaseOrderController extends Controller
                 $order->items()->create([
                     'product_id' => $item['product_id'],
                     'quantity'   => $item['quantity'],
-                    'unit_price' => $item['unit_price'],
+                    'unit_cost'  => $item['unit_price'],
                     'subtotal'   => $subtotal,
                 ]);
                 $total += $subtotal;
@@ -135,7 +135,7 @@ class PurchaseOrderController extends Controller
                 $purchaseOrder->items()->create([
                     'product_id' => $item['product_id'],
                     'quantity'   => $item['quantity'],
-                    'unit_price' => $item['unit_price'],
+                    'unit_cost'  => $item['unit_price'],
                     'subtotal'   => $subtotal,
                 ]);
                 $total += $subtotal;
