@@ -4,6 +4,15 @@
 
 @push('styles')
 <style>
+{{-- ══ Paleta padrão do app ══
+     Verde  : #4ade80  (vendas / positivo)
+     Vermelho: #f87171 (devoluções / negativo / danger)
+     Azul   : #60a5fa  (líquido / links / neutro)
+     Amarelo: #fbbf24  (aviso / rank #1)
+     Cinza  : #94a3b8  (muted / rank #2)
+     Marrom : #c97a3a  (rank #3)
+     Roxo   : #6366f1  (rank #4)
+--}}
 body {
     background: radial-gradient(circle at top left, rgba(96,165,250,.09), transparent 22%),
                 radial-gradient(circle at bottom right, rgba(34,197,94,.10), transparent 20%),
@@ -57,6 +66,9 @@ body {
 /* ── Filter bar ── */
 .filter-bar .btn-sm { font-size:.72rem; padding:.3rem .7rem; border-radius:.45rem; }
 .filter-bar input[type=date] { background:#0d1424;border-color:#1e293b;color:#e2e8f0;font-size:.72rem;border-radius:.45rem; }
+/* ── Link padrão do app ── */
+.app-link { font-size:.68rem; color:#60a5fa; text-decoration:none; }
+.app-link:hover { color:#93c5fd; }
 </style>
 @endpush
 
@@ -72,7 +84,7 @@ body {
             <input type="date" name="from" value="{{ $from??'' }}" class="form-control form-control-sm" style="max-width:130px;">
             <span class="text-muted-soft" style="font-size:.72rem;">até</span>
             <input type="date" name="to"   value="{{ $to??'' }}"   class="form-control form-control-sm" style="max-width:130px;">
-            <button type="submit" class="btn btn-sm btn-outline-info">Filtrar</button>
+            <button type="submit" class="btn btn-sm btn-outline-secondary">Filtrar</button>
         </div>
         @if($from||$to||$interval)
             <a href="{{ route('dashboard') }}" class="btn btn-sm btn-outline-danger">Limpar</a>
@@ -80,7 +92,7 @@ body {
     </form>
     <div class="ms-auto d-flex gap-2">
         @if(Auth::user()->isGerente())
-            <a href="{{ route('products.index') }}"  class="btn btn-sm btn-outline-light">Produtos</a>
+            <a href="{{ route('products.index') }}"   class="btn btn-sm btn-outline-light">Produtos</a>
             <a href="{{ route('categories.index') }}" class="btn btn-sm btn-outline-light">Categorias</a>
         @endif
         <a href="{{ route('sales.index') }}" class="btn btn-sm btn-outline-light">Vendas</a>
@@ -103,7 +115,7 @@ body {
         </div>
     </div>
     <div class="col-6 col-xl-3">
-        <div class="card kpi-card card-dark-hover h-100 text-white" style="background:linear-gradient(135deg,#0ea5e9,#38bdf8);">
+        <div class="card kpi-card card-dark-hover h-100 text-white" style="background:linear-gradient(135deg,#1e40af,#3b82f6);">
             <div class="card-body py-3 px-3">
                 <div class="kpi-lbl mb-2">Categorias</div>
                 <div class="kpi-val">{{ $totalCategories??0 }}</div>
@@ -150,7 +162,7 @@ body {
 @if(Auth::user()->isGerente())
 @php $balPos = $finCashBalance >= 0; @endphp
 <div class="row g-2 mb-3">
-    <div class="col-12"><p class="section-title mb-2"><i class="bi bi-bank me-1 text-info"></i>Painel Financeiro</p></div>
+    <div class="col-12"><p class="section-title mb-2"><i class="bi bi-bank me-1" style="color:#60a5fa;"></i>Painel Financeiro</p></div>
     <div class="col-6 col-xl-3">
         <div class="fin-card h-100">
             <div class="fin-lbl text-muted-soft mb-1">A Receber</div>
@@ -160,7 +172,7 @@ body {
             @else
                 <small class="text-muted-soft" style="font-size:.68rem;">Sem atrasos</small>
             @endif
-            <div class="mt-2"><a href="{{ route('receivables.index') }}" style="font-size:.68rem;color:#4ade80;text-decoration:none;">Ver contas <i class="bi bi-arrow-right"></i></a></div>
+            <div class="mt-2"><a href="{{ route('receivables.index') }}" class="app-link">Ver contas <i class="bi bi-arrow-right"></i></a></div>
         </div>
     </div>
     <div class="col-6 col-xl-3">
@@ -168,11 +180,11 @@ body {
             <div class="fin-lbl text-muted-soft mb-1">A Pagar</div>
             <div class="fin-val" style="color:#f87171;">R$ {{ number_format($finPayablePending,2,',','.') }}</div>
             @if($finPayableOverdue>0)
-                <small style="color:#fca5a5;font-size:.68rem;"><i class="bi bi-exclamation-triangle-fill me-1"></i>Vencido: R$ {{ number_format($finPayableOverdue,2,',','.') }}</small>
+                <small style="color:#f87171;font-size:.68rem;"><i class="bi bi-exclamation-triangle-fill me-1"></i>Vencido: R$ {{ number_format($finPayableOverdue,2,',','.') }}</small>
             @else
                 <small class="text-muted-soft" style="font-size:.68rem;">Sem atrasos</small>
             @endif
-            <div class="mt-2"><a href="{{ route('bills.index') }}" style="font-size:.68rem;color:#f87171;text-decoration:none;">Ver contas <i class="bi bi-arrow-right"></i></a></div>
+            <div class="mt-2"><a href="{{ route('bills.index') }}" class="app-link">Ver contas <i class="bi bi-arrow-right"></i></a></div>
         </div>
     </div>
     <div class="col-6 col-xl-3">
@@ -190,13 +202,14 @@ body {
         @endphp
         <div class="fin-card h-100">
             <div class="fin-lbl text-muted-soft mb-1">Vencimentos</div>
-            <div class="fin-val" style="color:#818cf8;">{{ $duePayTotal }} a pagar</div>
+            {{-- Cor unificada: azul padrão (era #818cf8 indigo fora do padrão) --}}
+            <div class="fin-val" style="color:#60a5fa;">{{ $duePayTotal }} a pagar</div>
             @if($duePayToday>0)
-                <small style="color:#fca5a5;font-size:.68rem;"><i class="bi bi-alarm-fill me-1"></i>{{ $duePayToday }} vence(m) hoje</small>
+                <small style="color:#f87171;font-size:.68rem;"><i class="bi bi-alarm-fill me-1"></i>{{ $duePayToday }} vence(m) hoje</small>
             @else
                 <small class="text-muted-soft" style="font-size:.68rem;">Próximos 7 dias</small>
             @endif
-            <div class="mt-2"><a href="{{ route('bills.index') }}" style="font-size:.68rem;color:#818cf8;text-decoration:none;">Ver agenda <i class="bi bi-arrow-right"></i></a></div>
+            <div class="mt-2"><a href="{{ route('bills.index') }}" class="app-link">Ver agenda <i class="bi bi-arrow-right"></i></a></div>
         </div>
     </div>
 </div>
@@ -204,15 +217,14 @@ body {
 
 {{-- ════ ROW 3 — Evolução de Vendas (col-8) + Doughnut (col-4) ════ --}}
 <div class="row g-2 mb-2">
-    {{-- Gráfico de linha --}}
     <div class="col-12 col-xl-8">
         <div class="card-dark chart-card h-100">
             <div class="chart-header">
-                <span><i class="bi bi-graph-up-arrow me-2 text-success"></i>Evolução de Vendas</span>
+                <span><i class="bi bi-bar-chart-fill me-2" style="color:#4ade80;"></i>Evolução de Vendas</span>
                 <div class="d-flex gap-3" style="font-size:.68rem;">
                     <span><span class="chart-legend-dot" style="background:#4ade80;"></span>Vendas</span>
                     <span><span class="chart-legend-dot" style="background:#f87171;"></span>Devoluções</span>
-                    <span><span class="chart-legend-dot" style="background:#60a5fa;"></span>Líquido</span>
+                    <span><span class="chart-legend-dot" style="background:#60a5fa;border-radius:2px;height:3px;width:14px;display:inline-block;vertical-align:middle;margin-bottom:1px;"></span>Líquido</span>
                 </div>
             </div>
             <div class="p-2">
@@ -220,12 +232,11 @@ body {
             </div>
         </div>
     </div>
-    {{-- Doughnut --}}
     <div class="col-12 col-xl-4">
         <div class="card-dark chart-card h-100">
             <div class="chart-header">
-                <span><i class="bi bi-trophy me-2 text-warning"></i>Top Produtos</span>
-                <a href="{{ route('reports.top-products') }}" style="font-size:.68rem;color:#38bdf8;text-decoration:none;">Relatório <i class="bi bi-arrow-right"></i></a>
+                <span><i class="bi bi-trophy me-2" style="color:#fbbf24;"></i>Top Produtos</span>
+                <a href="{{ route('reports.top-products') }}" class="app-link">Relatório <i class="bi bi-arrow-right"></i></a>
             </div>
             @if($topSellingProducts->count()>0)
             <div class="p-2 d-flex flex-column align-items-center justify-content-center">
@@ -252,12 +263,13 @@ body {
     <div class="col-12 col-xl-7">
         <div class="card-dark chart-card h-100">
             <div class="chart-header">
-                <span><i class="bi bi-cash-stack me-2 text-info"></i>Fluxo de Caixa <small class="text-muted-soft ms-1" style="font-size:.65rem;">{{ $cfPeriodLabel }}</small></span>
+                <span><i class="bi bi-bar-chart-line-fill me-2" style="color:#60a5fa;"></i>Fluxo de Caixa <small class="text-muted-soft ms-1" style="font-size:.65rem;">{{ $cfPeriodLabel }}</small></span>
                 <div class="d-flex gap-3" style="font-size:.65rem;">
-                    <span><span class="chart-legend-dot" style="background:#4ade80;"></span>Receber</span>
-                    <span><span class="chart-legend-dot" style="background:#34d399;"></span>Recebido</span>
-                    <span><span class="chart-legend-dot" style="background:#f87171;"></span>Pagar</span>
-                    <span><span class="chart-legend-dot" style="background:#60a5fa;"></span>Saldo</span>
+                    <span><span class="chart-legend-dot" style="background:#4ade80;"></span>A receber</span>
+                    <span><span class="chart-legend-dot" style="background:rgba(74,222,128,.45);border:1px solid #4ade80;"></span>Recebido</span>
+                    <span><span class="chart-legend-dot" style="background:#f87171;"></span>A pagar</span>
+                    <span><span class="chart-legend-dot" style="background:rgba(248,113,113,.4);border:1px solid #f87171;"></span>Pago</span>
+                    <span><span class="chart-legend-dot" style="background:#60a5fa;border-radius:2px;height:3px;width:14px;display:inline-block;vertical-align:middle;margin-bottom:1px;"></span>Saldo</span>
                 </div>
             </div>
             <div class="p-2">
@@ -271,11 +283,11 @@ body {
     <div class="col-12 col-xl-{{ Auth::user()->isGerente()?'5':'12' }}">
         <div class="card-dark chart-card h-100">
             <div class="chart-header">
-                <span><i class="bi bi-bar-chart-steps me-2 text-warning"></i>Ranking de Vendas</span>
+                <span><i class="bi bi-bar-chart-steps me-2" style="color:#fbbf24;"></i>Ranking de Vendas</span>
             </div>
             <div class="px-3 py-2">
                 @php
-                    $topColors = ['#fbbf24','#94a3b8','#c97a3a','#6366f1','#22d3ee'];
+                    $topColors = ['#fbbf24','#94a3b8','#c97a3a','#6366f1','#60a5fa'];
                     $maxSold   = $topSellingProducts->max('total_sold') ?: 1;
                     $sumSold   = $topChartData->sum() ?: 1;
                 @endphp
@@ -319,8 +331,8 @@ body {
     <div class="col-12 col-xl-7">
         <div class="card-dark chart-card h-100">
             <div class="chart-header">
-                <span><i class="bi bi-receipt me-2 text-success"></i>Últimas Vendas</span>
-                <a href="{{ route('sales.index') }}" style="font-size:.68rem;color:#38bdf8;text-decoration:none;">Ver todas <i class="bi bi-arrow-right"></i></a>
+                <span><i class="bi bi-receipt me-2" style="color:#4ade80;"></i>Últimas Vendas</span>
+                <a href="{{ route('sales.index') }}" class="app-link">Ver todas <i class="bi bi-arrow-right"></i></a>
             </div>
             <div class="table-responsive">
                 <table class="table tbl mb-0">
@@ -353,8 +365,8 @@ body {
     <div class="col-12 col-xl-5">
         <div class="card-dark chart-card h-100">
             <div class="chart-header">
-                <span><i class="bi bi-exclamation-triangle me-2 text-warning"></i>Estoque Crítico</span>
-                <a href="{{ route('products.index') }}" style="font-size:.68rem;color:#38bdf8;text-decoration:none;">Ver todos <i class="bi bi-arrow-right"></i></a>
+                <span><i class="bi bi-exclamation-triangle me-2" style="color:#fbbf24;"></i>Estoque Crítico</span>
+                <a href="{{ route('products.index') }}" class="app-link">Ver todos <i class="bi bi-arrow-right"></i></a>
             </div>
             <div class="table-responsive">
                 <table class="table tbl mb-0">
@@ -389,8 +401,8 @@ body {
     <div class="col-12">
         <div class="card-dark chart-card">
             <div class="chart-header">
-                <span><i class="bi bi-arrow-return-left me-2 text-danger"></i>Últimas Devoluções</span>
-                <a href="{{ route('returns.index') }}" style="font-size:.68rem;color:#38bdf8;text-decoration:none;">Ver todas <i class="bi bi-arrow-right"></i></a>
+                <span><i class="bi bi-arrow-return-left me-2" style="color:#f87171;"></i>Últimas Devoluções</span>
+                <a href="{{ route('returns.index') }}" class="app-link">Ver todas <i class="bi bi-arrow-right"></i></a>
             </div>
             <div class="table-responsive">
                 <table class="table tbl mb-0">
@@ -422,102 +434,224 @@ body {
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script>
-const _chartDefaults = {
-    tooltip: {
-        backgroundColor:'rgba(8,13,26,.96)',borderColor:'rgba(14,165,233,.18)',borderWidth:1,
-        titleColor:'#e2e8f0',bodyColor:'rgba(148,163,184,.85)',padding:10,
-    },
-    gridColor: 'rgba(148,163,184,.05)',
-    tickColor: 'rgba(148,163,184,.55)',
+/* ═══════════════════════════════════════════════════════════
+   Paleta centralizada — única fonte de verdade para os gráficos
+   ═══════════════════════════════════════════════════════════ */
+const APP = {
+    green  : '#4ade80',
+    red    : '#f87171',
+    blue   : '#60a5fa',
+    yellow : '#fbbf24',
+    gray   : '#94a3b8',
+    brown  : '#c97a3a',
+    purple : '#6366f1',
+    greenBg: 'rgba(74,222,128,.35)',
+    redBg  : 'rgba(248,113,113,.35)',
+    blueBg : 'rgba(96,165,250,.15)',
+    greenBgLight: 'rgba(74,222,128,.15)',
+    redBgLight  : 'rgba(248,113,113,.12)',
 };
+const CHART = {
+    tooltip: {
+        backgroundColor:'rgba(8,13,26,.96)',
+        borderColor:'rgba(96,165,250,.2)',
+        borderWidth:1,
+        titleColor:'#e2e8f0',
+        bodyColor:'rgba(148,163,184,.85)',
+        padding:10,
+    },
+    grid : 'rgba(148,163,184,.05)',
+    tick : 'rgba(148,163,184,.55)',
+    font : { size:10 },
+};
+const fmtBRL = v => 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits:2 });
 
-// ─── Evolução de Vendas ────────────────────────────────────
+/* ─── Evolução de Vendas — Barras agrupadas + linha Líquido ──── */
 (function(){
     const ctx = document.getElementById('salesChart'); if(!ctx) return;
-    new Chart(ctx,{
-        type:'line',
-        data:{
+    new Chart(ctx, {
+        data: {
             labels: @json($chartLabels),
-            datasets:[
-                {label:'Vendas',    data:@json($chartData),        borderColor:'#4ade80',backgroundColor:'rgba(74,222,128,.07)',borderWidth:2,pointRadius:2,fill:true, tension:.35},
-                {label:'Devoluções',data:@json($chartReturnsData), borderColor:'#f87171',backgroundColor:'rgba(248,113,113,.05)',borderWidth:2,pointRadius:2,fill:true, tension:.35},
-                {label:'Líquido',    data:@json($chartNetData),     borderColor:'#60a5fa',backgroundColor:'transparent',         borderWidth:1.5,pointRadius:1,fill:false,tension:.35,borderDash:[4,3]},
+            datasets: [
+                {
+                    type: 'bar',
+                    label: 'Vendas',
+                    data: @json($chartData),
+                    backgroundColor: APP.greenBg,
+                    borderColor: APP.green,
+                    borderWidth: 1.5,
+                    borderRadius: 3,
+                    order: 2,
+                },
+                {
+                    type: 'bar',
+                    label: 'Devoluções',
+                    data: @json($chartReturnsData),
+                    backgroundColor: APP.redBg,
+                    borderColor: APP.red,
+                    borderWidth: 1.5,
+                    borderRadius: 3,
+                    order: 2,
+                },
+                {
+                    type: 'line',
+                    label: 'Líquido',
+                    data: @json($chartNetData),
+                    borderColor: APP.blue,
+                    backgroundColor: APP.blueBg,
+                    borderWidth: 2,
+                    pointRadius: 3,
+                    pointBackgroundColor: APP.blue,
+                    fill: false,
+                    tension: .35,
+                    borderDash: [5, 3],
+                    order: 1,
+                },
             ]
         },
-        options:{
-            responsive:true, maintainAspectRatio:true,
-            interaction:{mode:'index',intersect:false},
-            plugins:{legend:{display:false},tooltip:{..._chartDefaults.tooltip,callbacks:{label:c=>` ${c.dataset.label}: R$ ${c.parsed.y.toLocaleString('pt-BR',{minimumFractionDigits:2})}`}}},
-            scales:{
-                x:{grid:{color:_chartDefaults.gridColor},ticks:{color:_chartDefaults.tickColor,font:{size:10},maxTicksLimit:10}},
-                y:{grid:{color:_chartDefaults.gridColor},ticks:{color:_chartDefaults.tickColor,font:{size:10},callback:v=>'R$'+v.toLocaleString('pt-BR',{minimumFractionDigits:0})}}
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            interaction: { mode:'index', intersect:false },
+            plugins: {
+                legend: { display:false },
+                tooltip: { ...CHART.tooltip, callbacks: { label: c => ` ${c.dataset.label}: ${fmtBRL(c.parsed.y)}` } }
+            },
+            scales: {
+                x: { grid:{ color:CHART.grid }, ticks:{ color:CHART.tick, font:CHART.font, maxTicksLimit:10 } },
+                y: { grid:{ color:CHART.grid }, ticks:{ color:CHART.tick, font:CHART.font, callback: v => 'R$'+v.toLocaleString('pt-BR',{minimumFractionDigits:0}) } }
             }
         }
     });
 })();
 
-// ─── Fluxo de Caixa ───────────────────────────────────────
+/* ─── Fluxo de Caixa — Barras agrupadas + linha Saldo ────────── */
 @if(Auth::user()->isGerente())
 (function(){
     const ctx = document.getElementById('cashflowChart'); if(!ctx) return;
-    new Chart(ctx,{
-        type:'bar',
-        data:{
+    new Chart(ctx, {
+        data: {
             labels: @json($cfLabels),
-            datasets:[
-                {label:'A receber', data:@json($cfDataRecPend),  backgroundColor:'rgba(74,222,128,.45)', borderColor:'#4ade80', borderWidth:1},
-                {label:'Recebido',  data:@json($cfDataRecReceb), backgroundColor:'rgba(52,211,153,.35)', borderColor:'#34d399', borderWidth:1},
-                {label:'A pagar',   data:@json($cfDataPayPend),  backgroundColor:'rgba(248,113,113,.4)', borderColor:'#f87171', borderWidth:1},
-                {label:'Pago',      data:@json($cfDataPayPaga),  backgroundColor:'rgba(248,113,113,.2)', borderColor:'#fca5a5', borderWidth:1},
-                {type:'line',label:'Saldo',data:@json($cfDataBalance),borderColor:'#60a5fa',backgroundColor:'transparent',borderWidth:2,pointRadius:2,fill:false,tension:.3,yAxisID:'y'},
+            datasets: [
+                {
+                    type: 'bar',
+                    label: 'A receber',
+                    data: @json($cfDataRecPend),
+                    backgroundColor: APP.greenBg,
+                    borderColor: APP.green,
+                    borderWidth: 1.5,
+                    borderRadius: 3,
+                    order: 2,
+                },
+                {
+                    type: 'bar',
+                    label: 'Recebido',
+                    data: @json($cfDataRecReceb),
+                    backgroundColor: APP.greenBgLight,
+                    borderColor: APP.green,
+                    borderWidth: 1,
+                    borderRadius: 3,
+                    borderDash: [3,2],
+                    order: 2,
+                },
+                {
+                    type: 'bar',
+                    label: 'A pagar',
+                    data: @json($cfDataPayPend),
+                    backgroundColor: APP.redBg,
+                    borderColor: APP.red,
+                    borderWidth: 1.5,
+                    borderRadius: 3,
+                    order: 2,
+                },
+                {
+                    type: 'bar',
+                    label: 'Pago',
+                    data: @json($cfDataPayPaga),
+                    backgroundColor: APP.redBgLight,
+                    borderColor: APP.red,
+                    borderWidth: 1,
+                    borderRadius: 3,
+                    order: 2,
+                },
+                {
+                    type: 'line',
+                    label: 'Saldo',
+                    data: @json($cfDataBalance),
+                    borderColor: APP.blue,
+                    backgroundColor: APP.blueBg,
+                    borderWidth: 2,
+                    pointRadius: 3,
+                    pointBackgroundColor: APP.blue,
+                    fill: false,
+                    tension: .3,
+                    borderDash: [5, 3],
+                    order: 1,
+                },
             ]
         },
-        options:{
-            responsive:true, maintainAspectRatio:true,
-            interaction:{mode:'index',intersect:false},
-            plugins:{legend:{display:false},tooltip:{..._chartDefaults.tooltip,callbacks:{label:c=>` ${c.dataset.label}: R$ ${c.parsed.y.toLocaleString('pt-BR',{minimumFractionDigits:2})}`}}},
-            scales:{
-                x:{stacked:true, grid:{color:_chartDefaults.gridColor},ticks:{color:_chartDefaults.tickColor,font:{size:10},maxTicksLimit:10}},
-                y:{stacked:false,grid:{color:_chartDefaults.gridColor},ticks:{color:_chartDefaults.tickColor,font:{size:10},callback:v=>'R$'+v.toLocaleString('pt-BR',{minimumFractionDigits:0})}}
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            interaction: { mode:'index', intersect:false },
+            plugins: {
+                legend: { display:false },
+                tooltip: { ...CHART.tooltip, callbacks: { label: c => ` ${c.dataset.label}: ${fmtBRL(c.parsed.y)}` } }
+            },
+            scales: {
+                x: { grid:{ color:CHART.grid }, ticks:{ color:CHART.tick, font:CHART.font, maxTicksLimit:10 } },
+                y: { grid:{ color:CHART.grid }, ticks:{ color:CHART.tick, font:CHART.font, callback: v => 'R$'+v.toLocaleString('pt-BR',{minimumFractionDigits:0}) } }
             }
         }
     });
 })();
 @endif
 
-// ─── Doughnut Top Produtos ─────────────────────────────────
+/* ─── Doughnut Top Produtos ──────────────────────────────────── */
 @if($topSellingProducts->count()>0)
 (function(){
     const labels  = @json($topChartLabels);
     const sold    = @json($topChartData);
     const revenue = @json($topChartRevenue);
-    const colors  = ['#fbbf24','#94a3b8','#c97a3a','#6366f1','#22d3ee'];
-    const total   = sold.reduce((a,b)=>a+b,0);
+    const colors  = [APP.yellow, APP.gray, APP.brown, APP.purple, APP.blue];
+    const total   = sold.reduce((a,b)=>a+b, 0);
     const ctx = document.getElementById('topProductsChart'); if(!ctx) return;
-    const chart = new Chart(ctx,{
-        type:'doughnut',
-        data:{labels,datasets:[{data:sold,backgroundColor:colors.map(c=>c+'cc'),borderColor:colors,borderWidth:2,hoverOffset:8}]},
-        options:{
-            cutout:'65%',responsive:true,
-            plugins:{
-                legend:{display:false},
-                tooltip:{..._chartDefaults.tooltip,callbacks:{label:ctx=>{
-                    const pct=total>0?Math.round(ctx.parsed/total*100):0;
-                    return [` ${ctx.parsed} un. (${pct}%)`,` R$ ${revenue[ctx.dataIndex].toLocaleString('pt-BR',{minimumFractionDigits:2})}`];
+    const chart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels,
+            datasets: [{
+                data: sold,
+                backgroundColor: colors.map(c => c + 'cc'),
+                borderColor: colors,
+                borderWidth: 2,
+                hoverOffset: 8,
+            }]
+        },
+        options: {
+            cutout: '65%',
+            responsive: true,
+            plugins: {
+                legend: { display:false },
+                tooltip: { ...CHART.tooltip, callbacks: { label: ctx => {
+                    const pct = total > 0 ? Math.round(ctx.parsed / total * 100) : 0;
+                    return [` ${ctx.parsed} un. (${pct}%)`, ` ${fmtBRL(revenue[ctx.dataIndex])}`];
                 }}}
             }
         }
     });
-    const cv=document.getElementById('topChartCenterVal');
-    ctx.addEventListener('mousemove',e=>{
-        const pts=chart.getElementsAtEventForMode(e,'nearest',{intersect:true},false);
-        if(pts.length&&cv) cv.textContent=sold[pts[0].index];
+    const cv = document.getElementById('topChartCenterVal');
+    ctx.addEventListener('mousemove', e => {
+        const pts = chart.getElementsAtEventForMode(e, 'nearest', {intersect:true}, false);
+        if(pts.length && cv) cv.textContent = sold[pts[0].index];
     });
-    ctx.addEventListener('mouseleave',()=>{ if(cv) cv.textContent=total; });
-    const leg=document.getElementById('topChartLegend');
-    if(leg) labels.forEach((l,i)=>{
-        const pct=total>0?Math.round(sold[i]/total*100):0;
-        leg.innerHTML+=`<div style="display:flex;align-items:center;gap:.3rem;font-size:.65rem;color:rgba(226,232,240,.65);"><span style="width:8px;height:8px;border-radius:50%;background:${colors[i]};flex-shrink:0;"></span>${l} <b style="color:${colors[i]}">${pct}%</b></div>`;
+    ctx.addEventListener('mouseleave', () => { if(cv) cv.textContent = total; });
+    const leg = document.getElementById('topChartLegend');
+    if(leg) labels.forEach((l,i) => {
+        const pct = total > 0 ? Math.round(sold[i]/total*100) : 0;
+        leg.innerHTML += `<div style="display:flex;align-items:center;gap:.3rem;font-size:.65rem;color:rgba(226,232,240,.65);">
+            <span style="width:8px;height:8px;border-radius:50%;background:${colors[i]};flex-shrink:0;"></span>
+            ${l} <b style="color:${colors[i]}">${pct}%</b></div>`;
     });
 })();
 @endif
