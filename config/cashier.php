@@ -11,9 +11,9 @@ return [
     ],
 
     'prices' => [
-        'pro'        => env('STRIPE_PRICE_PRO',        'price_1TYyVA3wN3kkGmhWiPsZtbic'),
-        'business'   => env('STRIPE_PRICE_BUSINESS',   'price_1TYyXP3wN3kkGmhW0xJhAbzA'),
-        'pro_launch' => env('STRIPE_PRICE_PRO_LAUNCH', 'price_1TYyYS3wN3kkGmhWxiT4Epfd'),
+        'pro_launch' => env('STRIPE_PRICE_PRO_LAUNCH', 'price_1TZZQE3wN3kkGmhWN7WeiL0v'), // R$ 39,90 — Oferta de Lançamento
+        'pro'        => env('STRIPE_PRICE_PRO',        'price_1TZZOb3wN3kkGmhWDE9PHRDp'), // R$ 59,90/mês
+        'business'   => env('STRIPE_PRICE_BUSINESS',   'price_1TZZOV3wN3kkGmhWsUKZHtae'), // R$ 119,90/mês
     ],
 
     'model'           => App\Models\Company::class,
