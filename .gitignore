@@ -29,3 +29,7 @@ npm-debug.log
 yarn-error.log
 /bootstrap/cache/*
 !/bootstrap/cache/.gitignore
+
+# Stripe CLI binaries
+stripe.exe
+stripe
