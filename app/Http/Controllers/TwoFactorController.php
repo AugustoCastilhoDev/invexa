@@ -6,6 +6,9 @@ use Illuminate\Http\Request;
 
 class TwoFactorController extends Controller
 {
+    // Janela de tolerância: ±1 período de 30s (cobre dessincronização de relógio)
+    private int $window = 1;
+
     // ── Exibe a tela de setup (QR Code)
     public function show()
     {
@@ -34,20 +37,20 @@ class TwoFactorController extends Controller
     public function confirm(Request $request)
     {
         $request->validate([
-            'code' => ['required', 'string', 'size:6'],
+            'code' => ['required', 'digits:6'],
         ], [
             'code.required' => 'Informe o código do aplicativo.',
-            'code.size'     => 'O código deve ter 6 dígitos.',
+            'code.digits'   => 'O código deve ter exatamente 6 dígitos numéricos.',
         ]);
 
         $user      = auth()->user();
         $google2fa = app('pragmarx.google2fa');
         $secret    = $this->decryptSecret($user);
 
-        $valid = $google2fa->verifyKey($secret, $request->code);
+        $valid = $google2fa->verifyKey($secret, $request->code, $this->window);
 
         if (! $valid) {
-            return back()->withErrors(['code' => 'Código inválido. Tente novamente.']);
+            return back()->withErrors(['code' => 'Código inválido. Aguarde o próximo código e tente novamente.']);
         }
 
         $user->update(['two_factor_confirmed_at' => now()]);
@@ -99,7 +102,7 @@ class TwoFactorController extends Controller
         $google2fa = app('pragmarx.google2fa');
         $secret    = $this->decryptSecret($user);
 
-        $valid = $google2fa->verifyKey($secret, $request->code);
+        $valid = $google2fa->verifyKey($secret, $request->code, $this->window);
 
         if (! $valid) {
             return back()->withErrors(['code' => 'Código inválido. Verifique o app e tente novamente.']);
@@ -111,13 +114,12 @@ class TwoFactorController extends Controller
         return redirect()->intended(route('dashboard'));
     }
 
-    // ── Helper: tenta decrypt; se falhar (payload inválido), regenera o secret
+    // ── Helper: tenta decrypt; se falhar regenera o secret
     private function decryptSecret(\App\Models\User $user): string
     {
         try {
             return decrypt($user->two_factor_secret);
         } catch (\Illuminate\Contracts\Encryption\DecryptException) {
-            // Secret foi salvo sem encrypt (sessão anterior) — regenera
             $google2fa = app('pragmarx.google2fa');
             $secret    = $google2fa->generateSecretKey();
             $user->update([
