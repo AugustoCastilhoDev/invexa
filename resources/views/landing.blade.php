@@ -185,6 +185,16 @@
         .plan-name { font-size: .875rem; font-weight: 700; color: var(--electric); text-transform: uppercase; letter-spacing: .08em; }
         .plan-price { font-size: 2.4rem; font-weight: 800; color: #f1f5f9; line-height: 1; margin: .5rem 0 .25rem; }
         .plan-price span { font-size: .95rem; font-weight: 400; color: rgba(148,163,184,.6); }
+        .plan-price-old { font-size: 1rem; color: rgba(148,163,184,.45); text-decoration: line-through; margin-bottom: .1rem; }
+        .plan-offer-badge {
+            display: inline-block;
+            background: rgba(251,191,36,.15);
+            border: 1px solid rgba(251,191,36,.35);
+            color: #FCD34D;
+            font-size: .7rem; font-weight: 700;
+            padding: .15rem .7rem; border-radius: 999px;
+            margin-bottom: .5rem;
+        }
         .plan-desc { font-size: .82rem; color: rgba(148,163,184,.6); margin-bottom: 1.5rem; }
         .plan-features li {
             font-size: .875rem; color: rgba(226,232,240,.75);
@@ -382,7 +392,7 @@
         </div>
         <div class="row g-4 justify-content-center">
 
-            {{-- Gratuito/Trial --}}
+            {{-- Free --}}
             <div class="col-md-4">
                 <div class="plan-card">
                     <div class="plan-name">Free</div>
@@ -407,7 +417,9 @@
                 <div class="plan-card featured">
                     <span class="plan-badge">Mais popular</span>
                     <div class="plan-name">Pro</div>
-                    <div class="plan-price">R$ 79 <span>/mês</span></div>
+                    <div class="plan-offer-badge"><i class="bi bi-lightning-fill"></i> Oferta de Lançamento</div>
+                    <div class="plan-price-old">R$ 59,90/mês</div>
+                    <div class="plan-price">R$ 39,90 <span>/mês</span></div>
                     <p class="plan-desc">Para empresas em crescimento</p>
                     <ul class="list-unstyled plan-features">
                         <li><i class="bi bi-check-circle-fill"></i> Até 5 usuários</li>
@@ -427,7 +439,7 @@
             <div class="col-md-4">
                 <div class="plan-card">
                     <div class="plan-name">Business</div>
-                    <div class="plan-price">R$ 149 <span>/mês</span></div>
+                    <div class="plan-price">R$ 119,90 <span>/mês</span></div>
                     <p class="plan-desc">Para empresas sem limites</p>
                     <ul class="list-unstyled plan-features">
                         <li><i class="bi bi-check-circle-fill"></i> Usuários ilimitados</li>
