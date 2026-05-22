@@ -166,6 +166,7 @@
                         @endif
                         <form action="{{ route('receivables.receive', $receivable) }}" method="POST">
                             @csrf
+                            @method('PATCH')
                             <div class="mb-3">
                                 <label class="form-label text-soft small">Valor Recebido (R$) <span class="text-danger">*</span></label>
                                 <input type="number" name="amount_received" class="form-control" required
