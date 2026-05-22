@@ -23,16 +23,26 @@
 
 <table>
   <thead>
-    <tr><th>#</th><th>Produto</th><th>Categoria</th><th class="text-end">Qtd. Vendida</th><th class="text-end">Receita Total</th></tr>
+    <tr>
+      <th>#</th>
+      <th>Produto</th>
+      <th>Categoria</th>
+      <th class="text-end">Qtd. Vendida</th>
+      <th class="text-end">Nº de Vendas</th>
+      <th class="text-end">Receita Total</th>
+      <th class="text-end">Ticket Médio</th>
+    </tr>
   </thead>
   <tbody>
     @foreach($products as $i => $p)
     <tr>
       <td class="rank">{{ $i + 1 }}º</td>
-      <td>{{ $p->name }}</td>
-      <td>{{ $p->category?->name ?? '—' }}</td>
-      <td class="text-end">{{ $p->total_sold ?? $p->total_quantity ?? 0 }}</td>
-      <td class="text-end">R$ {{ number_format($p->total_revenue ?? 0, 2, ',', '.') }}</td>
+      <td>{{ $p->product_name }}</td>
+      <td>{{ $p->category_name ?? '—' }}</td>
+      <td class="text-end">{{ number_format($p->total_qty, 0, ',', '.') }}</td>
+      <td class="text-end">{{ $p->total_sales }}</td>
+      <td class="text-end">R$ {{ number_format($p->total_revenue, 2, ',', '.') }}</td>
+      <td class="text-end">R$ {{ $p->total_sales > 0 ? number_format($p->total_revenue / $p->total_sales, 2, ',', '.') : '0,00' }}</td>
     </tr>
     @endforeach
   </tbody>
