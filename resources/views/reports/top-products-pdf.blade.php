@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<title>Produtos Mais Vendidos</title>
+@include('reports.partials.pdf-head')
+<title>Produtos Mais Vendidos — Invexa</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: Arial, sans-serif; font-size: 12px; color: #1a1a1a; padding: 32px; }
@@ -49,7 +49,7 @@
 </table>
 
 <div class="no-print" style="margin-top:32px;text-align:center;">
-  <button onclick="window.print()" style="padding:10px 28px;font-size:14px;cursor:pointer;background:#1d4ed8;color:#fff;border:none;border-radius:6px;">&#128438; Imprimir / Salvar como PDF</button>
+  <button onclick="window.print()" style="padding:10px 28px;font-size:14px;cursor:pointer;background:#1d4ed8;color:#fff;border:none;border-radius:6px;">🖨 Imprimir / Salvar como PDF</button>
   <a href="javascript:history.back()" style="margin-left:12px;font-size:13px;color:#555;">Voltar</a>
 </div>
 </body>
