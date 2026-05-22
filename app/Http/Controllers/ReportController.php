@@ -336,7 +336,7 @@ class ReportController extends Controller
                 optional($p->category)->name ?? '',
                 $p->quantity,
                 $p->min_quantity ?? 0,
-                number_format($p->cost_price ?? 0, 2, ',', '.'),
+                number_format($p->cost ?? 0, 2, ',', '.'),
                 number_format($p->price, 2, ',', '.'),
                 $statusLabel,
             ]);
@@ -511,16 +511,16 @@ class ReportController extends Controller
             ->where('s.company_id', $companyId)
             ->whereNotIn('s.status', ['cancelada'])
             ->whereBetween('s.created_at', [$from, $to])
-            ->groupBy('sale_items.product_id', 'p.name', 'c.name', 'p.cost_price')
+            ->groupBy('sale_items.product_id', 'p.name', 'c.name', 'p.cost')
             ->selectRaw(
                 'sale_items.product_id,'
                 . 'p.name            AS product_name,'
                 . 'c.name            AS category_name,'
-                . 'p.cost_price      AS unit_cost,'
+                . 'p.cost            AS unit_cost,'
                 . 'SUM(sale_items.quantity)  AS total_qty,'
                 . 'SUM(sale_items.subtotal)  AS total_revenue,'
-                . 'SUM(sale_items.quantity * COALESCE(p.cost_price, 0)) AS total_cost,'
-                . '(SUM(sale_items.subtotal) - SUM(sale_items.quantity * COALESCE(p.cost_price, 0))) AS total_profit'
+                . 'SUM(sale_items.quantity * COALESCE(p.cost, 0)) AS total_cost,'
+                . '(SUM(sale_items.subtotal) - SUM(sale_items.quantity * COALESCE(p.cost, 0))) AS total_profit'
             )
             ->orderByDesc('total_profit');
 
@@ -680,7 +680,7 @@ class ReportController extends Controller
         $products    = $query->get();
         $totalActive = $products->count();
         $totalLow    = $products->filter(fn($p) => $p->active && $p->min_quantity > 0 && $p->quantity <= $p->min_quantity)->count();
-        $totalValue  = $products->sum(fn($p) => ($p->cost_price ?? $p->price) * $p->quantity);
+        $totalValue  = $products->sum(fn($p) => ($p->cost ?? $p->price) * $p->quantity);
 
         return [$companyId, $filter, $products, $totalActive, $totalLow, $totalValue];
     }
