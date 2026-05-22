@@ -59,11 +59,6 @@ class SaleController extends Controller
 
     public function store(Request $request)
     {
-        $company = auth()->user()->company;
-        if ($company && ! $company->canAdd('products')) {
-            return redirect()->route('products.index')->with('error', 'Limite de produtos do seu plano atingido.');
-        }
-
         $companyId = auth()->user()->company_id;
 
         $validated = $request->validate([
@@ -87,7 +82,6 @@ class SaleController extends Controller
 
         try {
             DB::transaction(function () use ($validated, $companyId, $customerName, $saleDateTime) {
-                // Número seqüencial isolado por empresa
                 $saleNumber = Sale::withoutGlobalScope('company')
                     ->where('company_id', $companyId)
                     ->max('sale_number') + 1;
@@ -264,16 +258,31 @@ class SaleController extends Controller
                     ]);
                 }
 
-                if ($validated['status'] === 'concluida' && $prevStatus !== 'concluida' && !$sale->receivable) {
-                    Receivable::create([
-                        'company_id'  => $companyId,
-                        'customer_id' => $sale->customer_id,
-                        'sale_id'     => $sale->id,
-                        'description' => "Venda #{$sale->sale_number} — {$customerName}",
-                        'amount'      => $total,
-                        'due_date'    => Carbon::parse($saleDateTime)->addDays($this->receivableDueDays)->toDateString(),
-                        'status'      => 'pendente',
-                    ]);
+                // Sincroniza Receivable com o status e valor final da venda
+                $sale->load('receivable');
+                if ($validated['status'] === 'concluida') {
+                    if ($sale->receivable) {
+                        // Atualiza valor e descrição do Receivable existente
+                        $sale->receivable->update([
+                            'amount'      => $total,
+                            'customer_id' => $sale->customer_id,
+                            'description' => "Venda #{$sale->sale_number} — {$customerName}",
+                        ]);
+                    } else {
+                        // Cria Receivable se ainda não existe (mudança de pendente → concluida)
+                        Receivable::create([
+                            'company_id'  => $companyId,
+                            'customer_id' => $sale->customer_id,
+                            'sale_id'     => $sale->id,
+                            'description' => "Venda #{$sale->sale_number} — {$customerName}",
+                            'amount'      => $total,
+                            'due_date'    => Carbon::parse($saleDateTime)->addDays($this->receivableDueDays)->toDateString(),
+                            'status'      => 'pendente',
+                        ]);
+                    }
+                } elseif ($validated['status'] === 'cancelada' && $sale->receivable) {
+                    // Se venda editada para cancelada, cancela o Receivable vinculado
+                    $sale->receivable->update(['status' => 'cancelado']);
                 }
             });
 
@@ -291,7 +300,7 @@ class SaleController extends Controller
         $companyId = auth()->user()->company_id;
         try {
             DB::transaction(function () use ($sale, $companyId) {
-                $sale->load('items.product');
+                $sale->load('items.product', 'receivable');
                 $alreadyReturned = SaleReturnItem::whereHas('saleReturn', fn($q) => $q->where('sale_id', $sale->id))
                     ->selectRaw('product_id, SUM(quantity) as total_returned')
                     ->groupBy('product_id')->pluck('total_returned', 'product_id')->map(fn($v) => (int) $v);
@@ -311,6 +320,11 @@ class SaleController extends Controller
                     ]);
                 }
                 $sale->update(['status' => 'cancelada']);
+
+                // Cancela o Receivable vinculado, se existir e ainda estiver pendente
+                if ($sale->receivable && $sale->receivable->status === 'pendente') {
+                    $sale->receivable->update(['status' => 'cancelado']);
+                }
             });
             return back()->with('success', 'Venda cancelada e estoque estornado com sucesso.');
         } catch (\Exception $e) {
@@ -376,15 +390,14 @@ class SaleController extends Controller
         $pdf = Pdf::loadView('sales.pdf', compact('sale', 'company'))
             ->setPaper('a4', 'portrait')
             ->setOptions([
-                'defaultFont'        => 'DejaVu Sans',
+                'defaultFont'          => 'DejaVu Sans',
                 'isHtml5ParserEnabled' => true,
-                'isRemoteEnabled'    => false,
-                'dpi'                => 150,
-                // Margens em pontos: 1mm ≈ 2.83pt  →  20mm ≈ 56pt | 22mm ≈ 62pt
-                'margin_top'         => 20,
-                'margin_right'       => 20,
-                'margin_bottom'      => 20,
-                'margin_left'        => 20,
+                'isRemoteEnabled'      => false,
+                'dpi'                  => 150,
+                'margin_top'           => 20,
+                'margin_right'         => 20,
+                'margin_bottom'        => 20,
+                'margin_left'          => 20,
             ]);
 
         return $pdf->download('nf-venda-' . $sale->sale_number . '-' . now()->format('Ymd') . '.pdf');
