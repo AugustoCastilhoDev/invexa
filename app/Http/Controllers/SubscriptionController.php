@@ -18,6 +18,18 @@ class SubscriptionController extends Controller
         return view('settings.subscription', compact('company', 'subscription', 'invoices'));
     }
 
+    /**
+     * Redireciona para checkout via GET (usado após registro)
+     */
+    public function checkoutRedirect(Request $request)
+    {
+        $request->merge([
+            'plan'    => $request->route('plan'),
+            'billing' => $request->route('billing') ?? 'monthly',
+        ]);
+        return $this->checkout($request);
+    }
+
     public function checkout(Request $request)
     {
         $request->validate([
@@ -29,7 +41,6 @@ class SubscriptionController extends Controller
         $plan    = $request->input('plan');
         $company = auth()->user()->company;
 
-        // Resolve price ID: procura plan_annual primeiro, cai em plan
         $priceKey = ($billing === 'annual')
             ? config('cashier.prices.' . $plan . '_annual',
               config('cashier.prices.' . $plan))
@@ -68,9 +79,7 @@ class SubscriptionController extends Controller
 
     private function resolveStripeCustomer(Company $company): void
     {
-        if (! $company->stripe_id) {
-            return;
-        }
+        if (! $company->stripe_id) return;
 
         try {
             $stripe = new \Stripe\StripeClient(config('cashier.secret'));
@@ -93,13 +102,10 @@ class SubscriptionController extends Controller
             try {
                 $stripe  = new \Stripe\StripeClient(config('cashier.secret'));
                 $session = $stripe->checkout->sessions->retrieve($request->session_id);
-
                 if (! empty($session->metadata->plan)) {
                     $plan = $session->metadata->plan === 'business' ? 'business' : 'pro';
                 }
-            } catch (\Exception $e) {
-                // fallback abaixo
-            }
+            } catch (\Exception $e) {}
         }
 
         if ($plan === 'free') {
@@ -113,17 +119,18 @@ class SubscriptionController extends Controller
                     config('cashier.prices.business')        => 'business',
                     config('cashier.prices.business_annual') => 'business',
                 ];
-                $priceId = $sub->items()->first()?->stripe_price
-                         ?? $sub->stripe_price
-                         ?? null;
+                $priceId = $sub->items()->first()?->stripe_price ?? $sub->stripe_price ?? null;
                 $plan = $map[$priceId] ?? 'free';
             }
         }
 
-        $company->update([
-            'plan'          => $plan,
-            'trial_ends_at' => null,
-        ]);
+        $company->update(['plan' => $plan, 'trial_ends_at' => null]);
+
+        // Se onboarding ainda não foi feito, leva para lá antes do dashboard
+        if (! $company->onboarding_completed) {
+            return redirect()->route('onboarding.show')
+                ->with('success', '🎉 Assinatura ativada! Complete seu cadastro para começar.');
+        }
 
         return redirect()->route('dashboard')
             ->with('success', '🎉 Assinatura ativada com sucesso! Bem-vindo ao ' . ucfirst($plan) . '.');
@@ -138,7 +145,6 @@ class SubscriptionController extends Controller
     {
         $company = auth()->user()->company;
         $company->subscription('default')?->cancel();
-
         return redirect()->route('subscription.index')
             ->with('warning', 'Assinatura cancelada. Você terá acesso até o fim do período pago.');
     }

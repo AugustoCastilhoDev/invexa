@@ -31,6 +31,8 @@ class RegisteredUserController extends Controller
             'name'         => ['required', 'string', 'max:255'],
             'email'        => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:' . User::class],
             'password'     => ['required', 'confirmed', Rules\Password::min(8)->letters()->numbers()],
+            'plan'         => ['nullable', 'in:free,pro,pro_launch,business'],
+            'billing'      => ['nullable', 'in:monthly,annual'],
         ], [
             'company_name.required' => 'Informe o nome da empresa.',
             'company_name.min'      => 'O nome da empresa deve ter pelo menos 2 caracteres.',
@@ -43,7 +45,11 @@ class RegisteredUserController extends Controller
             'password.min'          => 'A senha deve ter pelo menos 8 caracteres com letras e números.',
         ]);
 
-        // 1. Cria a empresa com trial de 14 dias e onboarding pendente
+        $plan    = $request->input('plan', 'free');
+        $billing = $request->input('billing', 'monthly');
+        $isPaid  = in_array($plan, ['pro', 'pro_launch', 'business']);
+
+        // 1. Cria a empresa — sempre free inicialmente (plano é ativado após pagamento)
         $company = Company::create([
             'name'                 => $request->company_name,
             'slug'                 => Company::generateSlug($request->company_name),
@@ -54,7 +60,7 @@ class RegisteredUserController extends Controller
             'onboarding_completed' => false,
         ]);
 
-        // 2. Cria o usuário como admin da empresa
+        // 2. Cria o usuário admin
         $user = User::create([
             'name'       => $request->name,
             'email'      => $request->email,
@@ -65,17 +71,24 @@ class RegisteredUserController extends Controller
         ]);
 
         event(new Registered($user));
-
         Auth::login($user);
 
-        // 3. Envia e-mail de boas-vindas
+        // 3. E-mail de boas-vindas
         try {
             Mail::to($user->email)->send(new WelcomeMail($user));
         } catch (\Throwable $e) {
             Log::warning('WelcomeMail não enviado para ' . $user->email . ': ' . $e->getMessage());
         }
 
-        // 4. Redireciona para o wizard de onboarding
+        // 4. Se plano pago foi selecionado, redireciona direto para checkout
+        if ($isPaid) {
+            return redirect()->route('subscription.checkout.redirect', [
+                'plan'    => $plan,
+                'billing' => $billing,
+            ]);
+        }
+
+        // 5. Plano free — wizard de onboarding normal
         return redirect()->route('onboarding.show');
     }
 }
