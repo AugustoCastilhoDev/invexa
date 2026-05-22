@@ -26,7 +26,7 @@
     <div class="col-6 col-md-3">
         <div class="card card-dark-bg border border-secondary h-100">
             <div class="card-body py-3">
-                <p class="text-soft mb-1" style="font-size:.75rem;">A RECEBER</p>
+                <p class="text-soft mb-1" style="font-size:.75rem;">PENDENTES</p>
                 <p class="text-warning fw-bold fs-6 mb-0">R$ {{ number_format($totalPending, 2, ',', '.') }}</p>
             </div>
         </div>

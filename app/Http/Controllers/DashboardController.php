@@ -106,6 +106,7 @@ class DashboardController extends Controller
             $previousEnd   = $fromDate->copy()->subDay();
 
             $previousRevenue = (float) Sale::where('company_id', $companyId)
+                ->where('status', 'concluida')
                 ->whereBetween('sale_date', [$previousStart, $previousEnd])
                 ->sum('total');
 
@@ -123,7 +124,9 @@ class DashboardController extends Controller
 
         $todayStr = now($this->tz)->toDateString();
 
+        // Fluxo de caixa do dia — apenas vendas CONCLUÍDAS
         $salesToday = (float) Sale::where('company_id', $companyId)
+            ->where('status', 'concluida')
             ->whereBetween(DB::raw('COALESCE(sale_date, created_at)'), [
                 Carbon::parse($todayStr, $this->tz)->startOfDay(),
                 Carbon::parse($todayStr, $this->tz)->endOfDay(),
@@ -198,6 +201,7 @@ class DashboardController extends Controller
             $chartTo   = now($this->tz)->toDateString();
         }
 
+        // Gráfico de vendas — apenas concluídas
         $chartQuery       = $this->filteredSalesQuery($request, $chartFrom, $chartTo);
         $salesByDayModule = $chartQuery
             ->selectRaw('DATE(COALESCE(sale_date, created_at)) as day, SUM(total) as total')
@@ -246,6 +250,15 @@ class DashboardController extends Controller
         $chartNetData     = $allDays->map(
             fn($d) => round((float)($salesByDay[$d] ?? 0) - (float)($returnsByDay[$d] ?? 0), 2)
         );
+
+        // Se não há dados reais no período, garante ao menos o dia de hoje no gráfico
+        if ($allDays->isEmpty()) {
+            $todayLabel       = now($this->tz)->format('d/m');
+            $chartLabels      = collect([$todayLabel]);
+            $chartData        = collect([0]);
+            $chartReturnsData = collect([0]);
+            $chartNetData     = collect([0]);
+        }
 
         $todayDate  = now($this->tz)->toDateString();
         $in7Date    = now($this->tz)->addDays(7)->toDateString();
@@ -357,6 +370,18 @@ class DashboardController extends Controller
             $cfDataBalance->push(round($runningBalance, 2));
         }
 
+        // Fallback: garante ao menos um ponto no fluxo de caixa
+        if ($cfAllDays->isEmpty()) {
+            $todayLabel    = now($this->tz)->format('d/m');
+            $cfLabels      = collect([$todayLabel]);
+            $cfDataRecPend  = collect([0]);
+            $cfDataRecReceb = collect([0]);
+            $cfDataPay      = collect([0]);
+            $cfDataPayPend  = collect([0]);
+            $cfDataPayPaga  = collect([0]);
+            $cfDataBalance  = collect([0]);
+        }
+
         $mesesPt = ['janeiro','fevereiro','março','abril','maio','junho',
                     'julho','agosto','setembro','outubro','novembro','dezembro'];
         if ($interval === 'today') {
@@ -462,7 +487,9 @@ class DashboardController extends Controller
             $to   = now($this->tz)->toDateString();
         }
         $companyId = auth()->user()->company_id;
-        $query     = Sale::where('company_id', $companyId);
+        // Apenas vendas concluídas contribuem para faturamento e gráficos
+        $query = Sale::where('company_id', $companyId)
+                     ->where('status', 'concluida');
         if ($from && $to) {
             $query->whereBetween(
                 DB::raw('COALESCE(sale_date, created_at)'),
