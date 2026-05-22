@@ -86,7 +86,6 @@ Route::middleware(['auth', 'company'])->prefix('settings')->name('subscription.'
     Route::get('/subscription/success',                [SubscriptionController::class, 'success'])->name('success');
     Route::get('/subscription/portal',                 [SubscriptionController::class, 'billingPortal'])->name('billing-portal');
     Route::delete('/subscription/cancel',              [SubscriptionController::class, 'cancel'])->name('cancel');
-    // Redirect pós-registro: redireciona para checkout via auto-POST
     Route::get('/subscription/checkout/redirect',      [SubscriptionController::class, 'checkoutRedirect'])->name('checkout.redirect');
     Route::get('/subscription/invoice/{invoice}', function (string $invoice) {
         return auth()->user()->company->downloadInvoice($invoice);
@@ -162,6 +161,8 @@ Route::middleware(['auth', 'company', 'trial', 'onboarding'])->group(function ()
     Route::delete('/stock/{stock}', [StockMovementController::class, 'destroy'])->name('stock.destroy');
 
     Route::resource('products', ProductController::class);
+    Route::post('/products/import', [ProductController::class, 'import'])->name('products.import');
+    Route::get('/products/import/template', [ProductController::class, 'importTemplate'])->name('products.import.template');
     Route::resource('categories', CategoryController::class);
 
     Route::get('/customers/search', [CustomerController::class, 'search'])->name('customers.search');
@@ -183,31 +184,35 @@ Route::middleware(['auth', 'company', 'trial', 'onboarding'])->group(function ()
     Route::patch('/receivables/{receivable}/cancel',  [ReceivableController::class, 'cancel'])->name('receivables.cancel');
 
     Route::prefix('reports')->name('reports.')->group(function () {
-        Route::get('/',                  [ReportController::class, 'index'])->name('index');
-        Route::get('/financial',         [ReportController::class, 'financial'])->name('financial');
-        Route::get('/financial/pdf',     [ReportController::class, 'financialPdf'])->name('financial.pdf');
-        Route::get('/financial/csv',     [ReportController::class, 'financialCsv'])->name('financial.csv');
-        Route::get('/purchases',         [ReportController::class, 'purchases'])->name('purchases');
-        Route::get('/purchases/pdf',     [ReportController::class, 'purchasesPdf'])->name('purchases.pdf');
-        Route::get('/purchases/csv',     [ReportController::class, 'purchasesCsv'])->name('purchases.csv');
-        Route::get('/sales',             [ReportController::class, 'sales'])->name('sales');
-        Route::get('/sales/pdf',         [ReportController::class, 'salesPdf'])->name('sales.pdf');
-        Route::get('/sales/csv',         [ReportController::class, 'salesCsv'])->name('sales.csv');
-        Route::get('/bills',             [ReportController::class, 'bills'])->name('bills');
-        Route::get('/bills/pdf',         [ReportController::class, 'billsPdf'])->name('bills.pdf');
-        Route::get('/bills/csv',         [ReportController::class, 'billsCsv'])->name('bills.csv');
-        Route::get('/stock',             [ReportController::class, 'stock'])->name('stock');
-        Route::get('/stock/pdf',         [ReportController::class, 'stockPdf'])->name('stock.pdf');
-        Route::get('/stock/csv',         [ReportController::class, 'stockCsv'])->name('stock.csv');
-        Route::get('/suppliers',         [ReportController::class, 'suppliers'])->name('suppliers');
-        Route::get('/suppliers/pdf',     [ReportController::class, 'suppliersPdf'])->name('suppliers.pdf');
-        Route::get('/suppliers/csv',     [ReportController::class, 'suppliersCsv'])->name('suppliers.csv');
-        Route::get('/top-products',      [ReportController::class, 'topProducts'])->name('top-products');
-        Route::get('/top-products/pdf',  [ReportController::class, 'topProductsPdf'])->name('top-products.pdf');
-        Route::get('/top-products/csv',  [ReportController::class, 'topProductsCsv'])->name('top-products.csv');
-        Route::get('/returns',           [ReportController::class, 'returns'])->name('returns');
-        Route::get('/returns/pdf',       [ReportController::class, 'returnsPdf'])->name('returns.pdf');
-        Route::get('/returns/csv',       [ReportController::class, 'returnsCsv'])->name('returns.csv');
+        Route::get('/',                        [ReportController::class, 'index'])->name('index');
+        Route::get('/financial',               [ReportController::class, 'financial'])->name('financial');
+        Route::get('/financial/pdf',           [ReportController::class, 'financialPdf'])->name('financial.pdf');
+        Route::get('/financial/csv',           [ReportController::class, 'financialCsv'])->name('financial.csv');
+        Route::get('/purchases',               [ReportController::class, 'purchases'])->name('purchases');
+        Route::get('/purchases/pdf',           [ReportController::class, 'purchasesPdf'])->name('purchases.pdf');
+        Route::get('/purchases/csv',           [ReportController::class, 'purchasesCsv'])->name('purchases.csv');
+        Route::get('/sales',                   [ReportController::class, 'sales'])->name('sales');
+        Route::get('/sales/pdf',               [ReportController::class, 'salesPdf'])->name('sales.pdf');
+        Route::get('/sales/csv',               [ReportController::class, 'salesCsv'])->name('sales.csv');
+        Route::get('/bills',                   [ReportController::class, 'bills'])->name('bills');
+        Route::get('/bills/pdf',               [ReportController::class, 'billsPdf'])->name('bills.pdf');
+        Route::get('/bills/csv',               [ReportController::class, 'billsCsv'])->name('bills.csv');
+        Route::get('/stock',                   [ReportController::class, 'stock'])->name('stock');
+        Route::get('/stock/pdf',               [ReportController::class, 'stockPdf'])->name('stock.pdf');
+        Route::get('/stock/csv',               [ReportController::class, 'stockCsv'])->name('stock.csv');
+        Route::get('/suppliers',               [ReportController::class, 'suppliers'])->name('suppliers');
+        Route::get('/suppliers/pdf',           [ReportController::class, 'suppliersPdf'])->name('suppliers.pdf');
+        Route::get('/suppliers/csv',           [ReportController::class, 'suppliersCsv'])->name('suppliers.csv');
+        Route::get('/top-products',            [ReportController::class, 'topProducts'])->name('top-products');
+        Route::get('/top-products/pdf',        [ReportController::class, 'topProductsPdf'])->name('top-products.pdf');
+        Route::get('/top-products/csv',        [ReportController::class, 'topProductsCsv'])->name('top-products.csv');
+        Route::get('/returns',                 [ReportController::class, 'returns'])->name('returns');
+        Route::get('/returns/pdf',             [ReportController::class, 'returnsPdf'])->name('returns.pdf');
+        Route::get('/returns/csv',             [ReportController::class, 'returnsCsv'])->name('returns.csv');
+        // ── Lucratividade
+        Route::get('/profitability',           [ReportController::class, 'profitability'])->name('profitability');
+        Route::get('/profitability/pdf',       [ReportController::class, 'profitabilityPdf'])->name('profitability.pdf');
+        Route::get('/profitability/csv',       [ReportController::class, 'profitabilityCsv'])->name('profitability.csv');
     });
 
     Route::resource('users', UserController::class);

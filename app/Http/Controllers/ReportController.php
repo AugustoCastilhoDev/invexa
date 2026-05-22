@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Bill;
+use App\Models\Category;
 use App\Models\Product;
 use App\Models\PurchaseOrder;
 use App\Models\Receivable;
@@ -20,6 +21,65 @@ class ReportController extends Controller
     public function index()
     {
         return view('reports.index');
+    }
+
+    // ---------------------------------------------------------------
+    // Relatorio de Lucratividade
+    // ---------------------------------------------------------------
+    public function profitability(Request $request)
+    {
+        [$companyId, $period, $from, $to, $items, $categories] = $this->profitabilityData($request);
+
+        $totalRevenue = $items->sum('total_revenue');
+        $totalCost    = $items->sum('total_cost');
+        $totalProfit  = $items->sum('total_profit');
+        $totalMargin  = $totalRevenue > 0 ? ($totalProfit / $totalRevenue) * 100 : 0;
+
+        return view('reports.profitability', compact(
+            'period', 'from', 'to',
+            'items', 'categories',
+            'totalRevenue', 'totalCost', 'totalProfit', 'totalMargin'
+        ));
+    }
+
+    public function profitabilityCsv(Request $request): Response
+    {
+        [, , $from, $to, $items] = $this->profitabilityData($request);
+        $filename = 'lucratividade_' . $from->format('Ymd') . '_' . $to->format('Ymd') . '.csv';
+
+        $lines[] = implode(';', ['#', 'Produto', 'Categoria', 'Qtd. Vendida', 'Receita', 'Custo Total', 'Lucro Bruto', 'Margem %']);
+        foreach ($items as $i => $item) {
+            $margin = $item->total_revenue > 0 ? ($item->total_profit / $item->total_revenue) * 100 : 0;
+            $lines[] = implode(';', [
+                $i + 1,
+                $item->product_name,
+                $item->category_name ?? 'Sem categoria',
+                number_format($item->total_qty, 0, ',', '.'),
+                number_format($item->total_revenue, 2, ',', '.'),
+                number_format($item->total_cost, 2, ',', '.'),
+                number_format($item->total_profit, 2, ',', '.'),
+                number_format($margin, 1, ',', '.') . '%',
+            ]);
+        }
+
+        return $this->csvResponse("\xEF\xBB\xBF" . implode("\n", $lines), $filename);
+    }
+
+    public function profitabilityPdf(Request $request): Response
+    {
+        [, , $from, $to, $items] = $this->profitabilityData($request);
+
+        $totalRevenue = $items->sum('total_revenue');
+        $totalCost    = $items->sum('total_cost');
+        $totalProfit  = $items->sum('total_profit');
+        $totalMargin  = $totalRevenue > 0 ? ($totalProfit / $totalRevenue) * 100 : 0;
+
+        $html = view('reports.profitability-pdf', compact(
+            'from', 'to', 'items',
+            'totalRevenue', 'totalCost', 'totalProfit', 'totalMargin'
+        ))->render();
+
+        return response($html, 200, ['Content-Type' => 'text/html; charset=UTF-8']);
     }
 
     // ---------------------------------------------------------------
@@ -433,6 +493,47 @@ class ReportController extends Controller
     // ---------------------------------------------------------------
     // Helpers de dados
     // ---------------------------------------------------------------
+    private function profitabilityData(Request $request): array
+    {
+        $companyId  = auth()->user()->company_id;
+        $period     = $request->get('period', '30');
+        $categoryId = $request->get('category_id');
+
+        [$from, $to] = $this->resolvePurchasePeriod($period, $request);
+
+        $query = SaleItem::query()
+            ->join('sales as s', function ($join) {
+                $join->on('s.id', '=', 'sale_items.sale_id')
+                     ->whereNull('s.deleted_at');
+            })
+            ->join('products as p', 'p.id', '=', 'sale_items.product_id')
+            ->leftJoin('categories as c', 'c.id', '=', 'p.category_id')
+            ->where('s.company_id', $companyId)
+            ->whereNotIn('s.status', ['cancelada'])
+            ->whereBetween('s.created_at', [$from, $to])
+            ->groupBy('sale_items.product_id', 'p.name', 'c.name', 'p.cost_price')
+            ->selectRaw(
+                'sale_items.product_id,'
+                . 'p.name            AS product_name,'
+                . 'c.name            AS category_name,'
+                . 'p.cost_price      AS unit_cost,'
+                . 'SUM(sale_items.quantity)  AS total_qty,'
+                . 'SUM(sale_items.subtotal)  AS total_revenue,'
+                . 'SUM(sale_items.quantity * COALESCE(p.cost_price, 0)) AS total_cost,'
+                . '(SUM(sale_items.subtotal) - SUM(sale_items.quantity * COALESCE(p.cost_price, 0))) AS total_profit'
+            )
+            ->orderByDesc('total_profit');
+
+        if ($categoryId) {
+            $query->where('p.category_id', $categoryId);
+        }
+
+        $items      = $query->get();
+        $categories = Category::where('company_id', $companyId)->orderBy('name')->get(['id', 'name']);
+
+        return [$companyId, $period, $from, $to, $items, $categories];
+    }
+
     private function returnsData(Request $request): array
     {
         $companyId = auth()->user()->company_id;
@@ -450,7 +551,6 @@ class ReportController extends Controller
 
         $returns = $query->orderByDesc('created_at')->get();
 
-        // Lista de motivos distintos para o filtro
         $reasons = SaleReturn::whereHas('sale', fn($q) => $q->where('company_id', $companyId))
             ->whereNotNull('reason')
             ->distinct()
@@ -651,9 +751,6 @@ class ReportController extends Controller
         return [$companyId, $period, $from, $to, $sortBy, $products, $chartLabels, $chartData, $chartLabel];
     }
 
-    // ---------------------------------------------------------------
-    // Helpers compartilhados
-    // ---------------------------------------------------------------
     private function purchasesData(Request $request): array
     {
         $companyId  = auth()->user()->company_id;

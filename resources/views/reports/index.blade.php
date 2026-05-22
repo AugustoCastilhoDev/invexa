@@ -33,6 +33,16 @@ $cards = [
         'route_csv'  => 'reports.sales.csv',
     ],
     [
+        'title'      => 'Lucratividade',
+        'desc'       => 'Margem bruta, custo e lucro por produto',
+        'icon'       => 'bi-graph-up',
+        'color'      => '#34d399',
+        'bg'         => 'rgba(52,211,153,.15)',
+        'route_view' => 'reports.profitability',
+        'route_pdf'  => 'reports.profitability.pdf',
+        'route_csv'  => 'reports.profitability.csv',
+    ],
+    [
         'title'      => 'Devoluções',
         'desc'       => 'Devoluções por período, motivo e valor devolvido',
         'icon'       => 'bi-arrow-return-left',
