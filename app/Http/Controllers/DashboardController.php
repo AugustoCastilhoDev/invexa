@@ -37,8 +37,11 @@ class DashboardController extends Controller
         $user      = auth()->user();
         $companyId = $user->company_id;
 
-        // Usuário sem empresa — redireciona para completar cadastro
+        // SuperAdmin sem empresa vinculada vai para o painel admin
         if (! $companyId) {
+            if ($user->role === 'superadmin') {
+                return redirect()->route('admin.dashboard');
+            }
             return redirect()->route('login')
                 ->withErrors(['email' => 'Seu usuário não está vinculado a nenhuma empresa. Contate o administrador.']);
         }

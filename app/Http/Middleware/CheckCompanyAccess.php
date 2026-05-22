@@ -25,41 +25,45 @@ class CheckCompanyAccess
     {
         $user = $request->user();
 
-        // Super-admin (sem empresa) passa direto
-        if (! $user || ! $user->company_id) {
+        if (! $user) {
+            return redirect()->route('login');
+        }
+
+        // SuperAdmin nunca é bloqueado por empresa, trial ou plano
+        if ($user->role === 'superadmin') {
             return $next($request);
         }
 
-        // Modo suporte (impersonate) — SuperAdmin nunca é bloqueado por trial/plano
+        // Modo suporte (impersonate)
         if (session()->has('impersonator_id')) {
             return $next($request);
         }
 
-        // fresh() garante dados atualizados do banco, sem cache de relacionamento
+        // Usuário sem empresa
+        if (! $user->company_id) {
+            return redirect()->route('login')
+                ->withErrors(['email' => 'Seu usuário não está vinculado a nenhuma empresa. Contate o administrador.']);
+        }
+
         $company = $user->company()->first();
 
-        // Empresa inexistente ou inativa
         if (! $company || ! $company->active) {
             return redirect()->route('upgrade')
                 ->with('error', 'Sua conta está inativa. Entre em contato com o suporte.');
         }
 
-        // Rotas que nunca devem ser bloqueadas
         if ($request->routeIs($this->except)) {
             return $next($request);
         }
 
-        // Trial ativo: passa (vale para free e pagos no período de trial)
         if ($company->isOnTrial()) {
             return $next($request);
         }
 
-        // Assinatura paga ativa: passa
         if ($company->hasActiveSubscription()) {
             return $next($request);
         }
 
-        // Trial expirado ou plano free sem assinatura ativa: bloqueia e exige upgrade
         return redirect()->route('upgrade')
             ->with('error', 'Seu período de avaliação encerrou. Escolha um plano para continuar usando o Invexa.');
     }

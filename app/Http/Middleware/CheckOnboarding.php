@@ -12,25 +12,19 @@ class CheckOnboarding
     {
         $user = $request->user();
 
-        if (! $user || ! $user->company_id) {
+        if (! $user) {
             return $next($request);
         }
 
-        // Não redireciona em modo suporte (impersonate)
-        if (session()->has('impersonator_id')) {
+        // SuperAdmin nunca precisa de onboarding
+        if ($user->role === 'superadmin') {
             return $next($request);
         }
 
         $company = $user->company;
 
-        // Se onboarding não concluído e não está na rota do wizard
-        if (
-            $company &&
-            ! $company->onboarding_completed &&
-            ! $request->routeIs('onboarding.*') &&
-            ! $request->routeIs('logout')
-        ) {
-            return redirect()->route('onboarding.show');
+        if ($company && ! $company->onboarding_completed && ! $request->routeIs('onboarding.*', 'logout')) {
+            return redirect()->route('onboarding.index');
         }
 
         return $next($request);
