@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Customer;
+use App\Models\Sale;
+use App\Models\SaleReturnItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
@@ -104,10 +106,58 @@ class CustomerController extends Controller
         return redirect()->route('customers.index')->with('success', 'Cliente cadastrado com sucesso.');
     }
 
-    public function show(Customer $customer)
+    public function show(Customer $customer, Request $request)
     {
         $this->authorizeCustomer($customer);
-        return view('customers.show', compact('customer'));
+        $companyId = Auth::user()->company_id;
+
+        // ── Filtros do histórico ──────────────────────────────────────
+        $from   = $request->input('from');
+        $to     = $request->input('to');
+        $status = $request->input('status');
+
+        // ── Query de vendas deste cliente ─────────────────────────────
+        $salesQuery = Sale::with('items.product')
+            ->where('company_id', $companyId)
+            ->where('customer_id', $customer->id);
+
+        if ($from)   { $salesQuery->whereDate('sale_date', '>=', $from); }
+        if ($to)     { $salesQuery->whereDate('sale_date', '<=', $to); }
+        if ($status) { $salesQuery->where('status', $status); }
+
+        $sales = $salesQuery->orderByDesc('sale_date')->paginate(10)->withQueryString();
+
+        // ── KPIs (sem filtro de data/status para mostrar o total real) ─
+        $allSales = Sale::where('company_id', $companyId)
+            ->where('customer_id', $customer->id)
+            ->whereIn('status', ['concluida', 'pendente'])
+            ->get(['id', 'total', 'sale_date']);
+
+        $totalSales = $allSales->count();
+        $totalSpent = $allSales->sum('total');
+        $avgTicket  = $totalSales > 0 ? $totalSpent / $totalSales : 0;
+        $lastSale   = Sale::where('company_id', $companyId)
+            ->where('customer_id', $customer->id)
+            ->orderByDesc('sale_date')
+            ->first(['id', 'sale_date']);
+
+        // Devoluções deste cliente
+        $saleIds = $allSales->pluck('id');
+        $returnsData = SaleReturnItem::whereHas('saleReturn', fn($q) => $q->whereIn('sale_id', $saleIds))
+            ->selectRaw('SUM(quantity * price) as total_returned, COUNT(DISTINCT sale_return_id) as count_returned')
+            ->first();
+
+        $returnsTotal = (float) ($returnsData->total_returned ?? 0);
+        $returnsCount = (int)   ($returnsData->count_returned ?? 0);
+        $netSpent     = $totalSpent - $returnsTotal;
+
+        return view('customers.show', compact(
+            'customer',
+            'sales',
+            'from', 'to', 'status',
+            'totalSales', 'totalSpent', 'avgTicket', 'lastSale',
+            'returnsTotal', 'returnsCount', 'netSpent'
+        ));
     }
 
     public function edit(Customer $customer)
