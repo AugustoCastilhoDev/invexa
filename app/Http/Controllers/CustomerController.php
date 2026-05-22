@@ -15,15 +15,23 @@ class CustomerController extends Controller
     {
         $companyId = Auth::user()->company_id;
 
-        $query = Customer::where('company_id', $companyId)->orderBy('name');
+        $query = Customer::where('company_id', $companyId)
+            ->withCount([
+                // conta apenas vendas não canceladas
+                'sales' => fn($q) => $q->whereIn('status', ['concluida', 'pendente']),
+            ])
+            ->withSum([
+                'sales' => fn($q) => $q->whereIn('status', ['concluida', 'pendente']),
+            ], 'total')
+            ->orderBy('name');
 
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
+                $q->where('name',     'like', "%{$search}%")
                   ->orWhere('document', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%")
-                  ->orWhere('phone', 'like', "%{$search}%");
+                  ->orWhere('email',    'like', "%{$search}%")
+                  ->orWhere('phone',    'like', "%{$search}%");
             });
         }
         if ($request->filled('status')) {
@@ -111,12 +119,10 @@ class CustomerController extends Controller
         $this->authorizeCustomer($customer);
         $companyId = Auth::user()->company_id;
 
-        // ── Filtros do histórico ──────────────────────────────────────
         $from   = $request->input('from');
         $to     = $request->input('to');
         $status = $request->input('status');
 
-        // ── Query de vendas deste cliente ─────────────────────────────
         $salesQuery = Sale::with('items.product')
             ->where('company_id', $companyId)
             ->where('customer_id', $customer->id);
@@ -127,7 +133,6 @@ class CustomerController extends Controller
 
         $sales = $salesQuery->orderByDesc('sale_date')->paginate(10)->withQueryString();
 
-        // ── KPIs (sem filtro de data/status para mostrar o total real) ─
         $allSales = Sale::where('company_id', $companyId)
             ->where('customer_id', $customer->id)
             ->whereIn('status', ['concluida', 'pendente'])
@@ -141,7 +146,6 @@ class CustomerController extends Controller
             ->orderByDesc('sale_date')
             ->first(['id', 'sale_date']);
 
-        // Devoluções deste cliente
         $saleIds = $allSales->pluck('id');
         $returnsData = SaleReturnItem::whereHas('saleReturn', fn($q) => $q->whereIn('sale_id', $saleIds))
             ->selectRaw('SUM(quantity * price) as total_returned, COUNT(DISTINCT sale_return_id) as count_returned')
@@ -152,8 +156,7 @@ class CustomerController extends Controller
         $netSpent     = $totalSpent - $returnsTotal;
 
         return view('customers.show', compact(
-            'customer',
-            'sales',
+            'customer', 'sales',
             'from', 'to', 'status',
             'totalSales', 'totalSpent', 'avgTicket', 'lastSale',
             'returnsTotal', 'returnsCount', 'netSpent'
