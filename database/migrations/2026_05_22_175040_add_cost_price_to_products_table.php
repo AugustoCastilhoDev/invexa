@@ -3,21 +3,33 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 /**
- * Esta migration foi revertida intencionalmente.
- * A coluna permanece como 'cost' no banco de dados.
- * O controller e o model usam 'cost' de forma consistente.
+ * Garante que a coluna seja 'cost_price'.
+ * Se ainda for 'cost', renomeia. Se já for 'cost_price', não faz nada.
  */
 return new class extends Migration
 {
     public function up(): void
     {
-        // Nenhuma alteração — coluna já existe como 'cost'
+        $columns = Schema::getColumnListing('products');
+
+        if (in_array('cost', $columns) && !in_array('cost_price', $columns)) {
+            Schema::table('products', function (Blueprint $table) {
+                $table->renameColumn('cost', 'cost_price');
+            });
+        }
     }
 
     public function down(): void
     {
-        // Nada a reverter
+        $columns = Schema::getColumnListing('products');
+
+        if (in_array('cost_price', $columns) && !in_array('cost', $columns)) {
+            Schema::table('products', function (Blueprint $table) {
+                $table->renameColumn('cost_price', 'cost');
+            });
+        }
     }
 };
