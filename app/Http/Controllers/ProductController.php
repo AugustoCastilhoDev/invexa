@@ -7,6 +7,7 @@ use App\Models\Product;
 use App\Models\Supplier;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 
 class ProductController extends Controller
 {
@@ -74,7 +75,9 @@ class ProductController extends Controller
 
     public function store(Request $request)
     {
-        $company = Auth::user()->company;
+        $company   = Auth::user()->company;
+        $companyId = Auth::user()->company_id;
+
         if ($company && !$company->canAdd('products')) {
             return redirect()->route('products.index')
                 ->with('error', $this->limitMessage('produtos', $company->limit('products')));
@@ -82,7 +85,10 @@ class ProductController extends Controller
 
         $validated = $request->validate([
             'name'         => ['required', 'string', 'max:255'],
-            'sku'          => ['nullable', 'string', 'max:100'],
+            'sku'          => [
+                'nullable', 'string', 'max:100',
+                Rule::unique('products', 'sku')->where('company_id', $companyId),
+            ],
             'category_id'  => ['nullable', 'exists:categories,id'],
             'supplier_id'  => ['nullable', 'exists:suppliers,id'],
             'price'        => ['required', 'numeric', 'min:0'],
@@ -91,10 +97,14 @@ class ProductController extends Controller
             'min_quantity' => ['nullable', 'integer', 'min:0'],
             'description'  => ['nullable', 'string'],
             'unit'         => ['nullable', 'string', 'max:20'],
+        ], [
+            'name.required' => 'O nome do produto é obrigatório.',
+            'sku.unique'    => 'Já existe um produto com este SKU.',
+            'price.required'=> 'O preço de venda é obrigatório.',
         ]);
 
         Product::create(array_merge($validated, [
-            'company_id' => Auth::user()->company_id,
+            'company_id' => $companyId,
             'active'     => $request->boolean('active', true),
         ]));
 
@@ -119,10 +129,16 @@ class ProductController extends Controller
     public function update(Request $request, Product $product)
     {
         $this->authorizeProduct($product);
+        $companyId = Auth::user()->company_id;
 
         $validated = $request->validate([
             'name'         => ['required', 'string', 'max:255'],
-            'sku'          => ['nullable', 'string', 'max:100'],
+            'sku'          => [
+                'nullable', 'string', 'max:100',
+                Rule::unique('products', 'sku')
+                    ->where('company_id', $companyId)
+                    ->ignore($product->id),
+            ],
             'category_id'  => ['nullable', 'exists:categories,id'],
             'supplier_id'  => ['nullable', 'exists:suppliers,id'],
             'price'        => ['required', 'numeric', 'min:0'],
@@ -131,6 +147,10 @@ class ProductController extends Controller
             'min_quantity' => ['nullable', 'integer', 'min:0'],
             'description'  => ['nullable', 'string'],
             'unit'         => ['nullable', 'string', 'max:20'],
+        ], [
+            'name.required' => 'O nome do produto é obrigatório.',
+            'sku.unique'    => 'Já existe um produto com este SKU.',
+            'price.required'=> 'O preço de venda é obrigatório.',
         ]);
 
         $product->update(array_merge($validated, [
