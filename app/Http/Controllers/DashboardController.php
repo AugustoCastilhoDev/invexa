@@ -34,7 +34,15 @@ class DashboardController extends Controller
 
     public function index(Request $request)
     {
-        $companyId = auth()->user()->company_id;
+        $user      = auth()->user();
+        $companyId = $user->company_id;
+
+        // Usuário sem empresa — redireciona para completar cadastro
+        if (! $companyId) {
+            return redirect()->route('login')
+                ->withErrors(['email' => 'Seu usuário não está vinculado a nenhuma empresa. Contate o administrador.']);
+        }
+
         $interval  = $request->input('interval');
         $from      = $request->input('from');
         $to        = $request->input('to');
@@ -146,7 +154,6 @@ class DashboardController extends Controller
 
         $latestSales = Sale::where('company_id', $companyId)->latest()->limit(5)->get();
 
-        // ── Top 5 Produtos mais vendidos (respeitando filtro de período) ──
         $topQuery = DB::table('sale_items')
             ->join('sales', 'sales.id', '=', 'sale_items.sale_id')
             ->join('products', 'products.id', '=', 'sale_items.product_id')
@@ -181,7 +188,6 @@ class DashboardController extends Controller
             ->limit(5)
             ->get();
 
-        // ── Gráfico de vendas ──
         $chartFrom = $from;
         $chartTo   = $to;
         if (!$chartFrom && !$chartTo && !$interval) {
@@ -238,10 +244,6 @@ class DashboardController extends Controller
             fn($d) => round((float)($salesByDay[$d] ?? 0) - (float)($returnsByDay[$d] ?? 0), 2)
         );
 
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // MÓDULO 3.5 — Painel Financeiro
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
         $todayDate  = now($this->tz)->toDateString();
         $in7Date    = now($this->tz)->addDays(7)->toDateString();
 
@@ -277,14 +279,12 @@ class DashboardController extends Controller
             ->limit(6)
             ->get();
 
-        // ── Fluxo de Caixa ──────────────────────────────────────────
         $cfFrom = $chartFrom ?? now($this->tz)->startOfMonth()->toDateString();
         $cfTo   = $chartTo   ?? now($this->tz)->endOfMonth()->toDateString();
 
         $cfFromDt = Carbon::parse($cfFrom, $this->tz)->startOfDay();
         $cfToDt   = Carbon::parse($cfTo,   $this->tz)->endOfDay();
 
-        // Recebíveis pendentes/vencidos: filtra por due_date (data de vencimento)
         $cfRecPendente = Receivable::where('company_id', $companyId)
             ->whereIn('status', ['pendente', 'vencida'])
             ->whereBetween('due_date', [$cfFrom, $cfTo])
