@@ -126,13 +126,14 @@ class SubscriptionController extends Controller
 
         $company->update(['plan' => $plan, 'trial_ends_at' => null]);
 
-        // Se onboarding ainda não foi feito, leva para lá antes do dashboard
+        // Conta nova: passa pelo onboarding antes de tudo
         if (! $company->onboarding_completed) {
             return redirect()->route('onboarding.show')
                 ->with('success', '🎉 Assinatura ativada! Complete seu cadastro para começar.');
         }
 
-        return redirect()->route('dashboard')
+        // Conta existente: vai direto para a Home
+        return redirect()->route('home')
             ->with('success', '🎉 Assinatura ativada com sucesso! Bem-vindo ao ' . ucfirst($plan) . '.');
     }
 
