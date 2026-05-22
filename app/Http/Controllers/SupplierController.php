@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Supplier;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 
 class SupplierController extends Controller
 {
@@ -15,19 +16,19 @@ class SupplierController extends Controller
         $query = Supplier::where('company_id', $companyId)->orderBy('name');
 
         if ($request->filled('search')) {
-            $query->where(function ($q) use ($request) {
-                $q->where('name', 'like', '%' . $request->search . '%')
-                  ->orWhere('email', 'like', '%' . $request->search . '%')
-                  ->orWhere('document', 'like', '%' . $request->search . '%');
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('document', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%");
             });
         }
-
         if ($request->filled('status')) {
-            $query->where('active', $request->status === 'active');
+            $query->where('active', $request->status === 'ativo');
         }
 
-        $suppliers      = $query->paginate(15)->withQueryString();
-        $totalSuppliers = Supplier::where('company_id', $companyId)->count();
+        $suppliers       = $query->paginate(15)->withQueryString();
+        $totalSuppliers  = Supplier::where('company_id', $companyId)->count();
         $activeSuppliers = Supplier::where('company_id', $companyId)->where('active', true)->count();
 
         return view('suppliers.index', compact('suppliers', 'totalSuppliers', 'activeSuppliers'));
@@ -45,26 +46,42 @@ class SupplierController extends Controller
 
     public function store(Request $request)
     {
-        $company = Auth::user()->company;
+        $company   = Auth::user()->company;
+        $companyId = Auth::user()->company_id;
+
         if ($company && !$company->canAdd('suppliers')) {
             return redirect()->route('suppliers.index')
                 ->with('error', $this->limitMessage('fornecedores', $company->limit('suppliers')));
         }
 
-        $request->validate([
+        $validated = $request->validate([
             'name'     => ['required', 'string', 'max:255'],
-            'email'    => ['nullable', 'email', 'max:255'],
-            'phone'    => ['nullable', 'string', 'max:30'],
-            'document' => ['nullable', 'string', 'max:30'],
-            'address'  => ['nullable', 'string', 'max:500'],
+            'document' => [
+                'nullable', 'string', 'max:20',
+                Rule::unique('suppliers', 'document')->where('company_id', $companyId),
+            ],
+            'email'    => [
+                'nullable', 'email', 'max:255',
+                Rule::unique('suppliers', 'email')->where('company_id', $companyId),
+            ],
+            'phone'    => ['nullable', 'string', 'max:20'],
+            'address'  => ['nullable', 'string', 'max:255'],
+            'city'     => ['nullable', 'string', 'max:100'],
+            'state'    => ['nullable', 'string', 'size:2'],
             'notes'    => ['nullable', 'string'],
+        ], [
+            'name.required'    => 'O nome do fornecedor é obrigatório.',
+            'document.unique'  => 'Já existe um fornecedor com este CNPJ/CPF.',
+            'email.unique'     => 'Já existe um fornecedor com este e-mail.',
+            'email.email'      => 'Informe um e-mail válido.',
         ]);
 
-        Supplier::create(array_merge($request->all(), [
-            'company_id' => Auth::user()->company_id,
+        Supplier::create(array_merge($validated, [
+            'company_id' => $companyId,
+            'active'     => $request->boolean('active', true),
         ]));
 
-        return redirect()->route('suppliers.index')->with('success', 'Fornecedor criado com sucesso.');
+        return redirect()->route('suppliers.index')->with('success', 'Fornecedor cadastrado com sucesso.');
     }
 
     public function show(Supplier $supplier)
@@ -82,17 +99,38 @@ class SupplierController extends Controller
     public function update(Request $request, Supplier $supplier)
     {
         $this->authorizeSupplier($supplier);
+        $companyId = Auth::user()->company_id;
 
-        $request->validate([
+        $validated = $request->validate([
             'name'     => ['required', 'string', 'max:255'],
-            'email'    => ['nullable', 'email', 'max:255'],
-            'phone'    => ['nullable', 'string', 'max:30'],
-            'document' => ['nullable', 'string', 'max:30'],
-            'address'  => ['nullable', 'string', 'max:500'],
+            'document' => [
+                'nullable', 'string', 'max:20',
+                Rule::unique('suppliers', 'document')
+                    ->where('company_id', $companyId)
+                    ->ignore($supplier->id),
+            ],
+            'email'    => [
+                'nullable', 'email', 'max:255',
+                Rule::unique('suppliers', 'email')
+                    ->where('company_id', $companyId)
+                    ->ignore($supplier->id),
+            ],
+            'phone'    => ['nullable', 'string', 'max:20'],
+            'address'  => ['nullable', 'string', 'max:255'],
+            'city'     => ['nullable', 'string', 'max:100'],
+            'state'    => ['nullable', 'string', 'size:2'],
             'notes'    => ['nullable', 'string'],
+        ], [
+            'name.required'    => 'O nome do fornecedor é obrigatório.',
+            'document.unique'  => 'Já existe um fornecedor com este CNPJ/CPF.',
+            'email.unique'     => 'Já existe um fornecedor com este e-mail.',
+            'email.email'      => 'Informe um e-mail válido.',
         ]);
 
-        $supplier->update($request->all());
+        $supplier->update(array_merge($validated, [
+            'active' => $request->boolean('active'),
+        ]));
+
         return redirect()->route('suppliers.index')->with('success', 'Fornecedor atualizado com sucesso.');
     }
 
@@ -100,7 +138,7 @@ class SupplierController extends Controller
     {
         $this->authorizeSupplier($supplier);
         $supplier->delete();
-        return redirect()->route('suppliers.index')->with('success', 'Fornecedor excluído com sucesso.');
+        return redirect()->route('suppliers.index')->with('success', 'Fornecedor removido com sucesso.');
     }
 
     private function authorizeSupplier(Supplier $supplier): void

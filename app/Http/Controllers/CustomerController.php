@@ -3,26 +3,36 @@
 namespace App\Http\Controllers;
 
 use App\Models\Customer;
-use App\Models\Sale;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 
 class CustomerController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Customer::where('company_id', Auth::user()->company_id)->orderBy('name');
+        $companyId = Auth::user()->company_id;
+
+        $query = Customer::where('company_id', $companyId)->orderBy('name');
 
         if ($request->filled('search')) {
-            $query->where(function ($q) use ($request) {
-                $q->where('name', 'like', '%' . $request->search . '%')
-                  ->orWhere('email', 'like', '%' . $request->search . '%')
-                  ->orWhere('phone', 'like', '%' . $request->search . '%');
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('document', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%")
+                  ->orWhere('phone', 'like', "%{$search}%");
             });
         }
+        if ($request->filled('status')) {
+            $query->where('active', $request->status === 'ativo');
+        }
 
-        $customers = $query->paginate(15)->withQueryString();
-        return view('customers.index', compact('customers'));
+        $customers       = $query->paginate(15)->withQueryString();
+        $totalCustomers  = Customer::where('company_id', $companyId)->count();
+        $activeCustomers = Customer::where('company_id', $companyId)->where('active', true)->count();
+
+        return view('customers.index', compact('customers', 'totalCustomers', 'activeCustomers'));
     }
 
     public function create()
@@ -37,119 +47,92 @@ class CustomerController extends Controller
 
     public function store(Request $request)
     {
-        $company = Auth::user()->company;
+        $company   = Auth::user()->company;
+        $companyId = Auth::user()->company_id;
+
         if ($company && !$company->canAdd('customers')) {
             return redirect()->route('customers.index')
                 ->with('error', $this->limitMessage('clientes', $company->limit('customers')));
         }
 
-        $request->validate([
+        $validated = $request->validate([
             'name'     => ['required', 'string', 'max:255'],
+            'document' => [
+                'nullable', 'string', 'max:20',
+                Rule::unique('customers', 'document')->where('company_id', $companyId),
+            ],
             'email'    => ['nullable', 'email', 'max:255'],
-            'phone'    => ['nullable', 'string', 'max:30'],
-            'document' => ['nullable', 'string', 'max:30'],
-            'address'  => ['nullable', 'string', 'max:500'],
+            'phone'    => ['nullable', 'string', 'max:20'],
+            'address'  => ['nullable', 'string', 'max:255'],
+            'city'     => ['nullable', 'string', 'max:100'],
+            'state'    => ['nullable', 'string', 'size:2'],
             'notes'    => ['nullable', 'string'],
+        ], [
+            'name.required'   => 'O nome do cliente é obrigatório.',
+            'document.unique' => 'Já existe um cliente com este CPF/CNPJ.',
+            'email.email'     => 'Informe um e-mail válido.',
         ]);
 
-        Customer::create(array_merge($request->all(), [
-            'company_id' => Auth::user()->company_id,
+        Customer::create(array_merge($validated, [
+            'company_id' => $companyId,
+            'active'     => $request->boolean('active', true),
         ]));
 
-        return redirect()->route('customers.index')->with('success', 'Cliente criado com sucesso.');
+        return redirect()->route('customers.index')->with('success', 'Cliente cadastrado com sucesso.');
     }
 
-    public function show(Request $request, Customer $customer)
+    public function show(Customer $customer)
     {
-        $this->authorize($customer);
-
-        // ── Filtros ──────────────────────────────────────────────────
-        $from   = $request->input('from');
-        $to     = $request->input('to');
-        $status = $request->input('status');
-
-        // ── Query base de vendas do cliente ─────────────────────────
-        $baseQuery = Sale::with(['items.product'])
-            ->where('company_id', Auth::user()->company_id)
-            ->where('customer_id', $customer->id);
-
-        if ($from)   { $baseQuery->whereDate('sale_date', '>=', $from); }
-        if ($to)     { $baseQuery->whereDate('sale_date', '<=', $to); }
-        if ($status) { $baseQuery->where('status', $status); }
-
-        // ── Listagem paginada (para tabela de histórico) ─────────────
-        $sales = (clone $baseQuery)->latest('sale_date')->paginate(15)->withQueryString();
-
-        // ── KPIs (sempre sobre todas as vendas sem filtro de status) ─
-        $allSalesQuery = Sale::where('company_id', Auth::user()->company_id)
-            ->where('customer_id', $customer->id)
-            ->whereIn('status', ['concluida', 'pendente']);
-
-        $totalSales  = $allSalesQuery->count();
-        $totalSpent  = $allSalesQuery->sum('total');
-        $lastSale    = $allSalesQuery->latest('sale_date')->first();
-        $avgTicket   = $totalSales > 0 ? $totalSpent / $totalSales : 0;
-
-        // ── Devoluções do cliente ────────────────────────────────────
-        $returnsQuery = \App\Models\SaleReturn::whereHas('sale', function ($q) use ($customer) {
-            $q->where('customer_id', $customer->id)
-              ->where('company_id', Auth::user()->company_id);
-        });
-        $returnsCount = $returnsQuery->count();
-        $returnsTotal = $returnsQuery->sum('total');
-
-        $netSpent = $totalSpent - $returnsTotal;
-
-        return view('customers.show', compact(
-            'customer',
-            'sales',
-            'from', 'to', 'status',
-            'totalSales', 'totalSpent', 'lastSale', 'avgTicket',
-            'returnsCount', 'returnsTotal', 'netSpent'
-        ));
+        $this->authorizeCustomer($customer);
+        return view('customers.show', compact('customer'));
     }
 
     public function edit(Customer $customer)
     {
-        $this->authorize($customer);
+        $this->authorizeCustomer($customer);
         return view('customers.edit', compact('customer'));
     }
 
     public function update(Request $request, Customer $customer)
     {
-        $this->authorize($customer);
+        $this->authorizeCustomer($customer);
+        $companyId = Auth::user()->company_id;
 
-        $request->validate([
+        $validated = $request->validate([
             'name'     => ['required', 'string', 'max:255'],
+            'document' => [
+                'nullable', 'string', 'max:20',
+                Rule::unique('customers', 'document')
+                    ->where('company_id', $companyId)
+                    ->ignore($customer->id),
+            ],
             'email'    => ['nullable', 'email', 'max:255'],
-            'phone'    => ['nullable', 'string', 'max:30'],
-            'document' => ['nullable', 'string', 'max:30'],
-            'address'  => ['nullable', 'string', 'max:500'],
+            'phone'    => ['nullable', 'string', 'max:20'],
+            'address'  => ['nullable', 'string', 'max:255'],
+            'city'     => ['nullable', 'string', 'max:100'],
+            'state'    => ['nullable', 'string', 'size:2'],
             'notes'    => ['nullable', 'string'],
+        ], [
+            'name.required'   => 'O nome do cliente é obrigatório.',
+            'document.unique' => 'Já existe um cliente com este CPF/CNPJ.',
+            'email.email'     => 'Informe um e-mail válido.',
         ]);
 
-        $customer->update($request->all());
+        $customer->update(array_merge($validated, [
+            'active' => $request->boolean('active'),
+        ]));
+
         return redirect()->route('customers.index')->with('success', 'Cliente atualizado com sucesso.');
     }
 
     public function destroy(Customer $customer)
     {
-        $this->authorize($customer);
+        $this->authorizeCustomer($customer);
         $customer->delete();
-        return redirect()->route('customers.index')->with('success', 'Cliente excluído com sucesso.');
+        return redirect()->route('customers.index')->with('success', 'Cliente removido com sucesso.');
     }
 
-    public function search(Request $request)
-    {
-        $customers = Customer::where('company_id', Auth::user()->company_id)
-            ->where('name', 'like', '%' . $request->q . '%')
-            ->limit(10)
-            ->get(['id', 'name', 'email', 'phone']);
-
-        return response()->json($customers);
-    }
-
-    private function authorize(Customer $customer): void
+    private function authorizeCustomer(Customer $customer): void
     {
         if ($customer->company_id !== Auth::user()->company_id) abort(403);
     }
@@ -157,6 +140,6 @@ class CustomerController extends Controller
     private function limitMessage(string $nome, int $limite): string
     {
         $plano = strtoupper(Auth::user()->company->plan);
-        return "Limite de {$nome} do plano {$plano} atingido ({$limite}).  ✨ Faça upgrade para continuar.";
+        return "Limite de {$nome} do plano {$plano} atingido ({$limite}). ✨ Faça upgrade para continuar.";
     }
 }
