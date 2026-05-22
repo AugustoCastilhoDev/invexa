@@ -81,11 +81,13 @@ Route::middleware(['auth', 'company'])->group(function () {
 
 // ── Assinatura (autenticado, fora do trial check)
 Route::middleware(['auth', 'company'])->prefix('settings')->name('subscription.')->group(function () {
-    Route::get('/subscription',           [SubscriptionController::class, 'index'])->name('index');
-    Route::post('/subscription/checkout', [SubscriptionController::class, 'checkout'])->name('checkout');
-    Route::get('/subscription/success',   [SubscriptionController::class, 'success'])->name('success');
-    Route::get('/subscription/portal',    [SubscriptionController::class, 'billingPortal'])->name('billing-portal');
-    Route::delete('/subscription/cancel', [SubscriptionController::class, 'cancel'])->name('cancel');
+    Route::get('/subscription',                        [SubscriptionController::class, 'index'])->name('index');
+    Route::post('/subscription/checkout',              [SubscriptionController::class, 'checkout'])->name('checkout');
+    Route::get('/subscription/success',                [SubscriptionController::class, 'success'])->name('success');
+    Route::get('/subscription/portal',                 [SubscriptionController::class, 'billingPortal'])->name('billing-portal');
+    Route::delete('/subscription/cancel',              [SubscriptionController::class, 'cancel'])->name('cancel');
+    // Redirect pós-registro: redireciona para checkout via auto-POST
+    Route::get('/subscription/checkout/redirect',      [SubscriptionController::class, 'checkoutRedirect'])->name('checkout.redirect');
     Route::get('/subscription/invoice/{invoice}', function (string $invoice) {
         return auth()->user()->company->downloadInvoice($invoice);
     })->name('invoice');

@@ -2,151 +2,107 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Company;
 use Illuminate\Http\Request;
-use Laravel\Cashier\Exceptions\IncompletePayment;
-use Stripe\Exception\InvalidRequestException as StripeInvalidRequestException;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\View\View;
 
 class SubscriptionController extends Controller
 {
-    public function index()
+    /**
+     * Página de assinatura/upgrade.
+     */
+    public function index(): View
     {
-        $company      = auth()->user()->company;
-        $subscription = $company->subscription('default');
-        $invoices     = $company->invoices();
+        $company = auth()->user()->company;
 
-        return view('settings.subscription', compact('company', 'subscription', 'invoices'));
+        return view('subscription.index', compact('company'));
     }
 
     /**
-     * Redireciona para checkout via GET (usado após registro)
+     * Inicia o checkout no Stripe e redireciona para a URL de pagamento.
      */
-    public function checkoutRedirect(Request $request)
-    {
-        $request->merge([
-            'plan'    => $request->route('plan'),
-            'billing' => $request->route('billing') ?? 'monthly',
-        ]);
-        return $this->checkout($request);
-    }
-
-    public function checkout(Request $request)
+    public function checkout(Request $request): RedirectResponse
     {
         $request->validate([
-            'plan'    => 'required|in:pro,pro_launch,business',
-            'billing' => 'nullable|in:monthly,annual',
+            'plan'    => ['required', 'in:pro,pro_launch,business'],
+            'billing' => ['required', 'in:monthly,annual'],
         ]);
 
-        $billing = $request->input('billing', 'monthly');
-        $plan    = $request->input('plan');
-        $company = auth()->user()->company;
+        $company  = auth()->user()->company;
+        $plan     = $request->input('plan');
+        $billing  = $request->input('billing');
 
-        $priceKey = ($billing === 'annual')
-            ? config('cashier.prices.' . $plan . '_annual',
-              config('cashier.prices.' . $plan))
-            : config('cashier.prices.' . $plan);
+        // Mapeia plan+billing para o price_id do Stripe
+        $priceId = config('plans.' . $plan . '.' . $billing);
 
-        $this->resolveStripeCustomer($company);
-
-        $company->createOrGetStripeCustomer([
-            'name'  => $company->name,
-            'email' => $company->email,
-        ]);
-
-        $company->refresh();
-
-        $checkoutParams = [
-            'success_url' => route('subscription.success') . '?session_id={CHECKOUT_SESSION_ID}',
-            'cancel_url'  => route('pricing'),
-            'metadata'    => [
-                'company_id' => $company->id,
-                'plan'       => $plan,
-                'billing'    => $billing,
-            ],
-        ];
-
-        try {
-            return $company
-                ->newSubscription('default', $priceKey)
-                ->checkout($checkoutParams);
-        } catch (IncompletePayment $e) {
-            return redirect()->route('cashier.payment', [
-                $e->payment->id,
-                'redirect' => route('subscription.index'),
-            ]);
+        if (! $priceId) {
+            return back()->withErrors(['plan' => 'Plano ou período inválido. Tente novamente.']);
         }
+
+        $checkoutUrl = $company
+            ->newSubscription('default', $priceId)
+            ->allowPromotionCodes()
+            ->successUrl(route('subscription.success') . '?session_id={CHECKOUT_SESSION_ID}')
+            ->cancelUrl(route('subscription.index'))
+            ->checkout()
+            ->url;
+
+        return redirect($checkoutUrl);
     }
 
-    private function resolveStripeCustomer(Company $company): void
+    /**
+     * GET intermediário após registro com plano pago.
+     * Renderiza uma página que faz auto-submit do formulário para o checkout.
+     */
+    public function checkoutRedirect(Request $request): View
     {
-        if (! $company->stripe_id) return;
+        $plan    = $request->query('plan', 'pro_launch');
+        $billing = $request->query('billing', 'monthly');
 
-        try {
-            $stripe = new \Stripe\StripeClient(config('cashier.secret'));
-            $stripe->customers->retrieve($company->stripe_id);
-        } catch (StripeInvalidRequestException $e) {
-            if (str_contains($e->getMessage(), 'a similar object exists in')) {
-                $company->forceFill(['stripe_id' => null])->save();
-            } else {
-                throw $e;
-            }
-        }
+        return view('subscription.checkout-redirect', compact('plan', 'billing'));
     }
 
-    public function success(Request $request)
+    /**
+     * Página de sucesso pós-pagamento.
+     */
+    public function success(Request $request): RedirectResponse|View
     {
         $company = auth()->user()->company;
-        $plan    = 'free';
 
-        if ($request->filled('session_id')) {
-            try {
-                $stripe  = new \Stripe\StripeClient(config('cashier.secret'));
-                $session = $stripe->checkout->sessions->retrieve($request->session_id);
-                if (! empty($session->metadata->plan)) {
-                    $plan = $session->metadata->plan === 'business' ? 'business' : 'pro';
-                }
-            } catch (\Exception $e) {}
+        // Atualiza o plano da empresa baseado na subscription ativa
+        if ($company->subscribed('default')) {
+            $subscription = $company->subscription('default');
+            $priceId      = $subscription->stripe_price;
+
+            $planName = collect(config('plans'))
+                ->flatMap(fn ($periods, $plan) => collect($periods)->map(fn ($id) => [$id => $plan]))
+                ->collapse()
+                ->get($priceId, 'pro');
+
+            $company->update(['plan' => $planName]);
         }
 
-        if ($plan === 'free') {
-            $company->refresh();
-            $sub = $company->subscription('default');
-            if ($sub) {
-                $map = [
-                    config('cashier.prices.pro')             => 'pro',
-                    config('cashier.prices.pro_launch')      => 'pro',
-                    config('cashier.prices.pro_annual')      => 'pro',
-                    config('cashier.prices.business')        => 'business',
-                    config('cashier.prices.business_annual') => 'business',
-                ];
-                $priceId = $sub->items()->first()?->stripe_price ?? $sub->stripe_price ?? null;
-                $plan = $map[$priceId] ?? 'free';
-            }
-        }
-
-        $company->update(['plan' => $plan, 'trial_ends_at' => null]);
-
-        // Conta nova: passa pelo onboarding antes de tudo
-        if (! $company->onboarding_completed) {
-            return redirect()->route('onboarding.show')
-                ->with('success', '🎉 Assinatura ativada! Complete seu cadastro para começar.');
-        }
-
-        // Conta existente: vai direto para a Home
-        return redirect()->route('home')
-            ->with('success', '🎉 Assinatura ativada com sucesso! Bem-vindo ao ' . ucfirst($plan) . '.');
+        return view('subscription.success', compact('company'));
     }
 
-    public function billingPortal()
+    /**
+     * Redireciona para o portal de cobrança do Stripe.
+     */
+    public function billingPortal(): RedirectResponse
     {
-        return auth()->user()->company->redirectToBillingPortal(route('subscription.index'));
+        return redirect(
+            auth()->user()->company->billingPortalUrl(route('subscription.index'))
+        );
     }
 
-    public function cancel()
+    /**
+     * Cancela a assinatura no fim do período.
+     */
+    public function cancel(): RedirectResponse
     {
-        $company = auth()->user()->company;
-        $company->subscription('default')?->cancel();
+        auth()->user()->company->subscription('default')->cancel();
+
         return redirect()->route('subscription.index')
-            ->with('warning', 'Assinatura cancelada. Você terá acesso até o fim do período pago.');
+            ->with('success', 'Assinatura cancelada. Você terá acesso até o fim do período pago.');
     }
 }

@@ -72,8 +72,9 @@
         .plan-card.featured { border-color: var(--sky); box-shadow: 0 0 40px rgba(14,165,233,.15); }
         .plan-badge { position: absolute; top: -13px; left: 50%; transform: translateX(-50%); background: linear-gradient(90deg, var(--sky), var(--electric)); color: var(--abyss); font-size: .72rem; font-weight: 700; padding: .2rem 1rem; border-radius: 999px; white-space: nowrap; }
         .plan-name { font-size: .875rem; font-weight: 700; color: var(--electric); text-transform: uppercase; letter-spacing: .08em; }
-        .plan-price { font-size: 2.4rem; font-weight: 800; color: #f1f5f9; line-height: 1; margin: .5rem 0 .25rem; }
+        .plan-price { font-size: 2.4rem; font-weight: 800; color: #f1f5f9; line-height: 1; margin: .5rem 0 .1rem; }
         .plan-price span { font-size: .95rem; font-weight: 400; color: rgba(148,163,184,.6); }
+        .plan-price-billed { font-size: .75rem; color: rgba(148,163,184,.5); margin-bottom: .25rem; }
         .plan-price-old { font-size: 1rem; color: rgba(148,163,184,.45); text-decoration: line-through; margin-bottom: .1rem; }
         .plan-offer-badge { display: inline-block; background: rgba(251,191,36,.15); border: 1px solid rgba(251,191,36,.35); color: #FCD34D; font-size: .7rem; font-weight: 700; padding: .15rem .7rem; border-radius: 999px; margin-bottom: .5rem; }
         .plan-desc { font-size: .82rem; color: rgba(148,163,184,.6); margin-bottom: 1.5rem; }
@@ -268,15 +269,16 @@
                     <div class="price-monthly">
                         <div class="plan-price-old">R$ 59,90/mês</div>
                         <div class="plan-price">R$ 39,90 <span>/mês</span></div>
+                        <div class="plan-price-billed">cobrado mensalmente</div>
                     </div>
-                    {{-- Preços anuais: R$ 383,04/ano = R$ 31,92/mês --}}
+                    {{-- Preços anuais --}}
                     <div class="price-annual" style="display:none;">
                         <div class="plan-price-old">R$ 39,90/mês</div>
                         <div class="plan-price">R$ 31,92 <span>/mês</span></div>
-                        <div style="font-size:.75rem; color:#4ade80; margin-bottom:.25rem;"><i class="bi bi-gift-fill me-1"></i>R$ 383,04/ano — 2 meses grátis</div>
+                        <div class="plan-price-billed" style="color:#4ade80;"><i class="bi bi-check-circle-fill me-1"></i>R$ 383,04 cobrado anualmente</div>
                     </div>
 
-                    <p class="plan-desc">Para negócios em crescimento.</p>
+                    <p class="plan-desc mt-2">Para negócios em crescimento.</p>
                     <ul class="list-unstyled plan-features">
                         <li><i class="bi bi-check-circle-fill"></i> Até 500 produtos</li>
                         <li><i class="bi bi-check-circle-fill"></i> Até 1.000 clientes</li>
@@ -302,15 +304,16 @@
                     {{-- Preços mensais --}}
                     <div class="price-monthly">
                         <div class="plan-price">R$ 119,90 <span>/mês</span></div>
+                        <div class="plan-price-billed">cobrado mensalmente</div>
                     </div>
-                    {{-- Preços anuais: R$ 1.151,04/ano = R$ 95,92/mês --}}
+                    {{-- Preços anuais --}}
                     <div class="price-annual" style="display:none;">
                         <div class="plan-price-old">R$ 119,90/mês</div>
                         <div class="plan-price">R$ 95,92 <span>/mês</span></div>
-                        <div style="font-size:.75rem; color:#4ade80; margin-bottom:.25rem;"><i class="bi bi-gift-fill me-1"></i>R$ 1.151,04/ano — 2 meses grátis</div>
+                        <div class="plan-price-billed" style="color:#4ade80;"><i class="bi bi-check-circle-fill me-1"></i>R$ 1.151,04 cobrado anualmente</div>
                     </div>
 
-                    <p class="plan-desc">Para empresas sem limites.</p>
+                    <p class="plan-desc mt-2">Para empresas sem limites.</p>
                     <ul class="list-unstyled plan-features">
                         <li><i class="bi bi-check-circle-fill"></i> Produtos ilimitados</li>
                         <li><i class="bi bi-check-circle-fill"></i> Clientes ilimitados</li>
@@ -457,9 +460,9 @@
 
         if (isAnnual) {
             btnPro.href = proAnnualUrl;
-            btnPro.textContent = 'Assinar Pro — R$ 31,92/mês (anual)';
+            btnPro.textContent = 'Assinar Pro — R$ 383,04/ano';
             btnBusiness.href = bizAnnualUrl;
-            btnBusiness.textContent = 'Assinar Business — R$ 95,92/mês (anual)';
+            btnBusiness.textContent = 'Assinar Business — R$ 1.151,04/ano';
         } else {
             btnPro.href = proMonthlyUrl;
             btnPro.textContent = 'Assinar Pro — R$ 39,90/mês';
