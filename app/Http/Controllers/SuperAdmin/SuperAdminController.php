@@ -23,7 +23,6 @@ class SuperAdminController extends Controller
             ->pluck('total', 'plan')
             ->toArray();
 
-        // Preços reais dos planos (R$)
         $prices = ['free' => 0, 'pro' => 39.90, 'business' => 119.90];
         $mrr = 0;
         foreach ($planCounts as $plan => $count) {
@@ -50,13 +49,24 @@ class SuperAdminController extends Controller
         return back()->with('success', "Empresa \"{$company->name}\" {$status} com sucesso.");
     }
 
+    public function destroyCompany(Company $company)
+    {
+        $name = $company->name;
+
+        // Apaga todos os usuários da empresa primeiro
+        User::where('company_id', $company->id)->delete();
+
+        // Apaga a empresa
+        $company->delete();
+
+        return back()->with('success', "Empresa \"{$name}\" e todos os seus dados foram removidos.");
+    }
+
     // ── IMPERSONATE ──
 
     public function impersonate(Company $company)
     {
-        // Prioridade: admin > gerente > vendedor
         $roleOrder = ['admin', 'gerente', 'vendedor'];
-
         $target = null;
         foreach ($roleOrder as $role) {
             $target = User::where('company_id', $company->id)
@@ -91,9 +101,7 @@ class SuperAdminController extends Controller
         }
 
         $superAdmin = User::findOrFail($impersonatorId);
-
         session()->forget(['impersonator_id', 'impersonator_name', 'impersonated_company']);
-
         Auth::login($superAdmin);
 
         return redirect()->route('admin.index')
