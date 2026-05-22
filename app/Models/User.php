@@ -5,10 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-    use HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable;
 
     protected $fillable = [
         'name',
@@ -17,17 +18,21 @@ class User extends Authenticatable
         'company_id',
         'role',
         'active',
+        'two_factor_secret',
+        'two_factor_confirmed_at',
     ];
 
     protected $hidden = [
         'password',
         'remember_token',
+        'two_factor_secret',
     ];
 
     protected $casts = [
-        'email_verified_at' => 'datetime',
-        'password'          => 'hashed',
-        'active'            => 'boolean',
+        'email_verified_at'       => 'datetime',
+        'password'                => 'hashed',
+        'active'                  => 'boolean',
+        'two_factor_confirmed_at' => 'datetime',
     ];
 
     // ── Relacionamentos
@@ -51,7 +56,6 @@ class User extends Authenticatable
 
     public function isAdmin(): bool
     {
-        // superadmin também tem privilégios de admin dentro de empresa
         return in_array($this->role, ['superadmin', 'admin']);
     }
 
