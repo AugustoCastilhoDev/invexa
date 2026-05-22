@@ -83,6 +83,18 @@
         .plan-features li.disabled { color: rgba(148,163,184,.35); }
         .plan-features li.disabled i { color: rgba(148,163,184,.25); }
 
+        /* Toggle Mensal/Anual */
+        .billing-toggle { display: flex; align-items: center; justify-content: center; gap: .75rem; margin-bottom: 2.5rem; }
+        .billing-toggle .toggle-label { font-size: .875rem; color: rgba(226,232,240,.6); cursor: pointer; transition: color .2s; }
+        .billing-toggle .toggle-label.active { color: var(--ice); font-weight: 600; }
+        .toggle-switch { position: relative; width: 52px; height: 28px; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .toggle-slider { position: absolute; inset: 0; background: rgba(14,165,233,.2); border: 1px solid rgba(14,165,233,.3); border-radius: 999px; cursor: pointer; transition: background .25s; }
+        .toggle-slider:before { content: ''; position: absolute; width: 20px; height: 20px; left: 3px; top: 3px; background: var(--sky); border-radius: 50%; transition: transform .25s; }
+        .toggle-switch input:checked + .toggle-slider { background: rgba(14,165,233,.3); }
+        .toggle-switch input:checked + .toggle-slider:before { transform: translateX(24px); }
+        .annual-badge { display: inline-block; background: rgba(34,197,94,.15); border: 1px solid rgba(34,197,94,.3); color: #4ade80; font-size: .68rem; font-weight: 700; padding: .1rem .55rem; border-radius: 999px; }
+
         .faq { background: rgba(13,25,41,.4); }
         .faq .accordion-item { background: rgba(13,25,41,.7); border: 1px solid rgba(14,165,233,.1); border-radius: 10px !important; margin-bottom: .75rem; }
         .faq .accordion-button { background: transparent; color: #e2e8f0; font-weight: 600; font-size: .9rem; border-radius: 10px !important; box-shadow: none; }
@@ -209,11 +221,22 @@
 
 <section class="plans" id="plans">
     <div class="container">
-        <div class="text-center mb-5">
+        <div class="text-center mb-4">
             <span class="section-label">Planos &amp; Preços</span>
             <h2 class="section-title">Simples, transparente e justo</h2>
-            <p class="section-sub">Comece grátis por 14 dias. Sem cartão de crédito. Cancele quando quiser.</p>
+            <p class="section-sub mb-0">Comece grátis por 14 dias. Sem cartão de crédito. Cancele quando quiser.</p>
         </div>
+
+        {{-- Toggle Mensal / Anual --}}
+        <div class="billing-toggle">
+            <span class="toggle-label active" id="label-monthly">Mensal</span>
+            <label class="toggle-switch">
+                <input type="checkbox" id="billingToggle">
+                <span class="toggle-slider"></span>
+            </label>
+            <span class="toggle-label" id="label-annual">Anual <span class="annual-badge ms-1">-20%</span></span>
+        </div>
+
         <div class="row g-4 justify-content-center">
 
             {{-- FREE --}}
@@ -240,8 +263,19 @@
                     <span class="plan-badge">Mais popular</span>
                     <div class="plan-name">Pro</div>
                     <div class="plan-offer-badge"><i class="bi bi-lightning-fill"></i> Oferta de Lançamento</div>
-                    <div class="plan-price-old">R$ 59,90/mês</div>
-                    <div class="plan-price">R$ 39,90 <span>/mês</span></div>
+
+                    {{-- Preços mensais --}}
+                    <div class="price-monthly">
+                        <div class="plan-price-old">R$ 59,90/mês</div>
+                        <div class="plan-price">R$ 39,90 <span>/mês</span></div>
+                    </div>
+                    {{-- Preços anuais (2 meses grátis = 39,90 * 10 / 12 ≈ 33,25) --}}
+                    <div class="price-annual" style="display:none;">
+                        <div class="plan-price-old">R$ 39,90/mês</div>
+                        <div class="plan-price">R$ 33,25 <span>/mês</span></div>
+                        <div style="font-size:.75rem; color:#4ade80; margin-bottom:.25rem;"><i class="bi bi-gift-fill me-1"></i>R$ 399,00/ano — 2 meses grátis</div>
+                    </div>
+
                     <p class="plan-desc">Para negócios em crescimento.</p>
                     <ul class="list-unstyled plan-features">
                         <li><i class="bi bi-check-circle-fill"></i> Até 500 produtos</li>
@@ -251,7 +285,12 @@
                         <li><i class="bi bi-check-circle-fill"></i> PDV completo</li>
                         <li><i class="bi bi-check-circle-fill"></i> Suporte por e-mail</li>
                     </ul>
-                    <a href="{{ route('register') }}" class="btn btn-primary w-100 mt-4" style="background:var(--sky); border:none; font-weight:700;">Assinar Pro — R$ 39,90/mês</a>
+                    <a id="btn-pro"
+                       href="{{ route('register') }}?plan=pro_launch&billing=monthly"
+                       class="btn btn-primary w-100 mt-4"
+                       style="background:var(--sky); border:none; font-weight:700;">
+                        Assinar Pro — R$ 39,90/mês
+                    </a>
                 </div>
             </div>
 
@@ -259,7 +298,18 @@
             <div class="col-md-4">
                 <div class="plan-card">
                     <div class="plan-name">Business</div>
-                    <div class="plan-price">R$ 119,90 <span>/mês</span></div>
+
+                    {{-- Preços mensais --}}
+                    <div class="price-monthly">
+                        <div class="plan-price">R$ 119,90 <span>/mês</span></div>
+                    </div>
+                    {{-- Preços anuais (119,90 * 10 / 12 ≈ 99,92) --}}
+                    <div class="price-annual" style="display:none;">
+                        <div class="plan-price-old">R$ 119,90/mês</div>
+                        <div class="plan-price">R$ 99,92 <span>/mês</span></div>
+                        <div style="font-size:.75rem; color:#4ade80; margin-bottom:.25rem;"><i class="bi bi-gift-fill me-1"></i>R$ 1.199,00/ano — 2 meses grátis</div>
+                    </div>
+
                     <p class="plan-desc">Para empresas sem limites.</p>
                     <ul class="list-unstyled plan-features">
                         <li><i class="bi bi-check-circle-fill"></i> Produtos ilimitados</li>
@@ -269,7 +319,11 @@
                         <li><i class="bi bi-check-circle-fill"></i> API REST completa</li>
                         <li><i class="bi bi-check-circle-fill"></i> Suporte prioritário</li>
                     </ul>
-                    <a href="{{ route('register') }}" class="btn btn-outline-primary w-100 mt-4">Assinar Business — R$ 119,90/mês</a>
+                    <a id="btn-business"
+                       href="{{ route('register') }}?plan=business&billing=monthly"
+                       class="btn btn-outline-primary w-100 mt-4">
+                        Assinar Business — R$ 119,90/mês
+                    </a>
                 </div>
             </div>
 
@@ -377,5 +431,46 @@
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+(function () {
+    const toggle       = document.getElementById('billingToggle');
+    const labelMonthly = document.getElementById('label-monthly');
+    const labelAnnual  = document.getElementById('label-annual');
+    const btnPro       = document.getElementById('btn-pro');
+    const btnBusiness  = document.getElementById('btn-business');
+
+    const registerBase = "{{ route('register') }}";
+
+    const proMonthlyUrl    = registerBase + '?plan=pro_launch&billing=monthly';
+    const proAnnualUrl     = registerBase + '?plan=pro_launch&billing=annual';
+    const bizMonthlyUrl    = registerBase + '?plan=business&billing=monthly';
+    const bizAnnualUrl     = registerBase + '?plan=business&billing=annual';
+
+    toggle.addEventListener('change', function () {
+        const isAnnual = this.checked;
+
+        // Labels
+        labelMonthly.classList.toggle('active', !isAnnual);
+        labelAnnual.classList.toggle('active', isAnnual);
+
+        // Precos
+        document.querySelectorAll('.price-monthly').forEach(el => el.style.display = isAnnual ? 'none' : '');
+        document.querySelectorAll('.price-annual').forEach(el => el.style.display = isAnnual ? '' : 'none');
+
+        // Botoes
+        if (isAnnual) {
+            btnPro.href = proAnnualUrl;
+            btnPro.textContent = 'Assinar Pro — R$ 33,25/mês (anual)';
+            btnBusiness.href = bizAnnualUrl;
+            btnBusiness.textContent = 'Assinar Business — R$ 99,92/mês (anual)';
+        } else {
+            btnPro.href = proMonthlyUrl;
+            btnPro.textContent = 'Assinar Pro — R$ 39,90/mês';
+            btnBusiness.href = bizMonthlyUrl;
+            btnBusiness.textContent = 'Assinar Business — R$ 119,90/mês';
+        }
+    });
+})();
+</script>
 </body>
 </html>
