@@ -38,14 +38,12 @@
             <div class="row g-3 mb-4">
 
                 <div class="col-12 col-md-4">
-                    <label for="customer_search" class="form-label text-soft fw-semibold">
-                        Cliente <span class="text-danger">*</span>
-                    </label>
+                    <label for="customer_search" class="form-label text-soft fw-semibold">Cliente</label>
                     <div class="position-relative">
                         <input type="text" id="customer_search" name="customer_name"
                             class="form-control @error('customer_id') is-invalid @enderror"
                             value="{{ old('customer_name') }}"
-                            placeholder="Digite para buscar um cliente..."
+                            placeholder="Buscar cliente ou deixe vazio (Consumidor Final)"
                             autocomplete="off">
                         <div id="customer-suggestions"
                              class="position-absolute w-100 z-3"
@@ -62,9 +60,9 @@
                         <span id="customer-selected-name"></span>
                         <a href="#" id="customer-clear" class="ms-2" style="color:#f87171;font-size:.8rem;">remover</a>
                     </small>
-                    <div id="customer-required-msg" class="text-danger mt-1" style="font-size:.85rem; display:none;">
-                        <i class="bi bi-exclamation-circle me-1"></i>Selecione um cliente da lista.
-                    </div>
+                    <small class="text-soft" id="customer-guest-hint" style="display:none;">
+                        <i class="bi bi-person-fill text-warning me-1"></i>Consumidor Final (sem cadastro)
+                    </small>
                 </div>
 
                 <div class="col-12 col-md-4">
@@ -203,15 +201,15 @@
 <script>
 document.addEventListener('DOMContentLoaded', function () {
 
-    // ── Autocomplete de cliente ──────────────────────────────────────────
+    // ── Autocomplete de cliente ────────────────────────────────────────────
     const searchUrl   = '{{ route('customers.search') }}';
     const searchInput = document.getElementById('customer_search');
     const hiddenId    = document.getElementById('customer_id');
     const suggestions = document.getElementById('customer-suggestions');
     const hint        = document.getElementById('customer-selected-hint');
+    const guestHint   = document.getElementById('customer-guest-hint');
     const hintName    = document.getElementById('customer-selected-name');
     const clearBtn    = document.getElementById('customer-clear');
-    const requiredMsg = document.getElementById('customer-required-msg');
     let   debounce;
 
     function selectCustomer(c) {
@@ -219,17 +217,30 @@ document.addEventListener('DOMContentLoaded', function () {
         hiddenId.value       = c.id;
         hintName.textContent = c.name;
         hint.style.display   = 'inline';
-        requiredMsg.style.display = 'none';
+        guestHint.style.display = 'none';
         searchInput.classList.remove('is-invalid');
         suggestions.style.display = 'none';
+    }
+
+    function showGuestMode() {
+        // Campo vazio = Consumidor Final, sem bloquear o submit
+        hiddenId.value = '';
+        hint.style.display = 'none';
+        guestHint.style.display = searchInput.value.trim() === '' ? 'inline' : 'none';
     }
 
     searchInput.addEventListener('input', function () {
         clearTimeout(debounce);
         hiddenId.value = '';
         hint.style.display = 'none';
+        guestHint.style.display = 'none';
         const q = this.value.trim();
-        if (q.length < 2) { suggestions.style.display = 'none'; suggestions.innerHTML = ''; return; }
+        if (q.length < 2) {
+            suggestions.style.display = 'none';
+            suggestions.innerHTML = '';
+            if (q.length === 0) guestHint.style.display = 'inline';
+            return;
+        }
         debounce = setTimeout(() => {
             fetch(`${searchUrl}?q=${encodeURIComponent(q)}`)
                 .then(r => r.json())
@@ -252,7 +263,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
     searchInput.addEventListener('blur', () => setTimeout(() => {
         suggestions.style.display = 'none';
-        if (!hiddenId.value) searchInput.value = '';
+        // Se não selecionou um cliente, mantém o texto digitado como nome livre (Consumidor Final)
+        if (!hiddenId.value) {
+            guestHint.style.display = searchInput.value.trim() === '' ? 'inline' : 'none';
+        }
     }, 150));
 
     clearBtn.addEventListener('click', e => {
@@ -260,9 +274,15 @@ document.addEventListener('DOMContentLoaded', function () {
         hiddenId.value = '';
         searchInput.value = '';
         hint.style.display = 'none';
+        guestHint.style.display = 'inline';
     });
 
-    // ── Validação de estoque em tempo real ──────────────────────────────
+    // Mostra hint de consumidor final ao carregar com campo vazio
+    if (!hiddenId.value && searchInput.value.trim() === '') {
+        guestHint.style.display = 'inline';
+    }
+
+    // ── Validação de estoque em tempo real ────────────────────────────
     function checkStock(row) {
         const sel      = row.querySelector('.product-select');
         const qtyInput = row.querySelector('.qty-input');
@@ -294,13 +314,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function checkAllStock() {
         let valid = true;
-        document.querySelectorAll('.item-row').forEach(row => {
-            if (!checkStock(row)) valid = false;
-        });
+        document.querySelectorAll('.item-row').forEach(row => { if (!checkStock(row)) valid = false; });
         return valid;
     }
 
-    // ── Itens da venda ──────────────────────────────────────────────────
+    // ── Itens da venda ──────────────────────────────────────────────
     const container = document.getElementById('items-container');
     const template  = document.getElementById('item-template').innerHTML;
     const addButton = document.getElementById('add-item');
@@ -344,24 +362,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
     container.querySelectorAll('.item-row').forEach(row => bindRow(row));
 
-    // ── Bloquear submit ─────────────────────────────────────────────────
+    // ── Submit — sem bloqueio por cliente (Consumidor Final permitido) ────
     document.getElementById('sale-form').addEventListener('submit', function (e) {
-        let valid = true;
-
-        if (!hiddenId.value) {
-            e.preventDefault();
-            searchInput.classList.add('is-invalid');
-            requiredMsg.style.display = 'block';
-            searchInput.focus();
-            valid = false;
-        }
-
         if (!checkAllStock()) {
             e.preventDefault();
-            valid = false;
-        }
-
-        if (!valid) {
             const firstErr = document.querySelector('.is-invalid');
             if (firstErr) firstErr.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }

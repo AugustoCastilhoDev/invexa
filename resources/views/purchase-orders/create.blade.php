@@ -42,12 +42,15 @@
                     </select>
                     @error('supplier_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
+
+                {{-- CORRIGIDO: name era 'ordered_at', controller valida 'order_date' --}}
                 <div class="col-12 col-md-3">
                     <label class="form-label text-soft">Data do Pedido <span class="text-danger">*</span></label>
-                    <input type="date" name="ordered_at" value="{{ old('ordered_at', date('Y-m-d')) }}"
-                           class="form-control bg-dark text-white border-secondary @error('ordered_at') is-invalid @enderror" required>
-                    @error('ordered_at')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    <input type="date" name="order_date" value="{{ old('order_date', date('Y-m-d')) }}"
+                           class="form-control bg-dark text-white border-secondary @error('order_date') is-invalid @enderror" required>
+                    @error('order_date')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
+
                 <div class="col-12">
                     <label class="form-label text-soft">Observações</label>
                     <textarea name="notes" rows="2"
@@ -66,7 +69,9 @@
                         <select name="items[0][product_id]" class="form-select bg-dark text-white border-secondary product-select" required>
                             <option value="">Selecione o produto...</option>
                             @foreach($products as $product)
-                                <option value="{{ $product->id }}" data-price="{{ $product->cost_price ?? $product->price }}">
+                                <option value="{{ $product->id }}"
+                                    data-cost="{{ $product->cost_price ?? '' }}"
+                                    data-price="{{ $product->price }}">
                                     {{ $product->name }} (Estoque: {{ $product->quantity }})
                                 </option>
                             @endforeach
@@ -79,7 +84,8 @@
                     </div>
                     <div class="col-6 col-md-2">
                         <label class="form-label text-soft small">Preço Unit.</label>
-                        <input type="number" name="items[0][unit_price]" min="0" step="0.01" value="0.00"
+                        <input type="number" name="items[0][unit_price]" min="0" step="0.01" value=""
+                               placeholder="0.00"
                                class="form-control bg-dark text-white border-secondary price-input" required>
                     </div>
                     <div class="col-6 col-md-2">
@@ -137,13 +143,20 @@
     }
 
     function bindRow(row) {
-        row.querySelector('.product-select').addEventListener('change', function() {
-            const price = this.options[this.selectedIndex].dataset.price || 0;
-            row.querySelector('.price-input').value = parseFloat(price).toFixed(2);
+        const sel   = row.querySelector('.product-select');
+        const price = row.querySelector('.price-input');
+
+        sel.addEventListener('change', function() {
+            const opt      = this.options[this.selectedIndex];
+            // Preenche com cost_price do produto; se não houver, deixa em branco para digitar
+            const costVal  = opt ? opt.dataset.cost : '';
+            price.value    = costVal ? parseFloat(costVal).toFixed(2) : '';
             calcRow(row);
         });
+
         row.querySelector('.qty-input').addEventListener('input',   () => calcRow(row));
-        row.querySelector('.price-input').addEventListener('input', () => calcRow(row));
+        price.addEventListener('input', () => calcRow(row));
+
         row.querySelector('.remove-item').addEventListener('click', function() {
             row.remove();
             updateRemoveButtons();
@@ -164,8 +177,8 @@
         const clone     = first.cloneNode(true);
         clone.querySelectorAll('input, select').forEach(el => {
             el.name = el.name.replace(/\[\d+\]/, `[${itemIndex}]`);
-            if (el.type !== 'number' || el.classList.contains('qty-input')) el.value = el.type === 'number' ? '1' : '';
-            if (el.classList.contains('price-input')) el.value = '0.00';
+            if (el.classList.contains('qty-input'))      el.value = '1';
+            if (el.classList.contains('price-input'))    el.value = '';
             if (el.classList.contains('subtotal-input')) el.value = 'R$ 0,00';
         });
         clone.querySelector('.product-select').value = '';

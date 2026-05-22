@@ -13,10 +13,10 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class SaleController extends Controller
 {
-    /** Prazo padrão (dias) para vencimento da conta a receber gerada automaticamente pela venda. */
     private int $receivableDueDays = 30;
 
     public function index(Request $request)
@@ -62,26 +62,38 @@ class SaleController extends Controller
         $companyId = auth()->user()->company_id;
 
         $validated = $request->validate([
-            'customer_id'        => ['required', 'exists:customers,id'],
+            // customer_id é opcional — se vazio, venda para Consumidor Final
+            'customer_id'        => ['nullable', Rule::exists('customers', 'id')->where('company_id', $companyId)],
+            'customer_name'      => ['nullable', 'string', 'max:255'],
             'sale_date'          => ['required', 'date'],
             'status'             => ['required', 'in:concluida,pendente,cancelada'],
             'notes'              => ['nullable', 'string'],
             'items'              => ['required', 'array', 'min:1'],
-            'items.*.product_id' => ['required', 'exists:products,id'],
+            'items.*.product_id' => ['required', Rule::exists('products', 'id')->where('company_id', $companyId)],
             'items.*.quantity'   => ['required', 'integer', 'min:1'],
             'items.*.price'      => ['required', 'numeric', 'min:0'],
         ], [
-            'customer_id.required' => 'Selecione um cliente cadastrado.',
             'customer_id.exists'   => 'Cliente inválido.',
+            'sale_date.required'   => 'A data da venda é obrigatória.',
+            'items.required'       => 'Adicione ao menos um produto.',
+            'items.min'            => 'Adicione ao menos um produto.',
         ]);
 
-        $customer     = Customer::findOrFail($validated['customer_id']);
-        $customerName = $customer->name;
+        // Resolve nome do cliente: cadastrado > digitado > padrão
+        if (!empty($validated['customer_id'])) {
+            $customer     = Customer::find($validated['customer_id']);
+            $customerName = $customer->name;
+        } else {
+            $customer     = null;
+            $customerName = !empty($request->customer_name)
+                ? trim($request->customer_name)
+                : 'Consumidor Final';
+        }
 
         $saleDateTime = Carbon::parse($validated['sale_date'])->setTimeFrom(now());
 
         try {
-            DB::transaction(function () use ($validated, $companyId, $customerName, $saleDateTime) {
+            DB::transaction(function () use ($validated, $companyId, $customer, $customerName, $saleDateTime) {
                 $saleNumber = Sale::withoutGlobalScope('company')
                     ->where('company_id', $companyId)
                     ->max('sale_number') + 1;
@@ -91,7 +103,7 @@ class SaleController extends Controller
                 $sale = Sale::create([
                     'company_id'    => $companyId,
                     'sale_number'   => $saleNumber,
-                    'customer_id'   => $validated['customer_id'],
+                    'customer_id'   => $customer?->id ?? null,
                     'customer_name' => $customerName,
                     'sale_date'     => $saleDateTime,
                     'status'        => $validated['status'],
@@ -134,14 +146,15 @@ class SaleController extends Controller
                     ]);
                 }
 
-                if ($sale->status === 'concluida') {
+                // Cria Receivable apenas para vendas concluídas com cliente cadastrado
+                if ($sale->status === 'concluida' && $sale->customer_id) {
                     Receivable::create([
                         'company_id'  => $companyId,
                         'customer_id' => $sale->customer_id,
                         'sale_id'     => $sale->id,
                         'description' => "Venda #{$sale->sale_number} — {$customerName}",
                         'amount'      => $total,
-                        'due_date'    => Carbon::parse($sale->sale_date)->addDays($this->receivableDueDays)->toDateString(),
+                        'due_date'    => Carbon::parse($saleDateTime)->addDays($this->receivableDueDays)->toDateString(),
                         'status'      => 'pendente',
                     ]);
                 }
@@ -172,21 +185,29 @@ class SaleController extends Controller
         $companyId = auth()->user()->company_id;
 
         $validated = $request->validate([
-            'customer_id'        => ['required', 'exists:customers,id'],
+            'customer_id'        => ['nullable', Rule::exists('customers', 'id')->where('company_id', $companyId)],
+            'customer_name'      => ['nullable', 'string', 'max:255'],
             'sale_date'          => ['required', 'date'],
             'status'             => ['required', 'in:concluida,pendente,cancelada'],
             'notes'              => ['nullable', 'string'],
             'items'              => ['required', 'array', 'min:1'],
-            'items.*.product_id' => ['required', 'exists:products,id'],
+            'items.*.product_id' => ['required', Rule::exists('products', 'id')->where('company_id', $companyId)],
             'items.*.quantity'   => ['required', 'integer', 'min:1'],
             'items.*.price'      => ['required', 'numeric', 'min:0'],
         ], [
-            'customer_id.required' => 'Selecione um cliente cadastrado.',
-            'customer_id.exists'   => 'Cliente inválido.',
+            'sale_date.required' => 'A data da venda é obrigatória.',
+            'items.required'     => 'Adicione ao menos um produto.',
         ]);
 
-        $customer     = Customer::findOrFail($validated['customer_id']);
-        $customerName = $customer->name;
+        if (!empty($validated['customer_id'])) {
+            $customer     = Customer::find($validated['customer_id']);
+            $customerName = $customer->name;
+        } else {
+            $customer     = null;
+            $customerName = !empty($request->customer_name)
+                ? trim($request->customer_name)
+                : ($sale->customer_name ?: 'Consumidor Final');
+        }
 
         $existingTime = $sale->sale_date ? $sale->sale_date : now();
         $saleDateTime = Carbon::parse($validated['sale_date'])
@@ -195,7 +216,7 @@ class SaleController extends Controller
             ->setSecond($existingTime->second);
 
         try {
-            DB::transaction(function () use ($sale, $validated, $companyId, $customerName, $saleDateTime) {
+            DB::transaction(function () use ($sale, $validated, $companyId, $customer, $customerName, $saleDateTime) {
                 $sale->load('items.product');
 
                 $alreadyReturned = SaleReturnItem::whereHas('saleReturn', fn($q) => $q->where('sale_id', $sale->id))
@@ -226,9 +247,8 @@ class SaleController extends Controller
 
                 $total = collect($validated['items'])->sum(fn($i) => $i['quantity'] * $i['price']);
 
-                $prevStatus = $sale->status;
                 $sale->update([
-                    'customer_id'   => $validated['customer_id'],
+                    'customer_id'   => $customer?->id ?? null,
                     'customer_name' => $customerName,
                     'sale_date'     => $saleDateTime,
                     'status'        => $validated['status'],
@@ -258,18 +278,15 @@ class SaleController extends Controller
                     ]);
                 }
 
-                // Sincroniza Receivable com o status e valor final da venda
                 $sale->load('receivable');
-                if ($validated['status'] === 'concluida') {
+                if ($validated['status'] === 'concluida' && $sale->customer_id) {
                     if ($sale->receivable) {
-                        // Atualiza valor e descrição do Receivable existente
                         $sale->receivable->update([
                             'amount'      => $total,
                             'customer_id' => $sale->customer_id,
                             'description' => "Venda #{$sale->sale_number} — {$customerName}",
                         ]);
                     } else {
-                        // Cria Receivable se ainda não existe (mudança de pendente → concluida)
                         Receivable::create([
                             'company_id'  => $companyId,
                             'customer_id' => $sale->customer_id,
@@ -281,7 +298,6 @@ class SaleController extends Controller
                         ]);
                     }
                 } elseif ($validated['status'] === 'cancelada' && $sale->receivable) {
-                    // Se venda editada para cancelada, cancela o Receivable vinculado
                     $sale->receivable->update(['status' => 'cancelado']);
                 }
             });
@@ -320,8 +336,6 @@ class SaleController extends Controller
                     ]);
                 }
                 $sale->update(['status' => 'cancelada']);
-
-                // Cancela o Receivable vinculado, se existir e ainda estiver pendente
                 if ($sale->receivable && $sale->receivable->status === 'pendente') {
                     $sale->receivable->update(['status' => 'cancelado']);
                 }

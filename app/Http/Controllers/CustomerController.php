@@ -35,6 +35,29 @@ class CustomerController extends Controller
         return view('customers.index', compact('customers', 'totalCustomers', 'activeCustomers'));
     }
 
+    /**
+     * Autocomplete de clientes para o formulário de venda.
+     * Retorna JSON: [{id, name, document, phone}]
+     */
+    public function search(Request $request)
+    {
+        $q         = trim($request->get('q', ''));
+        $companyId = Auth::user()->company_id;
+
+        $customers = Customer::where('company_id', $companyId)
+            ->where('active', true)
+            ->where(function ($query) use ($q) {
+                $query->where('name',     'like', "%{$q}%")
+                      ->orWhere('document', 'like', "%{$q}%")
+                      ->orWhere('phone',    'like', "%{$q}%");
+            })
+            ->orderBy('name')
+            ->limit(10)
+            ->get(['id', 'name', 'document', 'phone']);
+
+        return response()->json($customers);
+    }
+
     public function create()
     {
         $company = Auth::user()->company;
