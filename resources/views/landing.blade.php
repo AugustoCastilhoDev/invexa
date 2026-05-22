@@ -269,11 +269,11 @@
                         <div class="plan-price-old">R$ 59,90/mês</div>
                         <div class="plan-price">R$ 39,90 <span>/mês</span></div>
                     </div>
-                    {{-- Preços anuais (2 meses grátis = 39,90 * 10 / 12 ≈ 33,25) --}}
+                    {{-- Preços anuais: R$ 383,04/ano = R$ 31,92/mês --}}
                     <div class="price-annual" style="display:none;">
                         <div class="plan-price-old">R$ 39,90/mês</div>
-                        <div class="plan-price">R$ 33,25 <span>/mês</span></div>
-                        <div style="font-size:.75rem; color:#4ade80; margin-bottom:.25rem;"><i class="bi bi-gift-fill me-1"></i>R$ 399,00/ano — 2 meses grátis</div>
+                        <div class="plan-price">R$ 31,92 <span>/mês</span></div>
+                        <div style="font-size:.75rem; color:#4ade80; margin-bottom:.25rem;"><i class="bi bi-gift-fill me-1"></i>R$ 383,04/ano — 2 meses grátis</div>
                     </div>
 
                     <p class="plan-desc">Para negócios em crescimento.</p>
@@ -303,11 +303,11 @@
                     <div class="price-monthly">
                         <div class="plan-price">R$ 119,90 <span>/mês</span></div>
                     </div>
-                    {{-- Preços anuais (119,90 * 10 / 12 ≈ 99,92) --}}
+                    {{-- Preços anuais: R$ 1.151,04/ano = R$ 95,92/mês --}}
                     <div class="price-annual" style="display:none;">
                         <div class="plan-price-old">R$ 119,90/mês</div>
-                        <div class="plan-price">R$ 99,92 <span>/mês</span></div>
-                        <div style="font-size:.75rem; color:#4ade80; margin-bottom:.25rem;"><i class="bi bi-gift-fill me-1"></i>R$ 1.199,00/ano — 2 meses grátis</div>
+                        <div class="plan-price">R$ 95,92 <span>/mês</span></div>
+                        <div style="font-size:.75rem; color:#4ade80; margin-bottom:.25rem;"><i class="bi bi-gift-fill me-1"></i>R$ 1.151,04/ano — 2 meses grátis</div>
                     </div>
 
                     <p class="plan-desc">Para empresas sem limites.</p>
@@ -441,28 +441,25 @@
 
     const registerBase = "{{ route('register') }}";
 
-    const proMonthlyUrl    = registerBase + '?plan=pro_launch&billing=monthly';
-    const proAnnualUrl     = registerBase + '?plan=pro_launch&billing=annual';
-    const bizMonthlyUrl    = registerBase + '?plan=business&billing=monthly';
-    const bizAnnualUrl     = registerBase + '?plan=business&billing=annual';
+    const proMonthlyUrl = registerBase + '?plan=pro_launch&billing=monthly';
+    const proAnnualUrl  = registerBase + '?plan=pro_launch&billing=annual';
+    const bizMonthlyUrl = registerBase + '?plan=business&billing=monthly';
+    const bizAnnualUrl  = registerBase + '?plan=business&billing=annual';
 
     toggle.addEventListener('change', function () {
         const isAnnual = this.checked;
 
-        // Labels
         labelMonthly.classList.toggle('active', !isAnnual);
         labelAnnual.classList.toggle('active', isAnnual);
 
-        // Precos
         document.querySelectorAll('.price-monthly').forEach(el => el.style.display = isAnnual ? 'none' : '');
         document.querySelectorAll('.price-annual').forEach(el => el.style.display = isAnnual ? '' : 'none');
 
-        // Botoes
         if (isAnnual) {
             btnPro.href = proAnnualUrl;
-            btnPro.textContent = 'Assinar Pro — R$ 33,25/mês (anual)';
+            btnPro.textContent = 'Assinar Pro — R$ 31,92/mês (anual)';
             btnBusiness.href = bizAnnualUrl;
-            btnBusiness.textContent = 'Assinar Business — R$ 99,92/mês (anual)';
+            btnBusiness.textContent = 'Assinar Business — R$ 95,92/mês (anual)';
         } else {
             btnPro.href = proMonthlyUrl;
             btnPro.textContent = 'Assinar Pro — R$ 39,90/mês';
