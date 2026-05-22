@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Subscription;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -18,17 +17,16 @@ class UpgradeController extends Controller
             $trialDaysLeft = $company->trialDaysLeft();
         }
 
-        // Busca a assinatura diretamente sem depender do Cashier billable_id
+        // Busca via billable_id (coluna padrão do Cashier na tabela subscriptions)
         $subscription = null;
         if ($company) {
             $subscription = DB::table('subscriptions')
-                ->where('company_id', $company->id)
+                ->where('billable_id', $company->id)
                 ->where('name', 'default')
                 ->orderByDesc('created_at')
                 ->first();
         }
 
-        // Considera assinatura ativa se não foi cancelada ou ainda está no grace period
         $hasActiveSubscription = $subscription &&
             in_array($subscription->stripe_status, ['active', 'trialing', 'past_due']) &&
             (is_null($subscription->ends_at) || $subscription->ends_at > now()->toDateTimeString());
