@@ -80,20 +80,20 @@ class ProductController extends Controller
                 ->with('error', $this->limitMessage('produtos', $company->limit('products')));
         }
 
-        $request->validate([
+        $validated = $request->validate([
             'name'         => ['required', 'string', 'max:255'],
             'sku'          => ['nullable', 'string', 'max:100'],
             'category_id'  => ['nullable', 'exists:categories,id'],
             'supplier_id'  => ['nullable', 'exists:suppliers,id'],
             'price'        => ['required', 'numeric', 'min:0'],
-            'cost_price'   => ['nullable', 'numeric', 'min:0'],
+            'cost'         => ['nullable', 'numeric', 'min:0'],
             'quantity'     => ['required', 'integer', 'min:0'],
             'min_quantity' => ['nullable', 'integer', 'min:0'],
             'description'  => ['nullable', 'string'],
             'unit'         => ['nullable', 'string', 'max:20'],
         ]);
 
-        Product::create(array_merge($request->all(), [
+        Product::create(array_merge($validated, [
             'company_id' => Auth::user()->company_id,
             'active'     => $request->boolean('active', true),
         ]));
@@ -120,20 +120,20 @@ class ProductController extends Controller
     {
         $this->authorizeProduct($product);
 
-        $request->validate([
+        $validated = $request->validate([
             'name'         => ['required', 'string', 'max:255'],
             'sku'          => ['nullable', 'string', 'max:100'],
             'category_id'  => ['nullable', 'exists:categories,id'],
             'supplier_id'  => ['nullable', 'exists:suppliers,id'],
             'price'        => ['required', 'numeric', 'min:0'],
-            'cost_price'   => ['nullable', 'numeric', 'min:0'],
+            'cost'         => ['nullable', 'numeric', 'min:0'],
             'quantity'     => ['required', 'integer', 'min:0'],
             'min_quantity' => ['nullable', 'integer', 'min:0'],
             'description'  => ['nullable', 'string'],
             'unit'         => ['nullable', 'string', 'max:20'],
         ]);
 
-        $product->update(array_merge($request->all(), [
+        $product->update(array_merge($validated, [
             'active' => $request->boolean('active'),
         ]));
 
