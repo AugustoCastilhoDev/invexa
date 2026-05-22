@@ -10,139 +10,344 @@
         :root {
             --brand-abyss: #080D1A;
             --brand-sky:   #0EA5E9;
+            --brand-sky2:  #38BDF8;
         }
         body {
-            background: radial-gradient(circle at top left, rgba(14,165,233,.07), transparent 22%),
+            background: radial-gradient(circle at top left, rgba(14,165,233,.08), transparent 24%),
+                        radial-gradient(circle at bottom right, rgba(14,165,233,.05), transparent 20%),
                         var(--brand-abyss);
             min-height: 100vh;
+            color: #e2e8f0;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+        }
+        .upgrade-wrap { max-width: 960px; }
+
+        /* Trial banner */
+        .trial-banner {
+            background: linear-gradient(90deg, rgba(245,158,11,.12), rgba(245,158,11,.06));
+            border: 1px solid rgba(245,158,11,.35);
+            border-radius: 12px;
+            padding: 14px 20px;
+        }
+        .trial-expired-banner {
+            background: linear-gradient(90deg, rgba(239,68,68,.12), rgba(239,68,68,.06));
+            border: 1px solid rgba(239,68,68,.35);
+            border-radius: 12px;
+            padding: 14px 20px;
+        }
+
+        /* Toggle */
+        .billing-toggle { background: rgba(255,255,255,.06); border-radius: 30px; padding: 4px; display: inline-flex; gap: 2px; }
+        .billing-toggle button {
+            border: none; background: transparent; color: rgba(226,232,240,.6);
+            border-radius: 26px; padding: 6px 20px; font-size: .88rem; font-weight: 500;
+            transition: all .2s; cursor: pointer;
+        }
+        .billing-toggle button.active { background: var(--brand-sky); color: #fff; }
+        .annual-badge { background: rgba(34,197,94,.15); color: #4ade80; border: 1px solid rgba(34,197,94,.3); font-size: .7rem; font-weight: 700; padding: 2px 8px; border-radius: 20px; }
+
+        /* Cards */
+        .plan-card {
+            background: rgba(13,25,41,.9);
+            border: 1px solid rgba(14,165,233,.12);
+            border-radius: 16px;
+            padding: 28px 24px;
+            transition: border-color .25s, transform .2s;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        .plan-card:hover { border-color: rgba(14,165,233,.35); transform: translateY(-2px); }
+        .plan-card.featured { border-color: var(--brand-sky); box-shadow: 0 0 32px rgba(14,165,233,.15); }
+        .plan-card.current-plan { border-color: rgba(34,197,94,.5); }
+
+        .badge-popular { background: #f59e0b; color: #1a1a1a; font-size: .7rem; font-weight: 700; padding: 3px 10px; border-radius: 20px; letter-spacing: .03em; }
+        .badge-current { background: rgba(34,197,94,.15); color: #4ade80; border: 1px solid rgba(34,197,94,.3); font-size: .7rem; font-weight: 700; padding: 3px 10px; border-radius: 20px; }
+
+        .plan-label { font-size: .72rem; letter-spacing: .1em; text-transform: uppercase; font-weight: 600; margin-bottom: 14px; }
+        .plan-price { font-size: 2.4rem; font-weight: 800; color: #fff; line-height: 1.1; }
+        .plan-price small { font-size: .95rem; font-weight: 400; color: rgba(226,232,240,.45); }
+        .plan-price .old-price { font-size: 1rem; color: rgba(226,232,240,.3); text-decoration: line-through; margin-left: 8px; }
+        .plan-desc { font-size: .84rem; margin-bottom: 20px; }
+
+        .feature-list li {
+            font-size: .86rem;
+            color: rgba(226,232,240,.8);
+            padding: 5px 0;
             display: flex;
             align-items: center;
-            justify-content: center;
-            color: #e2e8f0;
+            gap: 8px;
         }
-        .upgrade-wrap  { max-width: 820px; width: 100%; }
-        .plan-card     { background: rgba(13,25,41,.88); border: 1px solid rgba(14,165,233,.15); border-radius: 14px; padding: 28px; transition: border-color .2s; }
-        .plan-card.featured { border-color: #0EA5E9; box-shadow: 0 0 24px rgba(14,165,233,.18); }
-        .badge-popular { background: #f59e0b; color: #1a1a1a; font-size: .72rem; font-weight: 700; padding: .25rem .75rem; border-radius: 20px; letter-spacing: .03em; }
-        .plan-price    { font-size: 2.2rem; font-weight: 800; color: #fff; }
-        .plan-price small { font-size: 1rem; font-weight: 400; color: rgba(226,232,240,.55); }
-        .feature-list li { font-size: .88rem; color: rgba(226,232,240,.8); padding: 4px 0; }
-        .logo-wrap svg  { filter: drop-shadow(0 0 6px rgba(14,165,233,.4)); }
+        .feature-list .bi-check-circle-fill { color: #4ade80; }
+        .feature-list .bi-check-circle-fill.sky  { color: var(--brand-sky2); }
+        .feature-list .bi-x-circle { color: rgba(226,232,240,.2); }
+
+        /* Guarantee strip */
+        .guarantee-strip {
+            background: rgba(255,255,255,.03);
+            border: 1px solid rgba(255,255,255,.07);
+            border-radius: 12px;
+            padding: 16px 24px;
+        }
+        .guarantee-item { display: flex; align-items: center; gap: 8px; font-size: .82rem; color: rgba(226,232,240,.6); }
+        .guarantee-item i { font-size: 1rem; color: var(--brand-sky2); }
+
+        .logo-wrap svg { filter: drop-shadow(0 0 6px rgba(14,165,233,.4)); }
     </style>
 </head>
 <body>
 <div class="upgrade-wrap mx-auto px-3 py-5">
 
     {{-- Logo + Header --}}
-    <div class="text-center mb-5">
+    <div class="text-center mb-4">
         <div class="logo-wrap mb-3">
-            <svg width="42" height="42" viewBox="0 0 32 32" fill="none">
+            <svg width="44" height="44" viewBox="0 0 32 32" fill="none">
                 <rect width="32" height="32" rx="7" fill="#080D1A"/>
                 <path d="M7 10h5.5L16 16l3.5-6H25L18 22h-4L7 10Z" fill="#0EA5E9"/>
                 <circle cx="24" cy="10" r="2.2" fill="#38BDF8"/>
             </svg>
         </div>
-        <h1 class="fw-bold fs-3 text-white">Escolha seu plano</h1>
-        <p style="color:rgba(226,232,240,.6);">Continue usando o Invexa com todos os recursos.</p>
-
+        <h1 class="fw-bold fs-2 text-white mb-1">Escolha seu plano</h1>
+        <p style="color:rgba(226,232,240,.55); font-size:.95rem;">Acesso completo a todos os recursos. Cancele quando quiser.</p>
         @if($company)
-            <span class="badge" style="background:rgba(14,165,233,.12); color:#38BDF8; border:1px solid rgba(14,165,233,.25); font-size:.8rem;">
-                {{ $company->name }}
+            <span class="badge mt-1" style="background:rgba(14,165,233,.1); color:#38BDF8; border:1px solid rgba(14,165,233,.22); font-size:.8rem;">
+                <i class="bi bi-building me-1"></i>{{ $company->name }}
             </span>
         @endif
     </div>
 
-    @if(session('error'))
-        <div class="alert alert-warning text-center mb-4">{{ session('error') }}</div>
+    {{-- Trial / Expirado banner --}}
+    @if(!is_null($trialDaysLeft) && $trialDaysLeft > 0)
+        <div class="trial-banner d-flex align-items-center gap-3 mb-4">
+            <i class="bi bi-clock-history fs-4" style="color:#f59e0b;"></i>
+            <div>
+                <div class="fw-semibold" style="color:#fbbf24;">Seu trial expira em {{ $trialDaysLeft }} {{ $trialDaysLeft == 1 ? 'dia' : 'dias' }}</div>
+                <div style="font-size:.84rem; color:rgba(226,232,240,.55);">Assine agora e mantenha todos os seus dados sem interrupção.</div>
+            </div>
+        </div>
+    @elseif(session('error'))
+        <div class="trial-expired-banner d-flex align-items-center gap-3 mb-4">
+            <i class="bi bi-exclamation-circle-fill fs-4" style="color:#f87171;"></i>
+            <div>
+                <div class="fw-semibold" style="color:#fca5a5;">{{ session('error') }}</div>
+                <div style="font-size:.84rem; color:rgba(226,232,240,.55);">Escolha um plano abaixo para recuperar o acesso imediatamente.</div>
+            </div>
+        </div>
     @endif
 
-    <div class="row g-4 justify-content-center">
+    {{-- Toggle mensal / anual --}}
+    <div class="text-center mb-4">
+        <div class="billing-toggle">
+            <button class="active" id="btn-monthly" onclick="setBilling('monthly')">Mensal</button>
+            <button id="btn-annual" onclick="setBilling('annual')">
+                Anual &nbsp;<span class="annual-badge">-20%</span>
+            </button>
+        </div>
+    </div>
+
+    {{-- Cards --}}
+    <div class="row g-4 justify-content-center mb-4">
 
         {{-- FREE --}}
         <div class="col-md-4">
-            <div class="plan-card h-100 d-flex flex-column">
-                <div class="text-uppercase fw-semibold mb-3" style="font-size:.72rem; letter-spacing:.1em; color:rgba(226,232,240,.5);">Free</div>
-                <div class="plan-price mb-1">R$ 0 <small>/mês</small></div>
-                <p class="mb-3" style="font-size:.85rem; color:rgba(226,232,240,.55);">Para começar sem custo.</p>
-                <ul class="list-unstyled feature-list flex-grow-1">
-                    <li><i class="bi bi-check-circle-fill text-success me-2"></i>Até 50 produtos</li>
-                    <li><i class="bi bi-check-circle-fill text-success me-2"></i>Até 100 clientes</li>
-                    <li><i class="bi bi-check-circle-fill text-success me-2"></i>2 usuários</li>
-                    <li><i class="bi bi-check-circle-fill text-success me-2"></i>Relatórios básicos</li>
-                    <li><i class="bi bi-x-circle me-2" style="color:rgba(226,232,240,.3);"></i>PDV avançado</li>
-                    <li><i class="bi bi-x-circle me-2" style="color:rgba(226,232,240,.3);"></i>Suporte prioritário</li>
-                </ul>
-                <a href="{{ route('home') }}" class="btn btn-outline-secondary w-100 mt-3">Continuar grátis</a>
+            <div class="plan-card {{ $currentPlan === 'free' && !($subscription && $subscription->active()) ? 'current-plan' : '' }}">
+                <div>
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <span class="plan-label" style="color:rgba(226,232,240,.45);">Free</span>
+                        @if($currentPlan === 'free' && !($subscription && $subscription->active()))
+                            <span class="badge-current">Plano atual</span>
+                        @endif
+                    </div>
+                    <div class="plan-price mb-1">R$ 0 <small>/mês</small></div>
+                    <p class="plan-desc" style="color:rgba(226,232,240,.45);">Para começar sem custo.</p>
+                    <ul class="list-unstyled feature-list mb-4">
+                        <li><i class="bi bi-check-circle-fill"></i>Até 50 produtos</li>
+                        <li><i class="bi bi-check-circle-fill"></i>Até 100 clientes</li>
+                        <li><i class="bi bi-check-circle-fill"></i>2 usuários</li>
+                        <li><i class="bi bi-check-circle-fill"></i>Relatórios básicos</li>
+                        <li><i class="bi bi-x-circle"></i>PDV avançado</li>
+                        <li><i class="bi bi-x-circle"></i>Exportação PDF/CSV</li>
+                        <li><i class="bi bi-x-circle"></i>API REST</li>
+                        <li><i class="bi bi-x-circle"></i>Suporte prioritário</li>
+                    </ul>
+                </div>
+                <div class="mt-auto">
+                    <a href="{{ route('home') }}" class="btn btn-outline-secondary w-100">Continuar grátis</a>
+                </div>
             </div>
         </div>
 
         {{-- PRO --}}
         <div class="col-md-4">
-            <div class="plan-card featured h-100 d-flex flex-column position-relative">
-                <div class="text-center mb-3">
-                    <span class="badge-popular">&#128293; Mais popular</span>
+            <div class="plan-card featured {{ in_array($currentPlan, ['pro','pro_launch']) && ($subscription && $subscription->active()) ? 'current-plan' : '' }}">
+                <div>
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <span class="plan-label" style="color:#38BDF8;">Pro</span>
+                        <div class="d-flex gap-2">
+                            @if(in_array($currentPlan, ['pro','pro_launch']) && ($subscription && $subscription->active()))
+                                <span class="badge-current">Plano atual</span>
+                            @else
+                                <span class="badge-popular">&#128293; Mais popular</span>
+                            @endif
+                        </div>
+                    </div>
+
+                    {{-- Preço mensal --}}
+                    <div id="pro-price-monthly">
+                        <div class="plan-price mb-0">
+                            R$ 39,90
+                            <span class="old-price">R$ 59,90</span>
+                            <small>/mês</small>
+                        </div>
+                        <p class="plan-desc" style="color:rgba(56,189,248,.8); font-size:.8rem;">Oferta de lançamento</p>
+                    </div>
+                    {{-- Preço anual --}}
+                    <div id="pro-price-annual" style="display:none;">
+                        <div class="plan-price mb-0">
+                            R$ 31,92
+                            <small>/mês</small>
+                        </div>
+                        <p class="plan-desc" style="color:#4ade80; font-size:.8rem;">R$ 383,04/ano &mdash; economize R$ 96</p>
+                    </div>
+
+                    <ul class="list-unstyled feature-list mb-4">
+                        <li><i class="bi bi-check-circle-fill sky"></i>Até 500 produtos</li>
+                        <li><i class="bi bi-check-circle-fill sky"></i>Até 1.000 clientes</li>
+                        <li><i class="bi bi-check-circle-fill sky"></i>10 usuários</li>
+                        <li><i class="bi bi-check-circle-fill sky"></i>Todos os relatórios + PDF/CSV</li>
+                        <li><i class="bi bi-check-circle-fill sky"></i>PDV completo</li>
+                        <li><i class="bi bi-check-circle-fill sky"></i>Contas a pagar/receber</li>
+                        <li><i class="bi bi-x-circle"></i>API REST</li>
+                        <li><i class="bi bi-check-circle-fill sky"></i>Suporte por e-mail</li>
+                    </ul>
                 </div>
-                <div class="text-uppercase fw-semibold mb-3" style="font-size:.72rem; letter-spacing:.1em; color:#38BDF8;">Pro</div>
-                <div class="plan-price mb-1">
-                    R$ 39,90
-                    <span class="text-decoration-line-through ms-2" style="font-size:1rem; color:rgba(226,232,240,.35);">R$ 59,90</span>
-                    <small>/mês</small>
+                <div class="mt-auto">
+                    @if(in_array($currentPlan, ['pro','pro_launch']) && ($subscription && $subscription->active()))
+                        <a href="{{ route('subscription.billing-portal') }}" class="btn w-100 fw-semibold" style="background:rgba(14,165,233,.15); color:#38BDF8; border:1px solid rgba(14,165,233,.3);">
+                            <i class="bi bi-gear me-1"></i>Gerenciar assinatura
+                        </a>
+                    @else
+                        <form action="{{ route('subscription.checkout') }}" method="POST">
+                            @csrf
+                            <input type="hidden" name="plan" value="pro_launch">
+                            <button type="submit" class="btn w-100 fw-semibold" style="background:#0EA5E9; color:#fff;">
+                                Assinar Pro &mdash; R$ 39,90/mês
+                            </button>
+                        </form>
+                    @endif
                 </div>
-                <p class="mb-3" style="font-size:.85rem; color:rgba(56,189,248,.8);">Oferta de lançamento</p>
-                <ul class="list-unstyled feature-list flex-grow-1">
-                    <li><i class="bi bi-check-circle-fill me-2" style="color:#38BDF8;"></i>Até 500 produtos</li>
-                    <li><i class="bi bi-check-circle-fill me-2" style="color:#38BDF8;"></i>Até 1.000 clientes</li>
-                    <li><i class="bi bi-check-circle-fill me-2" style="color:#38BDF8;"></i>10 usuários</li>
-                    <li><i class="bi bi-check-circle-fill me-2" style="color:#38BDF8;"></i>Todos os relatórios + PDF/CSV</li>
-                    <li><i class="bi bi-check-circle-fill me-2" style="color:#38BDF8;"></i>PDV completo</li>
-                    <li><i class="bi bi-check-circle-fill me-2" style="color:#38BDF8;"></i>Suporte por e-mail</li>
-                </ul>
-                <form action="{{ route('subscription.checkout') }}" method="POST" class="mt-3">
-                    @csrf
-                    <input type="hidden" name="plan" value="pro_launch">
-                    <button type="submit" class="btn w-100 fw-semibold" style="background:#0EA5E9; color:#fff;">
-                        Assinar Pro — R$ 39,90/mês
-                    </button>
-                </form>
             </div>
         </div>
 
         {{-- BUSINESS --}}
         <div class="col-md-4">
-            <div class="plan-card h-100 d-flex flex-column">
-                <div class="text-uppercase fw-semibold mb-3" style="font-size:.72rem; letter-spacing:.1em; color:rgba(226,232,240,.5);">Business</div>
-                <div class="plan-price mb-1">R$ 119,90 <small>/mês</small></div>
-                <p class="mb-3" style="font-size:.85rem; color:rgba(226,232,240,.55);">Para empresas sem limites.</p>
-                <ul class="list-unstyled feature-list flex-grow-1">
-                    <li><i class="bi bi-check-circle-fill text-success me-2"></i>Produtos ilimitados</li>
-                    <li><i class="bi bi-check-circle-fill text-success me-2"></i>Clientes ilimitados</li>
-                    <li><i class="bi bi-check-circle-fill text-success me-2"></i>Usuários ilimitados</li>
-                    <li><i class="bi bi-check-circle-fill text-success me-2"></i>Todos os recursos Pro</li>
-                    <li><i class="bi bi-check-circle-fill text-success me-2"></i>API REST (em breve)</li>
-                    <li><i class="bi bi-check-circle-fill text-success me-2"></i>Suporte prioritário</li>
-                </ul>
-                <form action="{{ route('subscription.checkout') }}" method="POST" class="mt-3">
-                    @csrf
-                    <input type="hidden" name="plan" value="business">
-                    <button type="submit" class="btn btn-outline-light w-100 fw-semibold">
-                        Assinar Business — R$ 119,90/mês
-                    </button>
-                </form>
+            <div class="plan-card {{ $currentPlan === 'business' && ($subscription && $subscription->active()) ? 'current-plan' : '' }}">
+                <div>
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <span class="plan-label" style="color:rgba(226,232,240,.45);">Business</span>
+                        @if($currentPlan === 'business' && ($subscription && $subscription->active()))
+                            <span class="badge-current">Plano atual</span>
+                        @endif
+                    </div>
+
+                    {{-- Preço mensal --}}
+                    <div id="biz-price-monthly">
+                        <div class="plan-price mb-1">R$ 119,90 <small>/mês</small></div>
+                        <p class="plan-desc" style="color:rgba(226,232,240,.45);">Para empresas sem limites.</p>
+                    </div>
+                    {{-- Preço anual --}}
+                    <div id="biz-price-annual" style="display:none;">
+                        <div class="plan-price mb-0">R$ 95,92 <small>/mês</small></div>
+                        <p class="plan-desc" style="color:#4ade80; font-size:.8rem;">R$ 1.151,04/ano &mdash; economize R$ 288</p>
+                    </div>
+
+                    <ul class="list-unstyled feature-list mb-4">
+                        <li><i class="bi bi-check-circle-fill"></i>Produtos ilimitados</li>
+                        <li><i class="bi bi-check-circle-fill"></i>Clientes ilimitados</li>
+                        <li><i class="bi bi-check-circle-fill"></i>Usuários ilimitados</li>
+                        <li><i class="bi bi-check-circle-fill"></i>Todos os recursos Pro</li>
+                        <li><i class="bi bi-check-circle-fill"></i>API REST completa</li>
+                        <li><i class="bi bi-check-circle-fill"></i>Webhooks (em breve)</li>
+                        <li><i class="bi bi-check-circle-fill"></i>Suporte prioritário</li>
+                        <li><i class="bi bi-check-circle-fill"></i>Onboarding assistido</li>
+                    </ul>
+                </div>
+                <div class="mt-auto">
+                    @if($currentPlan === 'business' && ($subscription && $subscription->active()))
+                        <a href="{{ route('subscription.billing-portal') }}" class="btn btn-outline-light w-100 fw-semibold">
+                            <i class="bi bi-gear me-1"></i>Gerenciar assinatura
+                        </a>
+                    @else
+                        <form action="{{ route('subscription.checkout') }}" method="POST">
+                            @csrf
+                            <input type="hidden" name="plan" value="business">
+                            <button type="submit" class="btn btn-outline-light w-100 fw-semibold">
+                                Assinar Business &mdash; R$ 119,90/mês
+                            </button>
+                        </form>
+                    @endif
+                </div>
             </div>
         </div>
 
     </div>{{-- /row --}}
 
-    <div class="text-center mt-5" style="color:rgba(226,232,240,.4); font-size:.82rem;">
+    {{-- Garantia strip --}}
+    <div class="guarantee-strip mb-4">
+        <div class="row g-3 justify-content-center text-center">
+            <div class="col-6 col-md-3">
+                <div class="guarantee-item justify-content-center">
+                    <i class="bi bi-shield-check"></i>
+                    <span>14 dias de garantia</span>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="guarantee-item justify-content-center">
+                    <i class="bi bi-x-circle"></i>
+                    <span>Sem contrato</span>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="guarantee-item justify-content-center">
+                    <i class="bi bi-lock"></i>
+                    <span>Pagamento seguro</span>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="guarantee-item justify-content-center">
+                    <i class="bi bi-arrow-counterclockwise"></i>
+                    <span>Cancele quando quiser</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Footer --}}
+    <div class="text-center" style="color:rgba(226,232,240,.35); font-size:.82rem;">
         Dúvidas? <a href="mailto:suporte@castilhosolucoesdigitais.com" style="color:#38BDF8;">suporte@castilhosolucoesdigitais.com</a>
+        <span class="mx-2">·</span>
+        <a href="{{ route('dashboard') }}" style="color:rgba(226,232,240,.35);">Voltar ao sistema</a>
         <span class="mx-2">·</span>
         <form method="POST" action="{{ route('logout') }}" class="d-inline">
             @csrf
-            <button type="submit" class="btn btn-link btn-sm p-0" style="color:rgba(226,232,240,.4); font-size:.82rem;">Sair da conta</button>
+            <button type="submit" class="btn btn-link btn-sm p-0" style="color:rgba(226,232,240,.35); font-size:.82rem;">Sair da conta</button>
         </form>
     </div>
 
 </div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    function setBilling(type) {
+        const isAnnual = type === 'annual';
+        document.getElementById('btn-monthly').classList.toggle('active', !isAnnual);
+        document.getElementById('btn-annual').classList.toggle('active', isAnnual);
+
+        document.getElementById('pro-price-monthly').style.display  = isAnnual ? 'none' : '';
+        document.getElementById('pro-price-annual').style.display   = isAnnual ? '' : 'none';
+        document.getElementById('biz-price-monthly').style.display  = isAnnual ? 'none' : '';
+        document.getElementById('biz-price-annual').style.display   = isAnnual ? '' : 'none';
+    }
+</script>
 </body>
 </html>
