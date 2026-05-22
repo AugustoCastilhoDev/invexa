@@ -276,6 +276,7 @@
                         <i class="bi bi-bar-chart-line me-1 opacity-75"></i>Relatórios
                     </a>
                     <ul class="dropdown-menu">
+                        <li><a class="dropdown-item {{ request()->routeIs('reports.profitability') ? 'active' : '' }}" href="{{ route('reports.profitability') }}"><i class="bi bi-currency-dollar me-2"></i>Lucratividade</a></li>
                         <li><a class="dropdown-item {{ request()->routeIs('reports.top-products') ? 'active' : '' }}" href="{{ route('reports.top-products') }}"><i class="bi bi-trophy me-2"></i>Produtos Mais Vendidos</a></li>
                         <li><a class="dropdown-item {{ request()->routeIs('reports.purchases') ? 'active' : '' }}" href="{{ route('reports.purchases') }}"><i class="bi bi-cart-check me-2"></i>Relatório de Compras</a></li>
                         <li><a class="dropdown-item {{ request()->routeIs('reports.sales') ? 'active' : '' }}" href="{{ route('reports.sales') }}"><i class="bi bi-graph-up me-2"></i>Relatório de Vendas</a></li>
