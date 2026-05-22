@@ -24,7 +24,7 @@ class CheckOnboarding
         $company = $user->company;
 
         if ($company && ! $company->onboarding_completed && ! $request->routeIs('onboarding.*', 'logout')) {
-            return redirect()->route('onboarding.index');
+            return redirect()->route('onboarding.show');
         }
 
         return $next($request);
