@@ -137,7 +137,7 @@
                             <td class="ps-3 py-3">
                                 <div class="fw-semibold text-white">{{ $sale->customer_name ?? 'Sem nome' }}</div>
                                 <div class="text-soft small">
-                                    Venda #{{ $sale->id }}
+                                    Venda #{{ $sale->sale_number }}
                                     @if($showTrashed ?? false)
                                         <span class="badge bg-danger ms-1">Lixeira</span>
                                     @endif
