@@ -28,26 +28,25 @@ class SubscriptionController extends Controller
             'billing' => ['required', 'in:monthly,annual'],
         ]);
 
-        $company  = auth()->user()->company;
-        $plan     = $request->input('plan');
-        $billing  = $request->input('billing');
+        $company = auth()->user()->company;
+        $plan    = $request->input('plan');
+        $billing = $request->input('billing');
 
-        // Mapeia plan+billing para o price_id do Stripe
         $priceId = config('plans.' . $plan . '.' . $billing);
 
         if (! $priceId) {
             return back()->withErrors(['plan' => 'Plano ou período inválido. Tente novamente.']);
         }
 
-        $checkoutUrl = $company
+        $session = $company
             ->newSubscription('default', $priceId)
             ->allowPromotionCodes()
-            ->successUrl(route('subscription.success') . '?session_id={CHECKOUT_SESSION_ID}')
-            ->cancelUrl(route('subscription.index'))
-            ->checkout()
-            ->url;
+            ->checkout([
+                'success_url' => route('subscription.success') . '?session_id={CHECKOUT_SESSION_ID}',
+                'cancel_url'  => route('subscription.index'),
+            ]);
 
-        return redirect($checkoutUrl);
+        return redirect($session->url);
     }
 
     /**
@@ -69,10 +68,8 @@ class SubscriptionController extends Controller
     {
         $company = auth()->user()->company;
 
-        // Atualiza o plano da empresa baseado na subscription ativa
         if ($company->subscribed('default')) {
-            $subscription = $company->subscription('default');
-            $priceId      = $subscription->stripe_price;
+            $priceId = $company->subscription('default')->stripe_price;
 
             $planName = collect(config('plans'))
                 ->flatMap(fn ($periods, $plan) => collect($periods)->map(fn ($id) => [$id => $plan]))
