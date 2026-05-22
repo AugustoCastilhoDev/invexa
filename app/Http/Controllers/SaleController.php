@@ -93,9 +93,8 @@ class SaleController extends Controller
 
         try {
             DB::transaction(function () use ($validated, $companyId, $customer, $customerName, $saleDateTime) {
-                $saleNumber = Sale::withoutGlobalScope('company')
-                    ->where('company_id', $companyId)
-                    ->max('sale_number') + 1;
+                // Usa ?? 0 para tratar NULL quando não há vendas anteriores (NULL + 1 = NULL no MySQL)
+                $saleNumber = (Sale::where('company_id', $companyId)->max('sale_number') ?? 0) + 1;
 
                 $total = collect($validated['items'])->sum(fn($i) => $i['quantity'] * $i['price']);
 
@@ -146,7 +145,6 @@ class SaleController extends Controller
                 }
 
                 // Cria Receivable apenas para vendas com cliente cadastrado
-                // (sem cliente = Consumidor Final, sem conta a receber)
                 if ($sale->customer_id && $sale->status !== 'cancelada') {
                     $isConcluida = $sale->status === 'concluida';
 
@@ -157,10 +155,9 @@ class SaleController extends Controller
                         'category'        => 'venda',
                         'description'     => "Venda #{$sale->sale_number} — {$customerName}",
                         'amount'          => $total,
-                        // Se concluída no ato: já recebida integralmente
                         'amount_received' => $isConcluida ? $total : null,
                         'due_date'        => $isConcluida
-                            ? $saleDateTime->toDateString()          // vencimento = data da venda
+                            ? $saleDateTime->toDateString()
                             : Carbon::parse($saleDateTime)->addDays($this->receivableDueDays)->toDateString(),
                         'received_at'     => $isConcluida ? $saleDateTime : null,
                         'status'          => $isConcluida ? 'recebida' : 'pendente',
@@ -286,7 +283,6 @@ class SaleController extends Controller
                     ]);
                 }
 
-                // Sincroniza Receivable conforme o novo status da venda
                 $sale->load('receivable');
                 $newCustomerId = $customer?->id ?? null;
                 $isConcluida   = $validated['status'] === 'concluida';
@@ -295,7 +291,6 @@ class SaleController extends Controller
 
                 if ($newCustomerId && !$isCancelada) {
                     if ($sale->receivable) {
-                        // Atualiza receivable existente
                         $sale->receivable->update(array_filter([
                             'amount'          => $total,
                             'customer_id'     => $newCustomerId,
@@ -308,12 +303,10 @@ class SaleController extends Controller
                                 : $sale->receivable->due_date,
                         ], fn($v) => !is_null($v)));
 
-                        // Se voltou para pendente, limpa campos de recebimento
                         if ($isPendente) {
                             $sale->receivable->update(['amount_received' => null, 'received_at' => null]);
                         }
                     } else {
-                        // Cria novo receivable (ex: venda que antes era sem cliente)
                         Receivable::create([
                             'company_id'      => $companyId,
                             'customer_id'     => $newCustomerId,
