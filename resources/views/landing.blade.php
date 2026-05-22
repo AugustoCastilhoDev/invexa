@@ -33,224 +33,75 @@
             --ice:      #F0F9FF;
             --glow:     rgba(14,165,233,.35);
         }
-
         * { scroll-behavior: smooth; }
+        body { background: var(--abyss); color: #e2e8f0; font-family: system-ui, -apple-system, sans-serif; }
 
-        body {
-            background: var(--abyss);
-            color: #e2e8f0;
-            font-family: system-ui, -apple-system, sans-serif;
-        }
-
-        /* ── NAVBAR ─────────────────────────────────────────── */
-        .lp-nav {
-            background: rgba(8,13,26,.92);
-            border-bottom: 1px solid rgba(14,165,233,.1);
-            backdrop-filter: blur(14px);
-            padding: .6rem 0;
-        }
-        .lp-nav .navbar-brand {
-            display: flex; align-items: center; gap: .5rem;
-            font-weight: 700; color: var(--ice) !important;
-            font-size: 1rem; text-decoration: none;
-        }
+        .lp-nav { background: rgba(8,13,26,.92); border-bottom: 1px solid rgba(14,165,233,.1); backdrop-filter: blur(14px); padding: .6rem 0; }
+        .lp-nav .navbar-brand { display: flex; align-items: center; gap: .5rem; font-weight: 700; color: var(--ice) !important; font-size: 1rem; text-decoration: none; }
         .lp-nav .nav-link { color: rgba(226,232,240,.65) !important; font-size: .875rem; }
         .lp-nav .nav-link:hover { color: var(--ice) !important; }
 
-        /* ── HERO ───────────────────────────────────────────── */
-        .hero {
-            padding: 100px 0 80px;
-            background:
-                radial-gradient(ellipse 80% 60% at 50% -10%, rgba(14,165,233,.18), transparent),
-                radial-gradient(circle at 80% 80%, rgba(56,189,248,.07), transparent 40%);
-        }
-        .hero-badge {
-            display: inline-flex; align-items: center; gap: .4rem;
-            background: rgba(14,165,233,.12);
-            border: 1px solid rgba(14,165,233,.25);
-            border-radius: 999px;
-            padding: .25rem .9rem;
-            font-size: .78rem; font-weight: 600;
-            color: var(--electric);
-            margin-bottom: 1.5rem;
-        }
-        .hero h1 {
-            font-size: clamp(2rem, 5vw, 3.2rem);
-            font-weight: 800;
-            line-height: 1.15;
-            color: #f1f5f9;
-        }
-        .hero h1 span {
-            background: linear-gradient(90deg, var(--sky), var(--electric));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        .hero p.lead {
-            font-size: 1.1rem; color: rgba(226,232,240,.7);
-            max-width: 540px;
-            margin: 1.25rem auto 2rem;
-        }
-        .btn-hero-primary {
-            background: linear-gradient(135deg, var(--sky), #0284c7);
-            border: none; color: #fff; font-weight: 700;
-            padding: .8rem 2rem; border-radius: .6rem; font-size: 1rem;
-            box-shadow: 0 4px 20px rgba(14,165,233,.35);
-            transition: transform .2s, box-shadow .2s;
-        }
-        .btn-hero-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 28px rgba(14,165,233,.45);
-            color: #fff;
-        }
-        .btn-hero-secondary {
-            background: transparent;
-            border: 1px solid rgba(14,165,233,.3);
-            color: rgba(226,232,240,.8);
-            padding: .8rem 1.8rem; border-radius: .6rem; font-size: 1rem;
-            transition: border-color .2s, color .2s;
-        }
-        .btn-hero-secondary:hover {
-            border-color: var(--sky); color: var(--ice);
-        }
-        .hero-metrics {
-            display: flex; justify-content: center; gap: 2.5rem;
-            margin-top: 3.5rem; flex-wrap: wrap;
-        }
+        .hero { padding: 100px 0 80px; background: radial-gradient(ellipse 80% 60% at 50% -10%, rgba(14,165,233,.18), transparent), radial-gradient(circle at 80% 80%, rgba(56,189,248,.07), transparent 40%); }
+        .hero-badge { display: inline-flex; align-items: center; gap: .4rem; background: rgba(14,165,233,.12); border: 1px solid rgba(14,165,233,.25); border-radius: 999px; padding: .25rem .9rem; font-size: .78rem; font-weight: 600; color: var(--electric); margin-bottom: 1.5rem; }
+        .hero h1 { font-size: clamp(2rem, 5vw, 3.2rem); font-weight: 800; line-height: 1.15; color: #f1f5f9; }
+        .hero h1 span { background: linear-gradient(90deg, var(--sky), var(--electric)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .hero p.lead { font-size: 1.1rem; color: rgba(226,232,240,.7); max-width: 540px; margin: 1.25rem auto 2rem; }
+        .btn-hero-primary { background: linear-gradient(135deg, var(--sky), #0284c7); border: none; color: #fff; font-weight: 700; padding: .8rem 2rem; border-radius: .6rem; font-size: 1rem; box-shadow: 0 4px 20px rgba(14,165,233,.35); transition: transform .2s, box-shadow .2s; }
+        .btn-hero-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(14,165,233,.45); color: #fff; }
+        .btn-hero-secondary { background: transparent; border: 1px solid rgba(14,165,233,.3); color: rgba(226,232,240,.8); padding: .8rem 1.8rem; border-radius: .6rem; font-size: 1rem; transition: border-color .2s, color .2s; }
+        .btn-hero-secondary:hover { border-color: var(--sky); color: var(--ice); }
+        .hero-metrics { display: flex; justify-content: center; gap: 2.5rem; margin-top: 3.5rem; flex-wrap: wrap; }
         .metric-item { text-align: center; }
-        .metric-item .value {
-            font-size: 1.8rem; font-weight: 800;
-            background: linear-gradient(90deg, var(--sky), var(--electric));
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-        }
+        .metric-item .value { font-size: 1.8rem; font-weight: 800; background: linear-gradient(90deg, var(--sky), var(--electric)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         .metric-item .label { font-size: .78rem; color: rgba(148,163,184,.7); }
 
-        /* ── SECTION BASE ───────────────────────────────────── */
         section { padding: 80px 0; }
-        .section-label {
-            display: inline-block;
-            font-size: .72rem; font-weight: 700; letter-spacing: .12em;
-            text-transform: uppercase;
-            color: var(--sky); margin-bottom: .6rem;
-        }
-        .section-title {
-            font-size: clamp(1.5rem, 3vw, 2.2rem);
-            font-weight: 800; color: #f1f5f9;
-            margin-bottom: .75rem;
-        }
-        .section-sub {
-            color: rgba(226,232,240,.6); max-width: 520px; margin: 0 auto 3rem;
-        }
+        .section-label { display: inline-block; font-size: .72rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--sky); margin-bottom: .6rem; }
+        .section-title { font-size: clamp(1.5rem, 3vw, 2.2rem); font-weight: 800; color: #f1f5f9; margin-bottom: .75rem; }
+        .section-sub { color: rgba(226,232,240,.6); max-width: 520px; margin: 0 auto 3rem; }
 
-        /* ── FEATURES ───────────────────────────────────────── */
         .features { background: rgba(13,25,41,.5); }
-        .feature-card {
-            background: rgba(13,25,41,.8);
-            border: 1px solid rgba(14,165,233,.1);
-            border-radius: 14px; padding: 28px;
-            height: 100%;
-            transition: border-color .25s, transform .25s;
-        }
-        .feature-card:hover {
-            border-color: rgba(14,165,233,.35);
-            transform: translateY(-4px);
-        }
-        .feature-icon {
-            width: 48px; height: 48px; border-radius: 12px;
-            background: rgba(14,165,233,.12);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1.4rem; color: var(--sky); margin-bottom: 1rem;
-        }
+        .feature-card { background: rgba(13,25,41,.8); border: 1px solid rgba(14,165,233,.1); border-radius: 14px; padding: 28px; height: 100%; transition: border-color .25s, transform .25s; }
+        .feature-card:hover { border-color: rgba(14,165,233,.35); transform: translateY(-4px); }
+        .feature-icon { width: 48px; height: 48px; border-radius: 12px; background: rgba(14,165,233,.12); display: flex; align-items: center; justify-content: center; font-size: 1.4rem; color: var(--sky); margin-bottom: 1rem; }
         .feature-card h5 { color: #f1f5f9; font-weight: 700; font-size: 1rem; }
         .feature-card p { font-size: .875rem; color: rgba(226,232,240,.6); margin: 0; }
 
-        /* ── PLANOS ─────────────────────────────────────────── */
         .plans { background: var(--abyss); }
-        .plan-card {
-            background: rgba(13,25,41,.85);
-            border: 1px solid rgba(14,165,233,.12);
-            border-radius: 16px; padding: 32px 28px;
-            height: 100%; position: relative;
-            transition: border-color .25s, box-shadow .25s;
-        }
-        .plan-card.featured {
-            border-color: var(--sky);
-            box-shadow: 0 0 40px rgba(14,165,233,.15);
-        }
-        .plan-badge {
-            position: absolute; top: -13px; left: 50%; transform: translateX(-50%);
-            background: linear-gradient(90deg, var(--sky), var(--electric));
-            color: var(--abyss); font-size: .72rem; font-weight: 700;
-            padding: .2rem 1rem; border-radius: 999px; white-space: nowrap;
-        }
+        .plan-card { background: rgba(13,25,41,.85); border: 1px solid rgba(14,165,233,.12); border-radius: 16px; padding: 32px 28px; height: 100%; position: relative; transition: border-color .25s, box-shadow .25s; }
+        .plan-card.featured { border-color: var(--sky); box-shadow: 0 0 40px rgba(14,165,233,.15); }
+        .plan-badge { position: absolute; top: -13px; left: 50%; transform: translateX(-50%); background: linear-gradient(90deg, var(--sky), var(--electric)); color: var(--abyss); font-size: .72rem; font-weight: 700; padding: .2rem 1rem; border-radius: 999px; white-space: nowrap; }
         .plan-name { font-size: .875rem; font-weight: 700; color: var(--electric); text-transform: uppercase; letter-spacing: .08em; }
         .plan-price { font-size: 2.4rem; font-weight: 800; color: #f1f5f9; line-height: 1; margin: .5rem 0 .25rem; }
         .plan-price span { font-size: .95rem; font-weight: 400; color: rgba(148,163,184,.6); }
         .plan-price-old { font-size: 1rem; color: rgba(148,163,184,.45); text-decoration: line-through; margin-bottom: .1rem; }
-        .plan-offer-badge {
-            display: inline-block;
-            background: rgba(251,191,36,.15);
-            border: 1px solid rgba(251,191,36,.35);
-            color: #FCD34D;
-            font-size: .7rem; font-weight: 700;
-            padding: .15rem .7rem; border-radius: 999px;
-            margin-bottom: .5rem;
-        }
+        .plan-offer-badge { display: inline-block; background: rgba(251,191,36,.15); border: 1px solid rgba(251,191,36,.35); color: #FCD34D; font-size: .7rem; font-weight: 700; padding: .15rem .7rem; border-radius: 999px; margin-bottom: .5rem; }
         .plan-desc { font-size: .82rem; color: rgba(148,163,184,.6); margin-bottom: 1.5rem; }
-        .plan-features li {
-            font-size: .875rem; color: rgba(226,232,240,.75);
-            padding: .4rem 0; border-bottom: 1px solid rgba(14,165,233,.06);
-            display: flex; align-items: center; gap: .5rem;
-        }
+        .plan-features li { font-size: .875rem; color: rgba(226,232,240,.75); padding: .4rem 0; border-bottom: 1px solid rgba(14,165,233,.06); display: flex; align-items: center; gap: .5rem; }
         .plan-features li:last-child { border-bottom: none; }
         .plan-features li i { color: var(--sky); flex-shrink: 0; }
         .plan-features li.disabled { color: rgba(148,163,184,.35); }
         .plan-features li.disabled i { color: rgba(148,163,184,.25); }
 
-        /* ── FAQ ────────────────────────────────────────────── */
         .faq { background: rgba(13,25,41,.4); }
-        .faq .accordion-item {
-            background: rgba(13,25,41,.7);
-            border: 1px solid rgba(14,165,233,.1);
-            border-radius: 10px !important;
-            margin-bottom: .75rem;
-        }
-        .faq .accordion-button {
-            background: transparent; color: #e2e8f0;
-            font-weight: 600; font-size: .9rem;
-            border-radius: 10px !important;
-            box-shadow: none;
-        }
+        .faq .accordion-item { background: rgba(13,25,41,.7); border: 1px solid rgba(14,165,233,.1); border-radius: 10px !important; margin-bottom: .75rem; }
+        .faq .accordion-button { background: transparent; color: #e2e8f0; font-weight: 600; font-size: .9rem; border-radius: 10px !important; box-shadow: none; }
         .faq .accordion-button:not(.collapsed) { color: var(--electric); }
         .faq .accordion-button::after { filter: invert(1) brightness(.6); }
         .faq .accordion-body { color: rgba(226,232,240,.65); font-size: .875rem; }
 
-        /* ── CTA FINAL ──────────────────────────────────────── */
-        .cta-final {
-            background: linear-gradient(135deg, rgba(14,165,233,.12), rgba(56,189,248,.06));
-            border-top: 1px solid rgba(14,165,233,.15);
-            border-bottom: 1px solid rgba(14,165,233,.15);
-            text-align: center;
-        }
+        .cta-final { background: linear-gradient(135deg, rgba(14,165,233,.12), rgba(56,189,248,.06)); border-top: 1px solid rgba(14,165,233,.15); border-bottom: 1px solid rgba(14,165,233,.15); text-align: center; }
         .cta-final h2 { font-size: clamp(1.6rem, 3vw, 2.4rem); font-weight: 800; color: #f1f5f9; }
         .cta-final p { color: rgba(226,232,240,.6); }
 
-        /* ── FOOTER ─────────────────────────────────────────── */
-        .lp-footer {
-            background: rgba(8,13,26,.95);
-            border-top: 1px solid rgba(14,165,233,.08);
-            padding: 2.5rem 0;
-            font-size: .8rem; color: rgba(148,163,184,.5);
-        }
+        .lp-footer { background: rgba(8,13,26,.95); border-top: 1px solid rgba(14,165,233,.08); padding: 2.5rem 0; font-size: .8rem; color: rgba(148,163,184,.5); }
         .lp-footer a { color: var(--electric); text-decoration: none; }
         .lp-footer a:hover { color: #7DD3FC; }
-
-        /* ── UTILITIES ──────────────────────────────────────── */
         .divider { height: 1px; background: rgba(14,165,233,.08); margin: 0; }
     </style>
 </head>
 <body>
 
-{{-- ═══════════════ NAVBAR ═══════════════ --}}
 <nav class="lp-nav navbar navbar-expand-lg sticky-top">
     <div class="container">
         <a class="navbar-brand" href="/">
@@ -261,71 +112,45 @@
             </svg>
             INVEXA
         </a>
-
         <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#lpNav">
             <i class="bi bi-list fs-4 text-light"></i>
         </button>
-
         <div class="collapse navbar-collapse" id="lpNav">
             <ul class="navbar-nav ms-auto align-items-lg-center gap-2">
                 <li class="nav-item"><a class="nav-link" href="#features">Funcionalidades</a></li>
                 <li class="nav-item"><a class="nav-link" href="#plans">Planos</a></li>
                 <li class="nav-item"><a class="nav-link" href="#faq">FAQ</a></li>
                 <li class="nav-item ms-lg-2">
-                    <a href="{{ route('login') }}" class="btn btn-sm btn-outline-light" style="border-color:rgba(14,165,233,.4); font-size:.82rem;">
-                        Entrar
-                    </a>
+                    <a href="{{ route('login') }}" class="btn btn-sm btn-outline-light" style="border-color:rgba(14,165,233,.4); font-size:.82rem;">Entrar</a>
                 </li>
                 <li class="nav-item">
-                    <a href="{{ route('register') }}" class="btn btn-sm btn-primary" style="background:var(--sky); border:none; font-size:.82rem; font-weight:600;">
-                        Começar grátis
-                    </a>
+                    <a href="{{ route('register') }}" class="btn btn-sm btn-primary" style="background:var(--sky); border:none; font-size:.82rem; font-weight:600;">Começar grátis</a>
                 </li>
             </ul>
         </div>
     </div>
 </nav>
 
-{{-- ═══════════════ HERO ═══════════════ --}}
 <section class="hero text-center">
     <div class="container">
-        <div class="hero-badge">
-            <i class="bi bi-stars"></i>
-            14 dias grátis · Sem cartão de crédito
-        </div>
+        <div class="hero-badge"><i class="bi bi-stars"></i>14 dias grátis · Sem cartão de crédito</div>
         <h1>Gerencie seu negócio<br><span>com simplicidade e controle</span></h1>
-        <p class="lead mx-auto">
-            Invexa é o sistema de gestão completo para pequenas e médias empresas:
-            vendas, estoque, financeiro e relatórios — tudo em um só lugar.
-        </p>
+        <p class="lead mx-auto">Invexa é o sistema de gestão completo para pequenas e médias empresas: vendas, estoque, financeiro e relatórios — tudo em um só lugar.</p>
         <div class="d-flex justify-content-center gap-3 flex-wrap">
             <a href="{{ route('register') }}" class="btn-hero-primary">Criar conta grátis</a>
             <a href="#features" class="btn-hero-secondary">Ver funcionalidades</a>
         </div>
         <div class="hero-metrics">
-            <div class="metric-item">
-                <div class="value">14 dias</div>
-                <div class="label">Trial gratuito</div>
-            </div>
-            <div class="metric-item">
-                <div class="value">3 min</div>
-                <div class="label">Para começar</div>
-            </div>
-            <div class="metric-item">
-                <div class="value">100%</div>
-                <div class="label">Web — sem instalação</div>
-            </div>
-            <div class="metric-item">
-                <div class="value">Multi</div>
-                <div class="label">Usuários por empresa</div>
-            </div>
+            <div class="metric-item"><div class="value">14 dias</div><div class="label">Trial gratuito</div></div>
+            <div class="metric-item"><div class="value">3 min</div><div class="label">Para começar</div></div>
+            <div class="metric-item"><div class="value">100%</div><div class="label">Web — sem instalação</div></div>
+            <div class="metric-item"><div class="value">Multi</div><div class="label">Usuários por empresa</div></div>
         </div>
     </div>
 </section>
 
 <div class="divider"></div>
 
-{{-- ═══════════════ FEATURES ═══════════════ --}}
 <section class="features" id="features">
     <div class="container">
         <div class="text-center mb-5">
@@ -365,7 +190,7 @@
             <div class="col-sm-6 col-lg-4">
                 <div class="feature-card">
                     <div class="feature-icon"><i class="bi bi-bar-chart-line"></i></div>
-                    <h5>Relatórios & Dashboard</h5>
+                    <h5>Relatórios &amp; Dashboard</h5>
                     <p>Gráficos em tempo real, relatórios de vendas, estoque e financeiro — exportáveis em PDF e CSV.</p>
                 </div>
             </div>
@@ -382,11 +207,10 @@
 
 <div class="divider"></div>
 
-{{-- ═══════════════ PLANOS ═══════════════ --}}
 <section class="plans" id="plans">
     <div class="container">
         <div class="text-center mb-5">
-            <span class="section-label">Planos & Preços</span>
+            <span class="section-label">Planos &amp; Preços</span>
             <h2 class="section-title">Simples, transparente e justo</h2>
             <p class="section-sub">Comece grátis por 14 dias. Sem cartão de crédito. Cancele quando quiser.</p>
         </div>
@@ -406,9 +230,7 @@
                         <li class="disabled"><i class="bi bi-x-circle-fill"></i> PDV avançado</li>
                         <li class="disabled"><i class="bi bi-x-circle-fill"></i> Suporte prioritário</li>
                     </ul>
-                    <a href="{{ route('register') }}" class="btn btn-outline-primary w-100 mt-4">
-                        Começar grátis
-                    </a>
+                    <a href="{{ route('register') }}" class="btn btn-outline-primary w-100 mt-4">Começar grátis</a>
                 </div>
             </div>
 
@@ -429,9 +251,7 @@
                         <li><i class="bi bi-check-circle-fill"></i> PDV completo</li>
                         <li><i class="bi bi-check-circle-fill"></i> Suporte por e-mail</li>
                     </ul>
-                    <a href="{{ route('register') }}" class="btn btn-primary w-100 mt-4" style="background:var(--sky); border:none; font-weight:700;">
-                        Assinar Pro — R$ 39,90/mês
-                    </a>
+                    <a href="{{ route('register') }}" class="btn btn-primary w-100 mt-4" style="background:var(--sky); border:none; font-weight:700;">Assinar Pro — R$ 39,90/mês</a>
                 </div>
             </div>
 
@@ -446,12 +266,10 @@
                         <li><i class="bi bi-check-circle-fill"></i> Clientes ilimitados</li>
                         <li><i class="bi bi-check-circle-fill"></i> Usuários ilimitados</li>
                         <li><i class="bi bi-check-circle-fill"></i> Todos os recursos Pro</li>
-                        <li><i class="bi bi-check-circle-fill"></i> API REST (em breve)</li>
+                        <li><i class="bi bi-check-circle-fill"></i> API REST completa</li>
                         <li><i class="bi bi-check-circle-fill"></i> Suporte prioritário</li>
                     </ul>
-                    <a href="{{ route('register') }}" class="btn btn-outline-primary w-100 mt-4">
-                        Assinar Business — R$ 119,90/mês
-                    </a>
+                    <a href="{{ route('register') }}" class="btn btn-outline-primary w-100 mt-4">Assinar Business — R$ 119,90/mês</a>
                 </div>
             </div>
 
@@ -461,7 +279,6 @@
 
 <div class="divider"></div>
 
-{{-- ═══════════════ FAQ ═══════════════ --}}
 <section class="faq" id="faq">
     <div class="container">
         <div class="text-center mb-5">
@@ -471,62 +288,46 @@
         <div class="row justify-content-center">
             <div class="col-lg-8">
                 <div class="accordion" id="faqAccordion">
-
                     <div class="accordion-item">
                         <h2 class="accordion-header">
-                            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
-                                Preciso de cartão de crédito para testar?
-                            </button>
+                            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">Preciso de cartão de crédito para testar?</button>
                         </h2>
                         <div id="faq1" class="accordion-collapse collapse show" data-bs-parent="#faqAccordion">
                             <div class="accordion-body">Não. O trial de 14 dias é totalmente gratuito e não exige dados de pagamento. Você só escolhe um plano quando decidir continuar.</div>
                         </div>
                     </div>
-
                     <div class="accordion-item">
                         <h2 class="accordion-header">
-                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
-                                Posso cancelar a qualquer momento?
-                            </button>
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">Posso cancelar a qualquer momento?</button>
                         </h2>
                         <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
                             <div class="accordion-body">Sim. Não há fidelidade. Você pode cancelar quando quiser sem multa ou burocracia.</div>
                         </div>
                     </div>
-
                     <div class="accordion-item">
                         <h2 class="accordion-header">
-                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
-                                O sistema funciona em celular?
-                            </button>
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">O sistema funciona em celular?</button>
                         </h2>
                         <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
                             <div class="accordion-body">Sim. O Invexa é 100% responsivo — funciona em computador, tablet e smartphone sem precisar instalar nada.</div>
                         </div>
                     </div>
-
                     <div class="accordion-item">
                         <h2 class="accordion-header">
-                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq4">
-                                Meus dados ficam seguros?
-                            </button>
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq4">Meus dados ficam seguros?</button>
                         </h2>
                         <div id="faq4" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
                             <div class="accordion-body">Cada empresa tem seus dados completamente isolados dos demais clientes. Utilizamos criptografia em trânsito (HTTPS) e backups automáticos diários.</div>
                         </div>
                     </div>
-
                     <div class="accordion-item">
                         <h2 class="accordion-header">
-                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq5">
-                                Consigo migrar meus dados de outro sistema?
-                            </button>
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq5">Consigo migrar meus dados de outro sistema?</button>
                         </h2>
                         <div id="faq5" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
                             <div class="accordion-body">Entre em contato com nosso suporte — auxiliamos na importação de produtos e clientes via planilha CSV durante o período de onboarding.</div>
                         </div>
                     </div>
-
                 </div>
             </div>
         </div>
@@ -535,21 +336,15 @@
 
 <div class="divider"></div>
 
-{{-- ═══════════════ CTA FINAL ═══════════════ --}}
 <section class="cta-final">
     <div class="container">
-        <div class="hero-badge mx-auto mb-3" style="width:fit-content;">
-            <i class="bi bi-rocket-takeoff"></i> Comece agora — é grátis
-        </div>
+        <div class="hero-badge mx-auto mb-3" style="width:fit-content;"><i class="bi bi-rocket-takeoff"></i> Comece agora — é grátis</div>
         <h2>Pronto para ter controle<br>total do seu negócio?</h2>
         <p class="mt-2 mb-4">14 dias de acesso completo. Sem cartão, sem compromisso.</p>
-        <a href="{{ route('register') }}" class="btn-hero-primary" style="text-decoration:none;">
-            Criar minha conta grátis
-        </a>
+        <a href="{{ route('register') }}" class="btn-hero-primary" style="text-decoration:none;">Criar minha conta grátis</a>
     </div>
 </section>
 
-{{-- ═══════════════ FOOTER ═══════════════ --}}
 <footer class="lp-footer">
     <div class="container">
         <div class="row align-items-center">
