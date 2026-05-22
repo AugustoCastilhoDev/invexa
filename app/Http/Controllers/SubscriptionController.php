@@ -20,40 +20,43 @@ class SubscriptionController extends Controller
 
     public function checkout(Request $request)
     {
-        $request->validate(['plan' => 'required|in:pro,pro_launch,business']);
+        $request->validate([
+            'plan'    => 'required|in:pro,pro_launch,business',
+            'billing' => 'nullable|in:monthly,annual',
+        ]);
 
+        $billing = $request->input('billing', 'monthly');
+        $plan    = $request->input('plan');
         $company = auth()->user()->company;
-        $priceId = config('cashier.prices.' . $request->plan);
 
-        // Garante customer válido no ambiente atual antes de qualquer operação.
-        // Após este método, $company->stripe_id está sempre correto (ou null).
+        // Resolve price ID: procura plan_annual primeiro, cai em plan
+        $priceKey = ($billing === 'annual')
+            ? config('cashier.prices.' . $plan . '_annual',
+              config('cashier.prices.' . $plan))
+            : config('cashier.prices.' . $plan);
+
         $this->resolveStripeCustomer($company);
 
-        // Sempre garante que o customer existe e está atualizado no Stripe.
-        // createOrGetStripeCustomer() é idempotente: cria se não existir,
-        // ou retorna o existente se stripe_id já estiver preenchido.
         $company->createOrGetStripeCustomer([
             'name'  => $company->name,
             'email' => $company->email,
         ]);
 
-        // Recarrega o modelo para garantir que stripe_id esteja na instância
         $company->refresh();
 
-        // Não passar customer_email aqui: o Cashier já vincula o customer pelo
-        // stripe_id do modelo. Passar os dois causaria InvalidRequestException.
         $checkoutParams = [
             'success_url' => route('subscription.success') . '?session_id={CHECKOUT_SESSION_ID}',
             'cancel_url'  => route('pricing'),
             'metadata'    => [
                 'company_id' => $company->id,
-                'plan'       => $request->plan,
+                'plan'       => $plan,
+                'billing'    => $billing,
             ],
         ];
 
         try {
             return $company
-                ->newSubscription('default', $priceId)
+                ->newSubscription('default', $priceKey)
                 ->checkout($checkoutParams);
         } catch (IncompletePayment $e) {
             return redirect()->route('cashier.payment', [
@@ -63,10 +66,6 @@ class SubscriptionController extends Controller
         }
     }
 
-    /**
-     * Detecta mismatch de ambiente Stripe (test vs live) e zera o stripe_id
-     * na instância e no banco caso o customer pertença a outro ambiente.
-     */
     private function resolveStripeCustomer(Company $company): void
     {
         if (! $company->stripe_id) {
@@ -108,9 +107,11 @@ class SubscriptionController extends Controller
             $sub = $company->subscription('default');
             if ($sub) {
                 $map = [
-                    config('cashier.prices.pro')        => 'pro',
-                    config('cashier.prices.pro_launch') => 'pro',
-                    config('cashier.prices.business')   => 'business',
+                    config('cashier.prices.pro')             => 'pro',
+                    config('cashier.prices.pro_launch')      => 'pro',
+                    config('cashier.prices.pro_annual')      => 'pro',
+                    config('cashier.prices.business')        => 'business',
+                    config('cashier.prices.business_annual') => 'business',
                 ];
                 $priceId = $sub->items()->first()?->stripe_price
                          ?? $sub->stripe_price
@@ -125,7 +126,7 @@ class SubscriptionController extends Controller
         ]);
 
         return redirect()->route('dashboard')
-            ->with('success', '\ud83c\udf89 Assinatura ativada com sucesso! Bem-vindo ao ' . ucfirst($plan) . '.');
+            ->with('success', '🎉 Assinatura ativada com sucesso! Bem-vindo ao ' . ucfirst($plan) . '.');
     }
 
     public function billingPortal()
@@ -139,6 +140,6 @@ class SubscriptionController extends Controller
         $company->subscription('default')?->cancel();
 
         return redirect()->route('subscription.index')
-            ->with('warning', 'Assinatura cancelada. Voc\u00ea ter\u00e1 acesso at\u00e9 o fim do per\u00edodo pago.');
+            ->with('warning', 'Assinatura cancelada. Você terá acesso até o fim do período pago.');
     }
 }
