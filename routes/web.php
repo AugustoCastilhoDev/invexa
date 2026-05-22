@@ -66,8 +66,7 @@ Route::middleware(['auth', 'superadmin'])->prefix('admin')->name('admin.')->grou
     Route::get('/',                                    [SuperAdminController::class, 'index'])->name('index');
     Route::patch('/companies/{company}/toggle',        [SuperAdminController::class, 'toggleCompany'])->name('companies.toggle');
     Route::post('/companies/{company}/impersonate',    [SuperAdminController::class, 'impersonate'])->name('companies.impersonate');
-    Route::delete('companies/{company}', [SuperAdminController::class, 'destroyCompany'])
-    ->name('admin.companies.destroy');
+    Route::delete('/companies/{company}',              [SuperAdminController::class, 'destroyCompany'])->name('companies.destroy');
 });
 
 // ── Sair do modo suporte
