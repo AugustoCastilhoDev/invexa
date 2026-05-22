@@ -15,12 +15,12 @@ use App\Http\Controllers\Api\V1\StockController;
 */
 
 // ── Autenticação (pública)
-Route::prefix('v1')->group(function () {
-    Route::post('/auth/token', [AuthController::class, 'token'])->name('api.auth.token');
+Route::prefix('v1')->name('api.')->group(function () {
+    Route::post('/auth/token', [AuthController::class, 'token'])->name('auth.token');
 });
 
 // ── Rotas protegidas por Sanctum
-Route::prefix('v1')->middleware(['auth:sanctum', 'throttle:60,1'])->group(function () {
+Route::prefix('v1')->name('api.')->middleware(['auth:sanctum', 'throttle:60,1'])->group(function () {
 
     // Usuário autenticado
     Route::get('/me', function (Request $request) {
@@ -28,9 +28,9 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'throttle:60,1'])->group(functi
             'user'    => $request->user()->only('id', 'name', 'email', 'role'),
             'company' => $request->user()->company->only('id', 'name', 'plan'),
         ]);
-    })->name('api.me');
+    })->name('me');
 
-    Route::delete('/auth/token', [AuthController::class, 'revoke'])->name('api.auth.revoke');
+    Route::delete('/auth/token', [AuthController::class, 'revoke'])->name('auth.revoke');
 
     // Produtos
     Route::apiResource('products',  ProductController::class);
@@ -39,12 +39,12 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'throttle:60,1'])->group(functi
     Route::apiResource('customers', CustomerController::class);
 
     // Vendas
-    Route::get('sales',       [SaleController::class, 'index']);
-    Route::get('sales/{sale}', [SaleController::class, 'show']);
-    Route::post('sales',      [SaleController::class, 'store']);
+    Route::get('sales',        [SaleController::class, 'index'])->name('sales.index');
+    Route::get('sales/{sale}', [SaleController::class, 'show'])->name('sales.show');
+    Route::post('sales',       [SaleController::class, 'store'])->name('sales.store');
 
     // Estoque
-    Route::get('stock',               [StockController::class, 'index']);
-    Route::get('stock/low',           [StockController::class, 'low']);
-    Route::post('stock/movement',     [StockController::class, 'movement']);
+    Route::get('stock',           [StockController::class, 'index'])->name('stock.index');
+    Route::get('stock/low',       [StockController::class, 'low'])->name('stock.low');
+    Route::post('stock/movement', [StockController::class, 'movement'])->name('stock.movement');
 });
