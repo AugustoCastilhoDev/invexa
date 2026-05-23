@@ -13,7 +13,7 @@
 
 ## Sobre o Projeto
 
-O **Invexa** é um ERP leve voltado a pequenas e médias empresas, distribuído como SaaS com planos **Free / Pro / Business**. A arquitetura multi-tenant garante isolamento total de dados por empresa — produtos, vendas, compras, clientes, financeiro e usuários são sempre segregados por `company_id`. O controle de acesso é baseado em papéis (`admin`, `gerente`, `vendedor`), com visibilidades e permissões distintas em toda a interface e nas rotas.
+O **Invexa** é um ERP leve voltado a pequenas e médias empresas, distribuído como SaaS com planos **Free / Pro / Business**. A arquitetura multi-tenant garante isolamento total de dados por empresa — todos os recursos são segregados por `company_id`. O controle de acesso é baseado em papéis (`superadmin`, `admin`, `gerente`, `vendedor`), com visibilidades e permissões distintas em toda a interface e nas rotas.
 
 ---
 
@@ -27,222 +27,216 @@ O **Invexa** é um ERP leve voltado a pequenas e médias empresas, distribuído 
 | Template | Blade (layouts, componentes) |
 | Banco de dados | MySQL 8 (SQLite para desenvolvimento local) |
 | Geração de PDF | barryvdh/laravel-dompdf 3.x |
-| Auth | Laravel Breeze customizado |
+| Pagamentos | Laravel Cashier + Stripe |
+| Auth | Laravel Breeze customizado + 2FA (TOTP) |
 | Filas | Database driver |
 | Testes | PHPUnit 12 |
 | Dev tools | Laravel Pint, Laravel Pail, Concurrently |
 
 ---
 
-## Estado Atual do Desenvolvimento
-
-### ✅ Módulos Implementados e Funcionando
+## Módulos Implementados
 
 | Módulo | Status |
 |---|---|
+| Landing Page pública (`/`) | ✅ Completo |
+| Página de Pricing (`/pricing`) | ✅ Completo |
 | Autenticação & Multi-Tenant | ✅ Completo |
+| 2FA — Autenti. em dois fatores (TOTP) | ✅ Completo |
+| Onboarding pós-cadastro | ✅ Completo |
 | Papéis e Permissões | ✅ Completo |
+| Trial Period + middleware de expiração | ✅ Completo |
+| Assinatura / Stripe (Cashier) | ✅ Completo |
+| Upgrade de plano (`/upgrade`) | ✅ Completo |
+| Portal de cobrança Stripe | ✅ Completo |
+| Perfil da empresa + upload de logo | ✅ Completo |
+| Tokens de API (`/settings/api`) | ✅ Completo |
 | Dashboard Analítico | ✅ Completo |
-| Produtos & Categorias | ✅ Completo |
-| Vendas (PDV + itens) | ✅ Completo |
+| Produtos & Categorias (+ import CSV) | ✅ Completo |
+| Movimentação de Estoque | ✅ Completo |
+| Vendas (PDV + itens + numeração) | ✅ Completo |
 | Clientes | ✅ Completo |
 | Devoluções | ✅ Completo |
 | Fornecedores | ✅ Completo |
 | Ordens de Compra | ✅ Completo |
-| Contas a Pagar (bills) | ✅ Completo |
-| Contas a Receber (receivables) | ✅ Completo |
-| Relatório de Vendas | ✅ Completo |
-| Relatório de Compras | ✅ Completo |
+| Contas a Pagar (baixa unitária + lote) | ✅ Completo |
+| Contas a Receber (baixa unitária + lote) | ✅ Completo |
+| Relatório de Vendas (PDF/CSV) | ✅ Completo |
+| Relatório Financeiro (PDF/CSV) | ✅ Completo |
+| Relatório de Compras (PDF/CSV) | ✅ Completo |
+| Relatório de Estoque (PDF/CSV) | ✅ Completo |
+| Relatório de Fornecedores (PDF/CSV) | ✅ Completo |
+| Relatório de Devoluções (PDF/CSV) | ✅ Completo |
+| Relatório de Lucratividade (PDF/CSV) | ✅ Completo |
+| Relatório Top Produtos (PDF/CSV) | ✅ Completo |
+| Notificações internas | ✅ Completo |
 | Gestão de Usuários | ✅ Completo |
 | Painel Super-Admin | ✅ Completo |
+| Impersonation (suporte por empresa) | ✅ Completo |
+| Busca global | ✅ Completo |
+| Rate limiting (login + registro) | ✅ Completo |
 | Audit Log (estrutura base) | ✅ Estrutura criada |
-| Notificações internas | ✅ Model + Controller criados |
-| Testes automatizados | ✅ 8 testes (Feature + Unit) |
-
-### 🔴 Pendente — Crítico para produção
-
-| Item | Descrição |
-|---|---|
-| Cobrança / Assinaturas | Integração Asaas ou Stripe — sem isso qualquer empresa usa qualquer plano de graça |
-| Trial Period | Campo `trial_ends_at` + middleware de expiração + banner de aviso |
-| Página de Planos | View pública `/pricing` + tela `/settings/subscription` |
-| E-mail Transacional | Configurar Resend/Mailgun — hoje `MAIL_MAILER=log` (nenhum e-mail chega) |
-| Landing Page | Rota `/` redireciona para login — não existe apresentação do produto |
-
-### 🟠 Pendente — Profissionaliza o produto
-
-| Item | Descrição |
-|---|---|
-| Limites de plano no backend | `canAddProduct()` e `canAddUser()` existem mas não são chamados nos Controllers |
-| Upload de logo da empresa | Campo `logo` existe em `companies` mas upload não implementado |
-| Onboarding wizard | Pós-registro cai em dashboard vazio, sem guia |
-| Scheduler financeiro | `CheckFinancialAlerts.php` existe mas não está registrado no scheduler |
+| Testes automatizados | ✅ Feature + Unit |
 
 ---
 
-## Funcionalidades Implementadas
+## Funcionalidades em Detalhe
 
 ### Autenticação e Multi-Tenant
 
 - Registro de usuário com criação automática de empresa vinculada
 - Login / Logout com sessão segura (CSRF, hashing bcrypt)
-- Middleware `EnsureHasCompany` — bloqueia acesso se o usuário não tiver empresa associada
-- Middleware `CheckRole` — controle de acesso granular por papel
-- Trait `BelongsToCompany` — aplica escopo global de `company_id` em todos os models principais
+- Rate limiting: `throttle:10,1` no login, `throttle:5,1` no registro
+- Middleware `company` — bloqueia acesso se o usuário não tiver empresa
+- Middleware `trial` — verifica trial ativo ou assinatura válida
+- Middleware `onboarding` — redireciona para wizard se não concluído
+- Trait `BelongsToCompany` — escopo global de `company_id` em todos os models
 - Isolamento total: nenhum usuário acessa dados de outra empresa
+
+### 2FA — Dois Fatores
+
+- Suporte a TOTP (Google Authenticator, Authy)
+- QR Code gerado via `settings/security`
+- Middleware `TwoFactorMiddleware` redireciona para verificação pós-login
+- Habilitar / desabilitar pelo painel de segurança
+
+### Onboarding
+
+- Wizard pós-registro: dados da empresa → primeiro produto → primeiro cliente
+- `CheckOnboarding` middleware redireciona automaticamente enquanto não concluído
+- Opção de pular o wizard
 
 ### Papéis e Permissões
 
 | Papel | Acesso |
 |---|---|
-| **admin** | Acesso total — inclui gestão de usuários e todas as funcionalidades de gerente |
-| **gerente** | Estoque, Compras, Financeiro, Relatórios, Vendas (edição e exclusão incluídas) |
-| **vendedor** | Dashboard (parcial), Vendas, Clientes e Devoluções |
 | **superadmin** | Painel global do SaaS — gerencia todas as empresas |
+| **admin** | Acesso total dentro da empresa, inclui gestão de usuários |
+| **gerente** | Estoque, Compras, Financeiro, Relatórios, Vendas (edição incluída) |
+| **vendedor** | Dashboard (parcial), Vendas, Clientes e Devoluções |
+
+### Assinaturas e Planos
+
+- Integração com **Stripe via Laravel Cashier**
+- Webhook Stripe em `POST /stripe/webhook` (sem CSRF)
+- Checkout de plano via `SubscriptionController`
+- Portal de cobrança Stripe (gerenciar cartão, cancelar, ver faturas)
+- Download de faturas individuais
+- Página de upgrade (`/upgrade`) com comparação de planos
+- Trial period com middleware de expiração e redirect para `/upgrade`
+- Planos: `free`, `pro`, `business`
+
+### Perfil da Empresa
+
+- Edição de nome, e-mail e dados da empresa
+- Upload e remoção de logo (`DELETE /settings/company/logo`)
+- Exclusivo para o papel **admin**
 
 ### Dashboard Analítico
 
 Visão geral em tempo real com filtro de intervalo (Hoje / 7 dias / Este mês / Personalizado).
 
-**KPI Cards — visíveis para todos os papéis:**
-- Total de produtos ativos no estoque
-- Total de categorias cadastradas
-- Total de vendas no período
-- Faturamento líquido (bruto − devoluções) com variação percentual vs. período anterior
+**KPI Cards — todos os papéis:**
+- Total de produtos, categorias, vendas no período e faturamento líquido com variação %
 
-**Painel Financeiro — exclusivo para Gerente e Admin:**
-- A Receber (pendente + valor vencido em atraso)
-- A Pagar (pendente + valor vencido em atraso)
-- Saldo Previsto (A Receber − A Pagar)
-- Contador de vencimentos nos próximos 7 dias
+**Painel Financeiro — gerente+:**
+- A Receber / A Pagar / Saldo Previsto / Vencimentos próximos 7 dias
 
-**Gráficos — visíveis conforme papel:**
-- Evolução de Vendas: barras com 3 séries (Vendas / Devoluções / Líquido) — toggle interativo por série
-- Fluxo de Caixa: barras com 5 séries (A Receber / Recebido / A Pagar / Pago / Saldo) — exclusivo Gerente+
-- Top Produtos: doughnut chart com legenda e centro dinâmico ao hover
-- Ranking de Vendas: lista ranqueada com barra de progresso e percentual
+**Gráficos:**
+- Evolução de Vendas (barras: Vendas / Devoluções / Líquido, toggle interativo)
+- Fluxo de Caixa (barras: A Receber / Recebido / A Pagar / Pago / Saldo) — gerente+
+- Top Produtos: doughnut chart com legenda e centro dinâmico
+- Ranking de Vendas: lista com barra de progresso e percentual
 
 **Tabelas:**
-- Últimas 5 vendas com badge de status e `sale_number` sequencial
+- Últimas 5 vendas com `sale_number` sequencial e badge de status
 - Produtos com estoque abaixo do mínimo
-- Últimas devoluções (5 registros)
+- Últimas devoluções
 
 ### Produtos
 
-- CRUD completo (criar, listar, editar, excluir)
-- Campos: nome, descrição, preço de custo, preço de venda, quantidade em estoque, estoque mínimo
-- Vínculo com categoria (`belongsTo`)
-- Alertas de estoque baixo no dashboard e no menu de navegação (badge pulsante vermelho)
-- Acesso restrito a **gerente** e **admin**
+- CRUD completo + import via CSV
+- Campos: nome, descrição, preço de custo, preço de venda, estoque, estoque mínimo, categoria
+- Alerta de estoque baixo no menu (badge pulsante vermelho)
+- Restrito a **gerente** e **admin**
 
-### Categorias
+### Movimentação de Estoque
 
-- CRUD completo
-- Relacionamento `hasMany` com produtos
-- Acesso restrito a **gerente** e **admin**
+- Registro manual de entradas e saídas de estoque
+- Histórico de movimentações com exclusão
 
 ### Vendas
 
-- Criação de vendas com múltiplos itens (`SaleItem`)
-- Numeração sequencial automática por empresa (`sale_number`) — ex.: `#1`, `#2`, `#3`
-- Campos: data, cliente, status, total calculado automaticamente
-- Status disponíveis: `concluida`, `pendente`, `cancelada`
+- Criação com múltiplos itens (`SaleItem`)
+- Numeração sequencial automática por empresa (`sale_number`)
+- Status: `concluida`, `pendente`, `cancelada`
+- Geração de nota/invoice em PDF
+- Cancelar, restaurar e exclusão permanente (admin)
 - Edição e exclusão restritas a **gerente** e **admin**
-- Visualização de detalhes disponível para todos os papéis
 
-### Clientes
+### Clientes e Fornecedores
 
-- CRUD completo vinculado à empresa
-- Campos: nome, e-mail, telefone, CPF/CNPJ, endereço, observações
-- Relacionamento com vendas
-- Acesso a **vendedor**, **gerente** e **admin**
+- CRUD completo para ambos
+- Campos completos: nome, e-mail, telefone, documento, endereço, observações
+- Busca rápida de clientes (`GET /customers/search`)
 
 ### Devoluções
 
-- Registro de devoluções vinculadas a uma venda existente
-- Campos: motivo, itens devolvidos, valor estornado
+- Vinculadas a venda existente
 - Estorno automático no estoque dos produtos devolvidos
-- Badge de motivo no detalhe e no dashboard
-- Acesso a **vendedor**, **gerente** e **admin**
-
-### Fornecedores
-
-- CRUD completo
-- Campos: nome, CNPJ, e-mail, telefone, endereço, observações
-- Relacionamento com Ordens de Compra
-- Acesso restrito a **gerente** e **admin**
 
 ### Ordens de Compra
 
-- CRUD completo com fluxo de status: `rascunho → enviada → recebida_parcial → recebida` (ou `cancelada`)
-- Número automático único por empresa (ex.: `OC-000001`)
-- Itens da OC: produto, quantidade, preço unitário, subtotal
-- Ações de transição: Enviar, Receber, Cancelar (habilitadas conforme status atual)
-- Entrada automática no estoque ao receber a OC
-- Acesso restrito a **gerente** e **admin**
+- Fluxo de status: `rascunho → enviada → recebida_parcial → recebida` (ou `cancelada`)
+- Número automático único por empresa (`OC-000001`)
+- Entrada automática no estoque ao receber
 
-### Financeiro — Contas a Pagar
+### Financeiro
 
-- CRUD completo
-- Campos: descrição, valor, vencimento, categoria, forma de pagamento, status (`pendente`, `paga`, `vencida`, `cancelada`)
-- Baixa individual com data e forma de pagamento
-- **Baixa em lote**: selecione múltiplas contas pendentes/vencidas e quite todas de uma vez
+- **Contas a Pagar e a Receber** com CRUD completo
+- Baixa individual e **baixa em lote** para ambos
+- Status: `pendente`, `paga/recebida`, `vencida`, `cancelada`
 - Filtros por período e paginação
-- Acesso restrito a **gerente** e **admin**
 
-### Financeiro — Contas a Receber
+### Relatórios (todos com PDF e CSV)
 
-- CRUD completo
-- Campos: descrição, valor, vencimento, categoria, status (`pendente`, `recebida`, `vencida`, `cancelada`)
-- Baixa individual com data de recebimento
-- **Baixa em lote**: selecione múltiplas contas e confirme o recebimento de uma vez
-- Filtros por período e paginação
-- Acesso restrito a **gerente** e **admin**
+| Relatório | Rota |
+|---|---|
+| Vendas | `/reports/sales` |
+| Financeiro | `/reports/financial` |
+| Compras | `/reports/purchases` |
+| Estoque | `/reports/stock` |
+| Fornecedores | `/reports/suppliers` |
+| Devoluções | `/reports/returns` |
+| Lucratividade | `/reports/profitability` |
+| Top Produtos | `/reports/top-products` |
 
-### Relatório de Vendas
+### Notificações
 
-- Filtros por período (7d / 30d / 90d / 1 ano / personalizado)
-- KPIs: total de vendas, faturamento bruto, devoluções, faturamento líquido
-- Tabela de vendedores por volume
-- Top produtos mais vendidos (quantidade, pedidos, receita)
-- Tabela detalhada de todas as vendas no período
-- Exportação em **PDF** e **CSV**
-- Acesso restrito a **gerente** e **admin**
+- Listagem, marcar como lida, marcar todas como lidas, excluir
+- Endpoint de não lidas (`GET /notifications/unread`)
 
-### Relatório de Compras
+### Tokens de API
 
-- Filtros por período, fornecedor e status da OC
-- KPIs: total de OCs, valor total, valor recebido, valor pendente
-- Tabela de compras por fornecedor (quantidade + total)
-- Top produtos mais comprados (quantidade, OCs, custo total)
-- Tabela detalhada de OCs no período
-- Exportação em **PDF** e **CSV**
-- Acesso restrito a **gerente** e **admin**
-
-### Gestão de Usuários
-
-- CRUD de usuários — exclusivo para **admin**
-- Toggle de ativo/inativo via `PATCH /users/{user}/toggle-active`
-- Campos: nome, e-mail, papel, empresa vinculada, status ativo
-- Edição de perfil próprio disponível para todos os papéis
+- Geração e revogação de tokens Sanctum via `/settings/api`
 
 ### Painel Super-Admin
 
-- Acesso exclusivo para o papel `superadmin` via `/admin`
-- **Métricas globais do SaaS:** MRR estimado, total de empresas, novas no mês, churn no mês
-- **Distribuição de planos:** Free / Pro / Business com barra de progresso percentual
-- **Tabela de empresas:** numeração sequencial (1, 2, 3...) independente de exclusões, plano, status, usuários, trial, data de criação
-- Ações por empresa: Entrar como (impersonation para suporte), Ativar/Desativar, Excluir
-- Interface standalone (fora do layout do app)
+- Métricas globais: MRR, total de empresas, novas no mês, churn
+- Distribuição de planos com barra percentual
+- Listagem com numeração sequencial (independente de exclusões)
+- Ações: Ativar/Desativar, Impersonation (entrar como admin da empresa), Excluir
+- Sair do modo impersonation com banner identificador
 
-### Audit Log
+### Gestão de Usuários
 
-- Model `AuditLog` com migration dedicada
-- Estrutura base implementada para registro de ações críticas
+- CRUD completo — exclusivo **admin**
+- Toggle ativo/inativo
+- Edição de perfil próprio disponível para todos
 
 ---
 
-## Estrutura de Arquivos Relevantes
+## Estrutura de Arquivos
 
 ```
 invexa/
@@ -252,60 +246,72 @@ invexa/
 │   ├── Http/
 │   │   ├── Controllers/
 │   │   │   ├── Auth/
+│   │   │   ├── ApiTokenController.php
 │   │   │   ├── BillController.php
 │   │   │   ├── CategoryController.php
+│   │   │   ├── CompanyProfileController.php
 │   │   │   ├── CustomerController.php
 │   │   │   ├── DashboardController.php
+│   │   │   ├── HomeController.php
+│   │   │   ├── LandingController.php
+│   │   │   ├── NotificationController.php
+│   │   │   ├── OnboardingController.php
 │   │   │   ├── ProductController.php
 │   │   │   ├── PurchaseOrderController.php
 │   │   │   ├── ReceivableController.php
 │   │   │   ├── ReportController.php
-│   │   │   ├── ReturnController.php
 │   │   │   ├── SaleController.php
+│   │   │   ├── SaleReturnController.php
+│   │   │   ├── StockMovementController.php
+│   │   │   ├── StripeWebhookController.php
+│   │   │   ├── SubscriptionController.php
 │   │   │   ├── SupplierController.php
-│   │   │   ├── SuperAdmin/
-│   │   │   │   └── CompanyController.php
+│   │   │   ├── SuperAdmin/SuperAdminController.php
+│   │   │   ├── TwoFactorController.php
+│   │   │   ├── UpgradeController.php
 │   │   │   └── UserController.php
 │   │   └── Middleware/
+│   │       ├── CheckCompanyAccess.php
+│   │       ├── CheckOnboarding.php
 │   │       ├── CheckRole.php
-│   │       └── EnsureHasCompany.php
-│   ├── Models/
-│   │   ├── AuditLog.php
-│   │   ├── Bill.php
-│   │   ├── Category.php
-│   │   ├── Company.php
-│   │   ├── Customer.php
-│   │   ├── Product.php
-│   │   ├── PurchaseOrder.php
-│   │   ├── PurchaseOrderItem.php
-│   │   ├── Receivable.php
-│   │   ├── Return.php
-│   │   ├── Sale.php
-│   │   ├── SaleItem.php
-│   │   ├── Supplier.php
-│   │   └── User.php
+│   │       ├── CompanyMiddleware.php
+│   │       ├── EnsureHasCompany.php
+│   │       ├── ImpersonateBannerMiddleware.php
+│   │       ├── SuperAdminMiddleware.php
+│   │       └── TwoFactorMiddleware.php
 │   └── Traits/
 │       └── BelongsToCompany.php
 ├── resources/views/
 │   ├── auth/
 │   ├── bills/
 │   ├── categories/
+│   ├── components/
 │   ├── customers/
+│   ├── emails/
+│   ├── errors/
 │   ├── exports/
 │   ├── layouts/
+│   ├── notifications/
+│   ├── onboarding/
 │   ├── products/
+│   ├── profile/
 │   ├── purchase-orders/
 │   ├── receivables/
 │   ├── reports/
-│   │   ├── index.blade.php        # Relatório de vendas
-│   │   └── purchases.blade.php    # Relatório de compras
 │   ├── returns/
 │   ├── sales/
+│   ├── search/
+│   ├── settings/
+│   ├── stock/
+│   ├── subscription/
 │   ├── superadmin/
-│   │   └── index.blade.php        # Painel Super-Admin
 │   ├── suppliers/
+│   ├── upgrade/
 │   ├── users/
-│   └── dashboard.blade.php
+│   ├── dashboard.blade.php
+│   ├── landing.blade.php
+│   ├── pricing.blade.php
+│   └── upgrade.blade.php
 ├── tests/
 │   └── Feature/
 │       ├── BillBulkPayTest.php
@@ -332,39 +338,35 @@ companies
   └── bills            (company_id)
   └── receivables      (company_id)
 
-categories
-  └── products (category_id)
-
-sales
-  └── sale_items (sale_id → product_id)
-  └── returns    (sale_id)
-
-purchase_orders
-  └── purchase_order_items (purchase_order_id → product_id)
-
+categories → products
+sales → sale_items → products
+sales → sale_returns
+purchase_orders → purchase_order_items → products
 users → audit_logs
 ```
 
-### Tabelas
+### Tabelas Principais
 
 | Tabela | Descrição |
 |---|---|
-| `users` | Usuários com papel (superadmin/admin/gerente/vendedor), empresa e flag ativo |
-| `companies` | Empresas — unidade de isolamento multi-tenant, plano (free/pro/business) |
+| `companies` | Empresas — unidade de isolamento multi-tenant, plano, trial, logo |
+| `users` | Usuários com papel (superadmin/admin/gerente/vendedor), 2FA |
 | `categories` | Categorias de produtos por empresa |
-| `products` | Produtos com estoque, preços, estoque mínimo e categoria |
+| `products` | Produtos com estoque, preços e estoque mínimo |
 | `customers` | Clientes vinculados à empresa |
-| `sales` | Cabeçalho da venda (cliente, data, status, total, sale_number) |
-| `sale_items` | Itens de cada venda (produto, qtd, preço unitário) |
-| `returns` | Devoluções vinculadas a vendas |
+| `sales` | Cabeçalho da venda (sale_number, cliente, status, total) |
+| `sale_items` | Itens de cada venda |
+| `sale_returns` | Devoluções vinculadas a vendas |
+| `stock_movements` | Histórico de movimentações de estoque |
 | `suppliers` | Fornecedores por empresa |
 | `purchase_orders` | Ordens de compra com status e número automático |
 | `purchase_order_items` | Itens das ordens de compra |
 | `bills` | Contas a pagar |
 | `receivables` | Contas a receber |
-| `audit_logs` | Log de auditoria de ações do sistema |
-| `cache` | Cache de sessão do Laravel |
-| `jobs` | Filas de jobs do Laravel |
+| `notifications` | Notificações internas por usuário |
+| `personal_access_tokens` | Tokens de API (Sanctum) |
+| `subscriptions` | Assinaturas Stripe (Cashier) |
+| `audit_logs` | Log de auditoria |
 
 ---
 
@@ -380,11 +382,8 @@ users → audit_logs
 ### Passo a passo
 
 ```bash
-# 1. Clonar o repositório
 git clone https://github.com/AugustoCastilhoDev/invexa.git
 cd invexa
-
-# 2. Instalar dependências e configurar automaticamente
 composer run setup
 ```
 
@@ -407,6 +406,19 @@ DB_PORT=3306
 DB_DATABASE=invexa
 DB_USERNAME=root
 DB_PASSWORD=
+
+# Stripe
+STRIPE_KEY=pk_test_...
+STRIPE_SECRET=sk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+
+# E-mail (ex: Resend ou Mailgun)
+MAIL_MAILER=smtp
+MAIL_HOST=smtp.resend.com
+MAIL_PORT=465
+MAIL_USERNAME=resend
+MAIL_PASSWORD=re_...
+MAIL_FROM_ADDRESS=noreply@invexa.com.br
 ```
 
 ### Iniciar o servidor de desenvolvimento
@@ -429,67 +441,82 @@ Sobe simultaneamente:
 
 | Método | URI | Descrição |
 |---|---|---|
+| GET | `/` | Landing page |
+| GET | `/pricing` | Página de planos |
 | GET | `/login` | Tela de login |
-| POST | `/login` | Autenticar usuário |
+| POST | `/login` | Autenticar (throttle: 10/min) |
 | POST | `/logout` | Encerrar sessão |
 | GET | `/register` | Tela de registro |
-| POST | `/register` | Criar conta e empresa |
+| POST | `/register` | Criar conta e empresa (throttle: 5/min) |
+| POST | `/stripe/webhook` | Webhook Stripe (sem CSRF) |
+| GET | `/two-factor/verify` | Verificação de 2FA pós-login |
 
-### Protegidas (autenticado + empresa)
-
-| Método | URI | Papel mínimo | Descrição |
-|---|---|---|---|
-| GET | `/dashboard` | vendedor | Dashboard principal |
-| GET | `/dashboard/export/csv` | gerente | Exportar CSV do dashboard |
-| GET | `/dashboard/export/pdf` | gerente | Exportar PDF do dashboard |
-| GET/POST | `/sales` | vendedor | Listar / Criar vendas |
-| GET | `/sales/{id}` | vendedor | Detalhes da venda |
-| GET/PUT/DELETE | `/sales/{id}/edit` | gerente | Editar / Atualizar / Excluir venda |
-| GET/POST/PUT/DELETE | `/customers` | vendedor | CRUD de clientes |
-| GET/POST/PUT/DELETE | `/returns` | vendedor | CRUD de devoluções |
-| GET/POST/PUT/DELETE | `/products` | gerente | CRUD de produtos |
-| GET/POST/PUT/DELETE | `/categories` | gerente | CRUD de categorias |
-| GET/POST/PUT/DELETE | `/suppliers` | gerente | CRUD de fornecedores |
-| GET/POST/PUT/DELETE | `/purchase-orders` | gerente | CRUD de ordens de compra |
-| GET/POST/PUT/DELETE | `/bills` | gerente | CRUD de contas a pagar |
-| POST | `/bills/bulk-pay` | gerente | Baixa em lote — contas a pagar |
-| PATCH | `/bills/{bill}/pay` | gerente | Baixa individual |
-| GET/POST/PUT/DELETE | `/receivables` | gerente | CRUD de contas a receber |
-| POST | `/receivables/bulk-receive` | gerente | Baixa em lote — contas a receber |
-| PATCH | `/receivables/{receivable}/receive` | gerente | Baixa individual |
-| GET | `/reports` | gerente | Relatório de vendas |
-| GET | `/reports/pdf` | gerente | Exportar PDF — vendas |
-| GET | `/reports/csv` | gerente | Exportar CSV — vendas |
-| GET | `/reports/purchases` | gerente | Relatório de compras |
-| GET | `/reports/purchases/pdf` | gerente | Exportar PDF — compras |
-| GET | `/reports/purchases/csv` | gerente | Exportar CSV — compras |
-| GET/POST/PUT/DELETE | `/users` | admin | CRUD de usuários |
-| PATCH | `/users/{id}/toggle-active` | admin | Ativar/desativar usuário |
-| GET/PUT | `/profile` | vendedor | Editar perfil próprio |
-
-### Super-Admin (papel superadmin)
+### Autenticado — Onboarding
 
 | Método | URI | Descrição |
 |---|---|---|
-| GET | `/admin` | Painel global — métricas do SaaS + listagem de empresas |
-| POST | `/admin/companies/{company}/impersonate` | Entrar como admin de uma empresa (suporte) |
-| PATCH | `/admin/companies/{company}/toggle` | Ativar ou desativar empresa |
-| DELETE | `/admin/companies/{company}` | Excluir empresa e todos os seus usuários |
+| GET/POST | `/onboarding` | Wizard de configuração inicial |
+| POST | `/onboarding/skip` | Pular onboarding |
 
----
+### Autenticado — Configurações
 
-## Design e Interface
+| Método | URI | Papel | Descrição |
+|---|---|---|---|
+| GET | `/upgrade` | todos | Página de upgrade de plano |
+| GET | `/settings/subscription` | todos | Assinatura atual e faturas |
+| POST | `/settings/subscription/checkout` | todos | Iniciar checkout Stripe |
+| GET | `/settings/subscription/portal` | todos | Portal Stripe |
+| DELETE | `/settings/subscription/cancel` | todos | Cancelar assinatura |
+| GET | `/settings/security` | todos | Configuração de 2FA |
+| GET | `/settings/api` | todos | Tokens de API |
+| GET/PATCH | `/settings/company` | admin | Perfil e logo da empresa |
+| GET/PATCH | `/profile` | todos | Perfil do usuário |
 
-A interface utiliza tema escuro personalizado consistente em todas as telas:
+### Autenticado — App (requer trial/assinatura ativa)
 
-- **Paleta**: fundo `#08101d` com gradiente radial sutil em azul e verde
-- **KPI Cards**: gradiente colorido (azul, ciano, verde, âmbar) com badge de tendência percentual
-- **Dashboard cards**: fundo `rgba(15,23,42,.88)` com borda sutil `rgba(148,163,184,.14)`
-- **Badges de status**: pill translúcidos com ponto indicador colorido
-- **Tabelas**: cabeçalho uppercase em fonte menor com separação visual sutil
-- **Gráficos**: Chart.js com paleta escura, tooltip personalizado em `pt-BR` e toggle interativo de séries
-- **Alerta de estoque**: badge pulsante vermelho no menu (animação CSS)
-- **Barra de ação em lote**: flutuante no rodapé, aparece ao selecionar checkboxes
+| Método | URI | Papel mínimo | Descrição |
+|---|---|---|---|
+| GET | `/dashboard` | vendedor | Dashboard |
+| GET/POST | `/sales` | vendedor | Listar / Criar vendas |
+| GET | `/sales/{id}` | vendedor | Detalhes |
+| GET | `/sales/{id}/pdf` | vendedor | PDF da venda |
+| GET/PUT/DELETE | `/sales/{id}/edit` | gerente | Editar / Excluir |
+| PATCH | `/sales/{id}/cancel` | gerente | Cancelar venda |
+| GET/POST/PUT/DELETE | `/customers` | vendedor | CRUD de clientes |
+| GET/POST/PUT/DELETE | `/returns` | vendedor | CRUD de devoluções |
+| GET/POST/DELETE | `/stock` | gerente | Movimentação de estoque |
+| GET/POST/PUT/DELETE | `/products` | gerente | CRUD de produtos |
+| POST | `/products/import` | gerente | Importar produtos via CSV |
+| GET/POST/PUT/DELETE | `/categories` | gerente | CRUD de categorias |
+| GET/POST/PUT/DELETE | `/suppliers` | gerente | CRUD de fornecedores |
+| GET/POST/PUT/DELETE | `/purchase-orders` | gerente | CRUD de ordens de compra |
+| PATCH | `/purchase-orders/{id}/receive` | gerente | Receber OC |
+| GET/POST/PUT/DELETE | `/bills` | gerente | Contas a pagar |
+| POST | `/bills/bulk-pay` | gerente | Baixa em lote |
+| PATCH | `/bills/{id}/pay` | gerente | Baixa individual |
+| GET/POST/PUT/DELETE | `/receivables` | gerente | Contas a receber |
+| POST | `/receivables/bulk-receive` | gerente | Baixa em lote |
+| PATCH | `/receivables/{id}/receive` | gerente | Baixa individual |
+| GET | `/reports/sales` | gerente | Relatório de vendas |
+| GET | `/reports/financial` | gerente | Relatório financeiro |
+| GET | `/reports/purchases` | gerente | Relatório de compras |
+| GET | `/reports/stock` | gerente | Relatório de estoque |
+| GET | `/reports/suppliers` | gerente | Relatório de fornecedores |
+| GET | `/reports/returns` | gerente | Relatório de devoluções |
+| GET | `/reports/profitability` | gerente | Relatório de lucratividade |
+| GET | `/reports/top-products` | gerente | Top produtos |
+| GET/POST/PUT/DELETE | `/users` | admin | CRUD de usuários |
+| GET | `/notifications` | todos | Notificações |
+
+### Super-Admin
+
+| Método | URI | Descrição |
+|---|---|---|
+| GET | `/admin` | Painel global + métricas do SaaS |
+| POST | `/admin/companies/{company}/impersonate` | Entrar como admin da empresa |
+| POST | `/admin/leave-impersonate` | Sair do modo suporte |
+| PATCH | `/admin/companies/{company}/toggle` | Ativar/desativar empresa |
+| DELETE | `/admin/companies/{company}` | Excluir empresa |
 
 ---
 
@@ -497,16 +524,12 @@ A interface utiliza tema escuro personalizado consistente em todas as telas:
 
 ```bash
 php artisan test
-# ou
-composer run test
 ```
-
-### Cobertura de testes Feature implementada
 
 | Arquivo | Cenários cobertos |
 |---|---|
-| `BillBulkPayTest` | Baixa em lote com sucesso, ignorar já pagas, validação de campos, isolamento multi-tenant |
-| `ReceivableBulkReceiveTest` | Recebimento em lote com sucesso, ignorar já recebidas, validação de campos, isolamento multi-tenant |
+| `BillBulkPayTest` | Baixa em lote, ignorar já pagas, validação, isolamento multi-tenant |
+| `ReceivableBulkReceiveTest` | Recebimento em lote, ignorar já recebidas, validação, isolamento multi-tenant |
 
 ---
 
