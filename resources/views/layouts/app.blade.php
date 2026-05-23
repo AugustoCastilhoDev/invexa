@@ -161,6 +161,14 @@
         .notif-title   { font-size: .8rem; font-weight: 600; color: #e2e8f0; line-height: 1.3; }
         .notif-message { font-size: .74rem; color: rgba(148,163,184,.85); line-height: 1.4; margin-top: .1rem; }
         .notif-time    { font-size: .68rem; color: rgba(148,163,184,.5); margin-top: .2rem; }
+        /* Badge Business no menu */
+        .badge-business {
+            display:inline-block; padding:.08rem .45rem; border-radius:999px;
+            font-size:.58rem; font-weight:700; text-transform:uppercase; letter-spacing:.05em;
+            background:rgba(168,85,247,.18); color:#c084fc;
+            border:1px solid rgba(168,85,247,.3); margin-left:.35rem;
+            vertical-align:middle;
+        }
     </style>
     @stack('styles')
 </head>
@@ -372,12 +380,17 @@
                             </div>
                         </li>
                         <li><hr class="dropdown-divider"></li>
+
+                        {{-- Perfil --}}
                         <li>
                             <a class="dropdown-item {{ request()->routeIs('profile.*') ? 'active' : '' }}" href="{{ route('profile.edit') }}">
                                 <i class="bi bi-person-gear me-2"></i>Editar Perfil
                             </a>
                         </li>
+
                         @if(Auth::check() && Auth::user()->hasRole('admin'))
+
+                        {{-- Meu Plano --}}
                         <li>
                             <a class="dropdown-item {{ request()->routeIs('upgrade') ? 'active' : '' }}" href="{{ route('upgrade') }}">
                                 <i class="bi bi-rocket-takeoff me-2"></i>Meu Plano
@@ -386,14 +399,38 @@
                                 @endif
                             </a>
                         </li>
-                        @endif
-                        @if(Auth::check() && Auth::user()->isAdmin() && !Auth::user()->isSuperAdmin())
+
+                        {{-- Gerenciar Usuários --}}
+                        @if(!Auth::user()->isSuperAdmin())
                         <li>
                             <a class="dropdown-item" href="{{ route('users.index') }}">
                                 <i class="bi bi-people me-2"></i>Gerenciar Usuários
                             </a>
                         </li>
                         @endif
+
+                        <li><hr class="dropdown-divider"></li>
+                        <li><span class="dropdown-item-text">INTEGRAÇÕES</span></li>
+
+                        {{-- API Tokens --}}
+                        <li>
+                            <a class="dropdown-item {{ request()->routeIs('settings.api*') ? 'active' : '' }}" href="{{ route('settings.api') }}">
+                                <i class="bi bi-key me-2"></i>Tokens de API
+                            </a>
+                        </li>
+
+                        {{-- Webhooks — somente plano Business --}}
+                        @if(Auth::user()->company?->plan === 'business')
+                        <li>
+                            <a class="dropdown-item {{ request()->routeIs('webhooks.*') ? 'active' : '' }}" href="{{ route('webhooks.index') }}">
+                                <i class="bi bi-arrow-repeat me-2"></i>Webhooks
+                                <span class="badge-business">Business</span>
+                            </a>
+                        </li>
+                        @endif
+
+                        @endif {{-- end isAdmin --}}
+
                         <li><hr class="dropdown-divider"></li>
                         <li>
                             <form action="{{ route('logout') }}" method="POST">
@@ -575,7 +612,6 @@
                 'Accept': 'application/json'
             }
         }).then(r => {
-            // aceita tanto JSON quanto redirect
             fetchNotifications();
         }).catch(() => {});
     });
