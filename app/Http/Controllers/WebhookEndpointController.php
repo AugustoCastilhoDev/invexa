@@ -5,26 +5,27 @@ namespace App\Http\Controllers;
 use App\Models\WebhookEndpoint;
 use App\Services\WebhookDispatcher;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Gate;
 
 class WebhookEndpointController extends Controller
 {
     private function authorizeBusinessPlan(): void
     {
-        $company = auth()->user()->company;
-        if ($company->plan !== 'business') {
+        if (auth()->user()->company->plan !== 'business') {
             abort(403, 'Webhooks disponíveis apenas no plano Business.');
         }
     }
 
     public function index()
     {
-        $this->authorizeBusinessPlan();
-        $company   = auth()->user()->company;
-        $endpoints = WebhookEndpoint::where('company_id', $company->id)
-            ->latest()->get();
+        $company    = auth()->user()->company;
+        $isBusiness = $company->plan === 'business';
+        $canCreate  = $isBusiness;
 
-        return view('webhooks.index', compact('endpoints'));
+        $webhooks = $isBusiness
+            ? WebhookEndpoint::where('company_id', $company->id)->latest()->get()
+            : collect();
+
+        return view('webhooks.index', compact('webhooks', 'isBusiness', 'canCreate'));
     }
 
     public function create()
@@ -41,7 +42,8 @@ class WebhookEndpointController extends Controller
             'url'         => 'required|url|max:500',
             'description' => 'nullable|string|max:255',
             'events'      => 'required|array|min:1',
-            'events.*'    => 'in:sale.created,sale.returned,stock.low,customer.created',
+            'events.*'    => 'string',
+            'active'      => 'boolean',
         ]);
 
         $company = auth()->user()->company;
@@ -81,7 +83,7 @@ class WebhookEndpointController extends Controller
             'url'         => 'required|url|max:500',
             'description' => 'nullable|string|max:255',
             'events'      => 'required|array|min:1',
-            'events.*'    => 'in:sale.created,sale.returned,stock.low,customer.created',
+            'events.*'    => 'string',
             'active'      => 'boolean',
         ]);
 
@@ -120,7 +122,7 @@ class WebhookEndpointController extends Controller
         $this->authorizeEndpoint($webhook);
         WebhookDispatcher::dispatch(
             auth()->user()->company,
-            'sale.created',
+            'webhook.test',
             ['test' => true, 'message' => 'Payload de teste do Invexa']
         );
         return back()->with('success', 'Evento de teste disparado para ' . $webhook->url);
@@ -136,10 +138,16 @@ class WebhookEndpointController extends Controller
     private function availableEvents(): array
     {
         return [
-            'sale.created'     => 'Venda criada',
-            'sale.returned'    => 'Devolução processada',
-            'stock.low'        => 'Estoque abaixo do mínimo',
-            'customer.created' => 'Novo cliente cadastrado',
+            'sale.created'            => 'Venda criada',
+            'sale.cancelled'          => 'Venda cancelada',
+            'sale.deleted'            => 'Venda excluída',
+            'product.low_stock'       => 'Estoque abaixo do mínimo',
+            'product.created'         => 'Produto criado',
+            'product.updated'         => 'Produto atualizado',
+            'customer.created'        => 'Cliente criado',
+            'bill.paid'               => 'Conta paga',
+            'receivable.received'     => 'Recebível recebido',
+            'purchase_order.received' => 'Ordem de compra recebida',
         ];
     }
 }
