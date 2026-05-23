@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\ProductImport;
+use App\Models\StockMovement;
 use App\Models\Supplier;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -31,6 +32,7 @@ class ImportProductsCsvJob implements ShouldQueue
 
         $path      = Storage::path('imports/' . $this->import->filename);
         $companyId = $this->import->company_id;
+        $userId    = $this->import->user_id ?? null;
 
         if (! file_exists($path)) {
             $this->import->update(['status' => 'failed', 'finished_at' => now()]);
@@ -114,7 +116,7 @@ class ImportProductsCsvJob implements ShouldQueue
                 }
             }
 
-            Product::create([
+            $product = Product::create([
                 'company_id'   => $companyId,
                 'name'         => $name,
                 'sku'          => $sku ?: null,
@@ -128,6 +130,23 @@ class ImportProductsCsvJob implements ShouldQueue
                 'supplier_id'  => $supplierId,
                 'active'       => in_array($active, ['sim', 's', '1', 'true', 'yes']),
             ]);
+
+            // Registra movimentação de estoque inicial
+            if ($quantity > 0) {
+                StockMovement::create([
+                    'company_id'      => $companyId,
+                    'product_id'      => $product->id,
+                    'user_id'         => $userId,
+                    'type'            => 'entrada',
+                    'quantity'        => $quantity,
+                    'quantity_before' => 0,
+                    'quantity_after'  => $quantity,
+                    'reason'          => 'ajuste',
+                    'notes'           => 'Estoque inicial via importação CSV',
+                    'source_type'     => ProductImport::class,
+                    'source_id'       => $this->import->id,
+                ]);
+            }
 
             $imported++;
         }
