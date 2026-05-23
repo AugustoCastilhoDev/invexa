@@ -430,24 +430,6 @@
 
         <div class="row g-4 justify-content-center">
 
-            {{-- FREE --}}
-            <div class="col-md-4">
-                <div class="plan-card">
-                    <div class="plan-name">Free</div>
-                    <div class="plan-price">R$ 0 <span>/mês</span></div>
-                    <p class="plan-desc">Para conhecer o sistema sem custo.</p>
-                    <ul class="list-unstyled plan-features">
-                        <li><i class="bi bi-check-circle-fill"></i> Até 50 produtos</li>
-                        <li><i class="bi bi-check-circle-fill"></i> Até 100 clientes</li>
-                        <li><i class="bi bi-check-circle-fill"></i> 2 usuários</li>
-                        <li><i class="bi bi-check-circle-fill"></i> PDV, estoque e financeiro</li>
-                        <li><i class="bi bi-check-circle-fill"></i> Relatórios completos</li>
-                        <li class="disabled"><i class="bi bi-x-circle-fill"></i> Suporte prioritário</li>
-                    </ul>
-                    <a href="{{ route('register') }}" class="btn btn-outline-primary w-100 mt-4">Começar grátis</a>
-                </div>
-            </div>
-
             {{-- PRO --}}
             <div class="col-md-4">
                 <div class="plan-card featured">
@@ -479,7 +461,7 @@
                        href="{{ route('register') }}?plan=pro_launch&billing=monthly"
                        class="btn btn-primary w-100 mt-4"
                        style="background:var(--sky); border:none; font-weight:700;">
-                        Assinar Pro — R$ 39,90/mês
+                        Começar trial grátis — Pro
                     </a>
                 </div>
             </div>
@@ -511,11 +493,20 @@
                     <a id="btn-business"
                        href="{{ route('register') }}?plan=business&billing=monthly"
                        class="btn btn-outline-primary w-100 mt-4">
-                        Assinar Business — R$ 119,90/mês
+                        Começar trial grátis — Business
                     </a>
                 </div>
             </div>
 
+        </div>
+
+        {{-- Nota sobre trial --}}
+        <div class="text-center mt-4">
+            <p style="font-size:.82rem; color:rgba(148,163,184,.55);">
+                <i class="bi bi-info-circle me-1"></i>
+                Todos os planos incluem <strong style="color:rgba(226,232,240,.6);">14 dias de trial gratuito</strong> com acesso completo.
+                Após o trial, é necessário assinar um plano para continuar usando o sistema. Seus dados são preservados.
+            </p>
         </div>
     </div>
 </section>
@@ -577,7 +568,7 @@
                             <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq6">O que acontece quando o trial termina?</button>
                         </h2>
                         <div id="faq6" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-                            <div class="accordion-body">Após 14 dias você escolhe um plano para continuar. Se não assinar, o acesso fica limitado ao plano Free — seus dados não são apagados.</div>
+                            <div class="accordion-body">Após os 14 dias de trial, o acesso ao sistema é bloqueado até que um plano seja assinado. Todos os seus dados são preservados — produtos, clientes, vendas e histórico ficam intactos. Basta assinar um plano para retomar de onde parou.</div>
                         </div>
                     </div>
                 </div>
@@ -655,14 +646,14 @@
         document.querySelectorAll('.price-annual').forEach(el => el.style.display = isAnnual ? '' : 'none');
         if (isAnnual) {
             btnPro.href = proAnnualUrl;
-            btnPro.textContent = 'Assinar Pro — R$ 383,04/ano';
+            btnPro.textContent = 'Começar trial grátis — Pro Anual';
             btnBusiness.href = bizAnnualUrl;
-            btnBusiness.textContent = 'Assinar Business — R$ 1.151,04/ano';
+            btnBusiness.textContent = 'Começar trial grátis — Business Anual';
         } else {
             btnPro.href = proMonthlyUrl;
-            btnPro.textContent = 'Assinar Pro — R$ 39,90/mês';
+            btnPro.textContent = 'Começar trial grátis — Pro';
             btnBusiness.href = bizMonthlyUrl;
-            btnBusiness.textContent = 'Assinar Business — R$ 119,90/mês';
+            btnBusiness.textContent = 'Começar trial grátis — Business';
         }
     });
 })();
