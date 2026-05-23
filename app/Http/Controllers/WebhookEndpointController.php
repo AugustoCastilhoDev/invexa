@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\WebhookEndpoint;
 use App\Services\WebhookDispatcher;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class WebhookEndpointController extends Controller
 {
@@ -116,16 +118,41 @@ class WebhookEndpointController extends Controller
             ->with('success', 'Secret regenerado com sucesso.');
     }
 
+    /**
+     * Dispara um POST de teste diretamente no endpoint,
+     * sem passar pelo filtro listensTo() do WebhookDispatcher.
+     */
     public function test(WebhookEndpoint $webhook)
     {
         $this->authorizeBusinessPlan();
         $this->authorizeEndpoint($webhook);
-        WebhookDispatcher::dispatch(
-            auth()->user()->company,
-            'webhook.test',
-            ['test' => true, 'message' => 'Payload de teste do Invexa']
-        );
-        return back()->with('success', 'Evento de teste disparado para ' . $webhook->url);
+
+        $body = json_encode([
+            'event'     => 'webhook.test',
+            'timestamp' => now()->toIso8601String(),
+            'data'      => [
+                'test'    => true,
+                'message' => 'Payload de teste do Invexa',
+            ],
+        ]);
+
+        $signature = hash_hmac('sha256', $body, $webhook->secret);
+
+        try {
+            $response = Http::withHeaders([
+                'Content-Type'       => 'application/json',
+                'X-Invexa-Signature' => 'sha256=' . $signature,
+                'X-Invexa-Event'     => 'webhook.test',
+            ])
+            ->timeout(8)
+            ->post($webhook->url, json_decode($body, true));
+
+            $status = $response->status();
+            return back()->with('success', "Teste enviado com sucesso para {$webhook->url} — HTTP {$status}.");
+        } catch (\Exception $e) {
+            Log::warning("Webhook test failed for endpoint {$webhook->id}: " . $e->getMessage());
+            return back()->with('error', 'Falha ao enviar teste: ' . $e->getMessage());
+        }
     }
 
     private function authorizeEndpoint(WebhookEndpoint $webhook): void
