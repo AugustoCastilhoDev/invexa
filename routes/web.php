@@ -71,6 +71,7 @@ Route::middleware(['auth', 'company'])->prefix('onboarding')->name('onboarding.'
 Route::middleware(['auth', 'superadmin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/',                                    [SuperAdminController::class, 'index'])->name('index');
     Route::patch('/companies/{company}/toggle',        [SuperAdminController::class, 'toggleCompany'])->name('companies.toggle');
+    Route::patch('/companies/{company}/plan',          [SuperAdminController::class, 'changePlan'])->name('companies.plan');
     Route::post('/companies/{company}/impersonate',    [SuperAdminController::class, 'impersonate'])->name('companies.impersonate');
     Route::delete('/companies/{company}',              [SuperAdminController::class, 'destroyCompany'])->name('companies.destroy');
 });

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\SuperAdmin;
 use App\Http\Controllers\Controller;
 use App\Models\Company;
 use App\Models\User;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class SuperAdminController extends Controller
@@ -49,20 +50,25 @@ class SuperAdminController extends Controller
         return back()->with('success', "Empresa \"{$company->name}\" {$status} com sucesso.");
     }
 
+    public function changePlan(Request $request, Company $company)
+    {
+        $validated = $request->validate([
+            'plan' => ['required', 'in:free,pro,business'],
+        ]);
+
+        $oldPlan = $company->plan;
+        $company->update(['plan' => $validated['plan']]);
+
+        return back()->with('success', "Plano da empresa \"{$company->name}\" alterado de {$oldPlan} para {$validated['plan']}.");
+    }
+
     public function destroyCompany(Company $company)
     {
         $name = $company->name;
-
-        // Apaga todos os usuários da empresa primeiro
         User::where('company_id', $company->id)->delete();
-
-        // Apaga a empresa
         $company->delete();
-
         return back()->with('success', "Empresa \"{$name}\" e todos os seus dados foram removidos.");
     }
-
-    // ── IMPERSONATE ──
 
     public function impersonate(Company $company)
     {

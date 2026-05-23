@@ -45,7 +45,12 @@
         .btn-impersonate:hover { background:rgba(168,85,247,.22); }
         .btn-delete { background:rgba(239,68,68,.1); border-color:rgba(239,68,68,.25); color:#f87171; }
         .btn-delete:hover { background:rgba(239,68,68,.25); }
+        .btn-plan { background:rgba(14,165,233,.1); border-color:rgba(14,165,233,.25); color:#38BDF8; }
+        .btn-plan:hover { background:rgba(14,165,233,.2); }
         .table-wrapper { background:rgba(13,25,41,.7); border:1px solid rgba(14,165,233,.1); border-radius:14px; overflow:hidden; }
+        /* Plan select inline */
+        .plan-select { background:rgba(13,25,41,.9); border:1px solid rgba(14,165,233,.2); color:#e2e8f0; border-radius:.4rem; font-size:.75rem; padding:.2rem .5rem; cursor:pointer; }
+        .plan-select:focus { outline:none; border-color:var(--sky); }
     </style>
 </head>
 <body>
@@ -205,7 +210,21 @@
                             <div style="font-size:.72rem; color:rgba(148,163,184,.5);">{{ $company->email }}</div>
                         @endif
                     </td>
-                    <td><span class="plan-badge plan-{{ $company->plan }}">{{ $company->plan }}</span></td>
+
+                    {{-- Coluna Plano: badge + select inline --}}
+                    <td>
+                        <form action="{{ route('admin.companies.plan', $company) }}" method="POST"
+                              class="d-flex align-items-center gap-2 m-0"
+                              onchange="this.submit()">
+                            @csrf @method('PATCH')
+                            <select name="plan" class="plan-select">
+                                <option value="free"     {{ $company->plan === 'free'     ? 'selected' : '' }}>Free</option>
+                                <option value="pro"      {{ $company->plan === 'pro'      ? 'selected' : '' }}>Pro</option>
+                                <option value="business" {{ $company->plan === 'business' ? 'selected' : '' }}>Business</option>
+                            </select>
+                        </form>
+                    </td>
+
                     <td>
                         <span class="status-badge {{ $company->active ? 'status-active' : 'status-inactive' }}">
                             <span class="status-dot {{ $company->active ? 'dot-active' : 'dot-inactive' }}"></span>
