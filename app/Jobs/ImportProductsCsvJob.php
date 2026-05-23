@@ -39,7 +39,7 @@ class ImportProductsCsvJob implements ShouldQueue
 
         $handle = fopen($path, 'r');
         // Detecta e remove BOM UTF-8
-        $bom    = fread($handle, 3);
+        $bom = fread($handle, 3);
         if ($bom !== "\xEF\xBB\xBF") rewind($handle);
 
         $headers  = array_map('trim', fgetcsv($handle, 0, ';'));
@@ -52,9 +52,12 @@ class ImportProductsCsvJob implements ShouldQueue
         $categories = Category::where('company_id', $companyId)->get()->keyBy(fn($c) => Str::lower(trim($c->name)));
         $suppliers  = Supplier::where('company_id', $companyId)->get()->keyBy(fn($s) => Str::lower(trim($s->name)));
 
+        // Descobre se a coluna de custo é 'cost' ou 'cost_price'
+        $costColumn = in_array('cost_price', (new Product)->getFillable()) ? 'cost_price' : 'cost';
+
         while (($row = fgetcsv($handle, 0, ';')) !== false) {
             $total++;
-            $line = $total + 1; // +1 pelo cabeçalho
+            $line = $total + 1;
 
             if (count($row) < 3) {
                 $errors[] = ['linha' => $line, 'erro' => 'Linha com colunas insuficientes.'];
@@ -64,7 +67,6 @@ class ImportProductsCsvJob implements ShouldQueue
 
             $data = array_combine($headers, array_pad($row, count($headers), null));
 
-            // Limpeza
             $name        = trim($data['nome'] ?? '');
             $price       = $this->parseDecimal($data['preco_venda'] ?? '');
             $cost        = $this->parseDecimal($data['custo'] ?? '');
@@ -77,7 +79,6 @@ class ImportProductsCsvJob implements ShouldQueue
             $supplierKey = Str::lower(trim($data['fornecedor'] ?? ''));
             $active      = strtolower(trim($data['ativo'] ?? 'sim'));
 
-            // Validações obrigatórias
             $rowErrors = [];
             if ($name === '') $rowErrors[] = 'Nome obrigatório.';
             if ($price === null || $price < 0) $rowErrors[] = 'Preço de venda inválido.';
@@ -99,7 +100,6 @@ class ImportProductsCsvJob implements ShouldQueue
                 if ($categories->has($categoryKey)) {
                     $categoryId = $categories[$categoryKey]->id;
                 } else {
-                    // Cria categoria automaticamente
                     $cat = Category::create(['company_id' => $companyId, 'name' => trim($data['categoria'])]);
                     $categories->put($categoryKey, $cat);
                     $categoryId = $cat->id;
@@ -119,7 +119,7 @@ class ImportProductsCsvJob implements ShouldQueue
                 'name'         => $name,
                 'sku'          => $sku ?: null,
                 'price'        => $price,
-                'cost'         => $cost ?? 0,
+                $costColumn    => $cost ?? 0,
                 'quantity'     => $quantity,
                 'min_quantity' => $minQty,
                 'unit'         => $unit ?: 'un',
@@ -158,7 +158,6 @@ class ImportProductsCsvJob implements ShouldQueue
     {
         $value = trim($value);
         if ($value === '') return null;
-        // Aceita tanto 1.234,56 quanto 1234.56
         $value = str_replace('.', '', $value);
         $value = str_replace(',', '.', $value);
         return is_numeric($value) ? (float) $value : null;
