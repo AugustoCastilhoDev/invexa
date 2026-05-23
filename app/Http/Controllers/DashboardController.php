@@ -100,20 +100,31 @@ class DashboardController extends Controller
 
         if ($from && $to) {
             $fromDate      = Carbon::parse($from, $this->tz)->startOfDay();
-            $toDate        = Carbon::parse($to, $this->tz)->endOfDay();
+            $toDate        = Carbon::parse($to,   $this->tz)->endOfDay();
             $periodDays    = $fromDate->diffInDays($toDate) + 1;
             $previousStart = $fromDate->copy()->subDays($periodDays);
-            $previousEnd   = $fromDate->copy()->subDay();
+            $previousEnd   = $fromDate->copy()->subDay()->endOfDay();
 
-            $previousRevenue = (float) Sale::where('company_id', $companyId)
+            $prevStartStr = $previousStart->toDateString();
+            $prevEndStr   = $previousEnd->toDateString();
+
+            // Receita anterior: vendas concluídas (módulo)
+            $previousRevenueSales = (float) Sale::where('company_id', $companyId)
                 ->where('status', 'concluida')
-                ->whereBetween('sale_date', [$previousStart, $previousEnd])
+                ->whereBetween(DB::raw('COALESCE(sale_date, created_at)'), [$previousStart, $previousEnd])
                 ->sum('total');
+
+            // Receita anterior: movimentações manuais de estoque (venda)
+            $previousRevenueStock = $this->stockManualQuery($companyId, 'venda', $prevStartStr, $prevEndStr)
+                ->get()
+                ->sum(fn($m) => abs($m->quantity) * (float) optional($m->product)->price);
+
+            $previousRevenue = $previousRevenueSales + $previousRevenueStock;
 
             $revenueChange        = $periodNetRevenue - $previousRevenue;
             $revenueChangePercent = $previousRevenue > 0
                 ? ($revenueChange / $previousRevenue) * 100
-                : null;
+                : ($periodNetRevenue > 0 ? 100.0 : null);
         }
 
         $totalProducts   = Product::where('company_id', $companyId)->count();
