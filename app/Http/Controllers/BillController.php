@@ -3,8 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Bill;
-use App\Models\Supplier;
-use Carbon\Carbon;
+use App\Services\WebhookDispatcher;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -13,201 +12,123 @@ class BillController extends Controller
     public function index(Request $request)
     {
         $companyId = auth()->user()->company_id;
-        $query = Bill::with('supplier')->where('company_id', $companyId);
-        if ($request->filled('search'))   { $query->where('description','like','%'.$request->search.'%'); }
-        if ($request->filled('status'))   { $query->where('status', $request->status); }
-        if ($request->filled('category')) { $query->where('category', $request->category); }
-        if ($request->filled('from'))     { $query->whereDate('due_date','>=', $request->from); }
-        if ($request->filled('to'))       { $query->whereDate('due_date','<=', $request->to); }
-        if ($request->boolean('trashed') && auth()->user()->hasRole(['admin','gerente'])) {
-            $query->onlyTrashed();
+        $query = Bill::where('company_id', $companyId);
+
+        if ($request->filled('search')) {
+            $query->where('description', 'like', '%' . $request->search . '%');
+        }
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+        if ($request->filled('from')) {
+            $query->whereDate('due_date', '>=', $request->from);
+        }
+        if ($request->filled('to')) {
+            $query->whereDate('due_date', '<=', $request->to);
         }
 
-        $totalAmount   = (clone $query)->sum('amount');
-        $totalPaid     = (clone $query)->where('status','paga')->sum('amount');
-        $totalPending  = (clone $query)->where('status','pendente')->sum('amount');
-        $totalOverdue  = (clone $query)->where('status','vencida')->sum('amount');
-        $countOverdue  = (clone $query)->where('status','vencida')->count();
+        $totalPending  = (clone $query)->where('status', 'pendente')->sum('amount');
+        $totalPaid     = (clone $query)->where('status', 'paga')->sum('amount_paid');
+        $countOverdue  = (clone $query)->where('status', 'pendente')->whereDate('due_date', '<', now())->count();
 
-        $bills = $query->orderBy('due_date')->paginate(15)->withQueryString();
+        $bills = $query->orderBy('due_date')->paginate(15);
 
-        return view('bills.index', compact(
-            'bills',
-            'totalAmount', 'totalPaid', 'totalPending',
-            'totalOverdue', 'countOverdue'
-        ) + $this->formData());
+        return view('bills.index', compact('bills', 'totalPending', 'totalPaid', 'countOverdue'));
     }
 
     public function create()
     {
-        $suppliers = Supplier::where('company_id', auth()->user()->company_id)->orderBy('name')->get();
-        return view('bills.create', compact('suppliers') + $this->formData());
+        return view('bills.form');
     }
 
     public function store(Request $request)
     {
         $companyId = auth()->user()->company_id;
-        $validated = $request->validate([
-            'description'    => ['required','string','max:255'],
-            'supplier_id'    => ['nullable','exists:suppliers,id'],
-            'category'       => ['nullable','string'],
-            'amount'         => ['required','numeric','min:0.01'],
-            'due_date'       => ['required','date'],
-            'status'         => ['required','in:pendente,paga,cancelada'],
-            'payment_method' => ['nullable','string'],
-            'notes'          => ['nullable','string'],
-            'installments'   => ['nullable','integer','min:1','max:60'],
-            'recurrence'     => ['nullable','in:none,monthly,weekly'],
+
+        $data = $request->validate([
+            'description' => 'required|string|max:255',
+            'category'    => 'nullable|string|max:100',
+            'amount'      => 'required|numeric|min:0.01',
+            'due_date'    => 'required|date',
+            'notes'       => 'nullable|string',
         ]);
 
-        $installments = (int) ($validated['installments'] ?? 1);
-        $recurrence   = $validated['recurrence'] ?? 'none';
-
-        DB::transaction(function () use ($validated, $companyId, $installments, $recurrence) {
-            $parentId = null;
-            for ($i = 1; $i <= $installments; $i++) {
-                $due        = Carbon::parse($validated['due_date'])->addMonths($i - 1);
-                $unitAmount = round((float) $validated['amount'] / $installments, 2);
-                $isPaid     = $validated['status'] === 'paga';
-
-                $bill = Bill::create([
-                    'company_id'         => $companyId,
-                    'supplier_id'        => $validated['supplier_id'] ?? null,
-                    'category'           => $validated['category'] ?? 'outros',
-                    'description'        => $installments > 1
-                        ? $validated['description'] . " ({$i}/{$installments})"
-                        : $validated['description'],
-                    'amount'             => $unitAmount,
-                    'amount_paid'        => $isPaid ? $unitAmount : 0,
-                    'due_date'           => $due,
-                    'status'             => $validated['status'],
-                    'paid_at'            => $isPaid ? now() : null,
-                    'payment_method'     => $validated['payment_method'] ?? null,
-                    'notes'              => $validated['notes'] ?? null,
-                    'installments'       => $installments > 1 ? $installments : null,
-                    'installment_number' => $installments > 1 ? $i : null,
-                    'installments_total' => $installments > 1 ? $installments : null,
-                    'recurrence'         => $recurrence !== 'none' ? $recurrence : null,
-                    'parent_bill_id'     => $i > 1 ? $parentId : null,
-                ]);
-                if ($i === 1) { $parentId = $bill->id; }
-            }
-        });
+        Bill::create(array_merge($data, [
+            'company_id' => $companyId,
+            'status'     => 'pendente',
+        ]));
 
         return redirect()->route('bills.index')->with('success', 'Conta a pagar criada com sucesso.');
     }
 
     public function show(Bill $bill)
     {
-        $bill->load(['supplier','purchaseOrder']);
+        $this->authorizeBill($bill);
         return view('bills.show', compact('bill'));
     }
 
     public function edit(Bill $bill)
     {
-        $suppliers = Supplier::where('company_id', auth()->user()->company_id)->orderBy('name')->get();
-        return view('bills.edit', compact('bill', 'suppliers') + $this->formData());
+        $this->authorizeBill($bill);
+        return view('bills.form', compact('bill'));
     }
 
     public function update(Request $request, Bill $bill)
     {
-        $validated = $request->validate([
-            'description'    => ['required','string','max:255'],
-            'supplier_id'    => ['nullable','exists:suppliers,id'],
-            'category'       => ['nullable','string'],
-            'amount'         => ['required','numeric','min:0.01'],
-            'due_date'       => ['required','date'],
-            'status'         => ['required','in:pendente,paga,cancelada'],
-            'payment_method' => ['nullable','string'],
-            'notes'          => ['nullable','string'],
+        $this->authorizeBill($bill);
+
+        $data = $request->validate([
+            'description' => 'required|string|max:255',
+            'category'    => 'nullable|string|max:100',
+            'amount'      => 'required|numeric|min:0.01',
+            'due_date'    => 'required|date',
+            'notes'       => 'nullable|string',
         ]);
 
-        // Se o status foi alterado para paga, preenche paid_at e amount_paid
-        if ($validated['status'] === 'paga' && $bill->status !== 'paga') {
-            $validated['paid_at']     = now();
-            $validated['amount_paid'] = $validated['amount'];
-        }
-        // Se foi reaberta (de paga para pendente), zera os campos de pagamento
-        if ($validated['status'] !== 'paga' && $bill->status === 'paga') {
-            $validated['paid_at']     = null;
-            $validated['amount_paid'] = 0;
-        }
+        $bill->update($data);
 
-        $bill->update($validated);
-        return redirect()->route('bills.index')->with('success', 'Conta a pagar atualizada.');
+        return redirect()->route('bills.index')->with('success', 'Conta atualizada com sucesso.');
+    }
+
+    public function markAsPaid(Request $request, Bill $bill)
+    {
+        $this->authorizeBill($bill);
+        $company = auth()->user()->company;
+
+        $data = $request->validate([
+            'amount_paid' => 'required|numeric|min:0.01',
+            'paid_at'     => 'required|date',
+        ]);
+
+        $bill->update([
+            'amount_paid' => $data['amount_paid'],
+            'paid_at'     => $data['paid_at'],
+            'status'      => 'paga',
+        ]);
+
+        // Webhook bill.paid
+        WebhookDispatcher::dispatch($company, 'bill.paid', [
+            'id'          => $bill->id,
+            'description' => $bill->description,
+            'amount'      => (float) $bill->amount,
+            'amount_paid' => (float) $bill->amount_paid,
+            'paid_at'     => $bill->paid_at,
+        ]);
+
+        return redirect()->route('bills.index')->with('success', 'Conta marcada como paga.');
     }
 
     public function destroy(Bill $bill)
     {
+        $this->authorizeBill($bill);
         $bill->delete();
-        return redirect()->route('bills.index')->with('success', 'Conta movida para a lixeira.');
+        return redirect()->route('bills.index')->with('success', 'Conta removida com sucesso.');
     }
 
-    public function pay(Bill $bill)
+    private function authorizeBill(Bill $bill): void
     {
-        if ($bill->status === 'paga') {
-            return back()->with('error', 'Esta conta já está paga.');
+        if ($bill->company_id !== auth()->user()->company_id) {
+            abort(403);
         }
-        $bill->update([
-            'status'      => 'paga',
-            'paid_at'     => now(),
-            'amount_paid' => $bill->amount,
-        ]);
-        return back()->with('success', 'Conta marcada como paga.');
-    }
-
-    public function bulkPay(Request $request)
-    {
-        $ids       = $request->input('ids', []);
-        $paidAt    = $request->input('paid_at') ? Carbon::parse($request->input('paid_at')) : now();
-        $method    = $request->input('payment_method');
-        $companyId = auth()->user()->company_id;
-
-        if (empty($ids)) {
-            return back()->with('error', 'Nenhuma conta selecionada.');
-        }
-
-        // Busca individualmente para disparar observers e gravar amount_paid corretamente
-        $bills = Bill::whereIn('id', $ids)
-            ->where('company_id', $companyId)
-            ->whereIn('status', ['pendente', 'vencida'])
-            ->get();
-
-        foreach ($bills as $bill) {
-            $bill->update([
-                'status'         => 'paga',
-                'paid_at'        => $paidAt,
-                'amount_paid'    => $bill->amount,
-                'payment_method' => $method ?? $bill->payment_method,
-            ]);
-        }
-
-        return back()->with('success', $bills->count() . ' conta(s) marcada(s) como paga(s).');
-    }
-
-    public function cancel(Bill $bill)
-    {
-        $bill->update([
-            'status'      => 'cancelada',
-            'paid_at'     => null,
-            'amount_paid' => 0,
-        ]);
-        return back()->with('success', 'Conta cancelada.');
-    }
-
-    // ── Dados comuns para views ─────────────────────────────────────
-
-    private function formData(): array
-    {
-        return [
-            'categories'     => Bill::CATEGORIES,
-            'paymentMethods' => Bill::PAYMENT_METHODS,
-            'statuses'       => [
-                'pendente'  => 'Pendente',
-                'paga'      => 'Paga',
-                'vencida'   => 'Vencida',
-                'cancelada' => 'Cancelada',
-            ],
-        ];
     }
 }

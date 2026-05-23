@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Customer;
 use App\Services\WebhookDispatcher;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 
 class CustomerController extends Controller
 {
@@ -24,18 +23,13 @@ class CustomerController extends Controller
             });
         }
 
-        $customers = $query->orderBy('name')->paginate(15)->withQueryString();
+        $customers = $query->orderBy('name')->paginate(15);
         return view('customers.index', compact('customers'));
     }
 
     public function create()
     {
-        $company = auth()->user()->company;
-        if (! $company->canAdd('customers')) {
-            return redirect()->route('customers.index')
-                ->with('error', 'Limite de clientes atingido para o seu plano.');
-        }
-        return view('customers.create');
+        return view('customers.form');
     }
 
     public function store(Request $request)
@@ -43,87 +37,71 @@ class CustomerController extends Controller
         $companyId = auth()->user()->company_id;
         $company   = auth()->user()->company;
 
-        if (! $company->canAdd('customers')) {
-            return redirect()->route('customers.index')
-                ->with('error', 'Limite de clientes atingido para o seu plano.');
-        }
-
-        $validated = $request->validate([
-            'name'     => ['required', 'string', 'max:255'],
-            'email'    => ['nullable', 'email', 'max:255', Rule::unique('customers')->where('company_id', $companyId)],
-            'phone'    => ['nullable', 'string', 'max:20'],
-            'document' => ['nullable', 'string', 'max:20'],
-            'address'  => ['nullable', 'string', 'max:500'],
-            'notes'    => ['nullable', 'string', 'max:1000'],
-            'type'     => ['nullable', 'in:pessoa_fisica,pessoa_juridica'],
-            'birth_date' => ['nullable', 'date'],
-            'credit_limit' => ['nullable', 'numeric', 'min:0'],
+        $data = $request->validate([
+            'name'     => 'required|string|max:255',
+            'email'    => 'nullable|email|max:255',
+            'phone'    => 'nullable|string|max:30',
+            'document' => 'nullable|string|max:30',
+            'address'  => 'nullable|string|max:500',
+            'notes'    => 'nullable|string',
         ]);
 
-        $customer = Customer::create(array_merge($validated, ['company_id' => $companyId]));
+        $customer = Customer::create(array_merge($data, ['company_id' => $companyId]));
 
-        // ── Webhook: customer.created
+        // Webhook customer.created
         WebhookDispatcher::dispatch($company, 'customer.created', [
-            'id'    => $customer->id,
-            'name'  => $customer->name,
-            'email' => $customer->email,
-            'phone' => $customer->phone,
-            'type'  => $customer->type,
+            'id'       => $customer->id,
+            'name'     => $customer->name,
+            'email'    => $customer->email,
+            'phone'    => $customer->phone,
+            'document' => $customer->document,
         ]);
 
-        return redirect()->route('customers.index')
-            ->with('success', 'Cliente cadastrado com sucesso.');
+        return redirect()->route('customers.index')->with('success', 'Cliente cadastrado com sucesso.');
     }
 
     public function show(Customer $customer)
     {
-        abort_if($customer->company_id !== auth()->user()->company_id, 403);
-        $customer->load(['sales' => fn($q) => $q->latest()->limit(10)]);
+        $this->authorizeCustomer($customer);
+        $customer->load(['sales' => fn($q) => $q->latest()->take(10)]);
         return view('customers.show', compact('customer'));
     }
 
     public function edit(Customer $customer)
     {
-        abort_if($customer->company_id !== auth()->user()->company_id, 403);
-        return view('customers.edit', compact('customer'));
+        $this->authorizeCustomer($customer);
+        return view('customers.form', compact('customer'));
     }
 
     public function update(Request $request, Customer $customer)
     {
-        abort_if($customer->company_id !== auth()->user()->company_id, 403);
-        $companyId = auth()->user()->company_id;
+        $this->authorizeCustomer($customer);
 
-        $validated = $request->validate([
-            'name'     => ['required', 'string', 'max:255'],
-            'email'    => ['nullable', 'email', 'max:255', Rule::unique('customers')->where('company_id', $companyId)->ignore($customer->id)],
-            'phone'    => ['nullable', 'string', 'max:20'],
-            'document' => ['nullable', 'string', 'max:20'],
-            'address'  => ['nullable', 'string', 'max:500'],
-            'notes'    => ['nullable', 'string', 'max:1000'],
-            'type'     => ['nullable', 'in:pessoa_fisica,pessoa_juridica'],
-            'birth_date' => ['nullable', 'date'],
-            'credit_limit' => ['nullable', 'numeric', 'min:0'],
+        $data = $request->validate([
+            'name'     => 'required|string|max:255',
+            'email'    => 'nullable|email|max:255',
+            'phone'    => 'nullable|string|max:30',
+            'document' => 'nullable|string|max:30',
+            'address'  => 'nullable|string|max:500',
+            'notes'    => 'nullable|string',
         ]);
 
-        $customer->update($validated);
+        $customer->update($data);
+
         return redirect()->route('customers.index')->with('success', 'Cliente atualizado com sucesso.');
     }
 
     public function destroy(Customer $customer)
     {
-        abort_if($customer->company_id !== auth()->user()->company_id, 403);
+        $this->authorizeCustomer($customer);
         $customer->delete();
         return redirect()->route('customers.index')->with('success', 'Cliente removido com sucesso.');
     }
 
-    public function search(Request $request)
+    private function authorizeCustomer(Customer $customer): void
     {
-        $companyId = auth()->user()->company_id;
-        $term      = $request->get('q', '');
-        $customers = Customer::where('company_id', $companyId)
-            ->where('name', 'like', '%' . $term . '%')
-            ->limit(10)
-            ->get(['id', 'name', 'email']);
-        return response()->json($customers);
+        if ($customer->company_id !== auth()->user()->company_id) {
+            abort(403);
+        }
     }
 }
