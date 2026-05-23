@@ -1,95 +1,110 @@
 @extends('layouts.app')
-
 @section('title', 'Webhooks')
 
 @section('content')
-<div class="space-y-6">
-
-    <div class="flex items-center justify-between">
-        <div>
-            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Webhooks</h1>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Integre eventos do Invexa com seus sistemas externos.</p>
-        </div>
-        <a href="{{ route('webhooks.create') }}"
-           class="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 transition">
-            <x-heroicon-o-plus class="w-4 h-4" />
-            Novo Webhook
-        </a>
+<div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+        <h2 class="fw-bold mb-0" style="color:var(--brand-ice);">Webhooks</h2>
+        <p class="mb-0" style="font-size:.82rem; color:rgba(148,163,184,.6);">Receba notificações automáticas em sua URL quando eventos ocorrerem no Invexa.</p>
     </div>
-
-    @if(session('success'))
-        <div class="rounded-lg bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-800 dark:bg-green-900/20 dark:border-green-800 dark:text-green-300">
-            {{ session('success') }}
-        </div>
-    @endif
-
-    @if($endpoints->isEmpty())
-        <div class="rounded-xl border border-dashed border-gray-300 dark:border-gray-700 p-12 text-center">
-            <x-heroicon-o-arrow-path class="mx-auto w-10 h-10 text-gray-400" />
-            <p class="mt-3 text-sm text-gray-500 dark:text-gray-400">Nenhum webhook configurado ainda.</p>
-            <a href="{{ route('webhooks.create') }}" class="mt-4 inline-block text-sm text-indigo-600 hover:underline">Criar o primeiro webhook</a>
-        </div>
-    @else
-        <div class="overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
-                <thead class="bg-gray-50 dark:bg-gray-700/50">
-                    <tr>
-                        <th class="px-6 py-3 text-left font-medium text-gray-500 dark:text-gray-400">URL</th>
-                        <th class="px-6 py-3 text-left font-medium text-gray-500 dark:text-gray-400">Eventos</th>
-                        <th class="px-6 py-3 text-left font-medium text-gray-500 dark:text-gray-400">Status</th>
-                        <th class="px-6 py-3 text-right font-medium text-gray-500 dark:text-gray-400">Ações</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
-                    @foreach($endpoints as $endpoint)
-                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition">
-                        <td class="px-6 py-4">
-                            <p class="font-medium text-gray-900 dark:text-white truncate max-w-xs">{{ $endpoint->url }}</p>
-                            @if($endpoint->description)
-                                <p class="text-xs text-gray-400 mt-0.5">{{ $endpoint->description }}</p>
-                            @endif
-                        </td>
-                        <td class="px-6 py-4">
-                            <div class="flex flex-wrap gap-1">
-                                @foreach($endpoint->events as $ev)
-                                    <span class="inline-flex items-center rounded-full bg-indigo-50 dark:bg-indigo-900/30 px-2 py-0.5 text-xs font-medium text-indigo-700 dark:text-indigo-300">
-                                        {{ $ev }}
-                                    </span>
-                                @endforeach
-                            </div>
-                        </td>
-                        <td class="px-6 py-4">
-                            @if($endpoint->active)
-                                <span class="inline-flex items-center gap-1 rounded-full bg-green-50 dark:bg-green-900/30 px-2 py-0.5 text-xs font-medium text-green-700 dark:text-green-300">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span> Ativo
-                                </span>
-                            @else
-                                <span class="inline-flex items-center gap-1 rounded-full bg-gray-100 dark:bg-gray-700 px-2 py-0.5 text-xs font-medium text-gray-500">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-gray-400"></span> Inativo
-                                </span>
-                            @endif
-                        </td>
-                        <td class="px-6 py-4 text-right">
-                            <div class="flex justify-end gap-2">
-                                <a href="{{ route('webhooks.show', $endpoint) }}" class="text-gray-400 hover:text-indigo-600 transition" title="Ver detalhes">
-                                    <x-heroicon-o-eye class="w-4 h-4" />
-                                </a>
-                                <a href="{{ route('webhooks.edit', $endpoint) }}" class="text-gray-400 hover:text-indigo-600 transition" title="Editar">
-                                    <x-heroicon-o-pencil class="w-4 h-4" />
-                                </a>
-                                <form method="POST" action="{{ route('webhooks.destroy', $endpoint) }}" onsubmit="return confirm('Remover este webhook?')">
-                                    @csrf @method('DELETE')
-                                    <button type="submit" class="text-gray-400 hover:text-red-600 transition" title="Remover">
-                                        <x-heroicon-o-trash class="w-4 h-4" />
-                                    </button>
-                                </form>
-                            </div>
-                        </td>
-                    </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
+    @if($canCreate)
+    <a href="{{ route('webhooks.create') }}" class="btn btn-sm"
+       style="background:rgba(14,165,233,.15); border:1px solid rgba(14,165,233,.3); color:#38BDF8; font-size:.82rem;">
+        <i class="bi bi-plus-lg me-1"></i>Novo Webhook
+    </a>
     @endif
 </div>
+
+{{-- Aviso de plano --}}
+@if(!$isBusiness)
+<div class="alert mb-4" style="background:rgba(168,85,247,.1); border:1px solid rgba(168,85,247,.25); color:#c084fc; border-radius:10px;">
+    <i class="bi bi-stars me-2"></i>
+    Webhooks estão disponíveis apenas no <strong>Plano Business</strong>.
+    <a href="{{ route('upgrade') }}" class="ms-2" style="color:#c084fc; font-weight:600;">Fazer upgrade →</a>
+</div>
+@endif
+
+@if($webhooks->isEmpty())
+<div class="card-dark-bg rounded-3 p-5 text-center">
+    <i class="bi bi-arrow-repeat d-block mb-3" style="font-size:2.5rem; color:rgba(14,165,233,.3);"></i>
+    <p class="mb-1 fw-semibold" style="color:rgba(226,232,240,.6);">Nenhum webhook configurado</p>
+    <p class="mb-3" style="font-size:.8rem; color:rgba(148,163,184,.45);">Crie um webhook para integrar o Invexa com outros sistemas.</p>
+    @if($canCreate)
+    <a href="{{ route('webhooks.create') }}" class="btn btn-sm"
+       style="background:rgba(14,165,233,.15); border:1px solid rgba(14,165,233,.3); color:#38BDF8;">
+        <i class="bi bi-plus-lg me-1"></i>Criar primeiro webhook
+    </a>
+    @endif
+</div>
+@else
+<div class="table-responsive">
+    <table class="w-100" style="border-collapse:collapse; font-size:.875rem;">
+        <thead>
+            <tr style="border-bottom:1px solid rgba(14,165,233,.1);">
+                <th style="padding:.6rem 1rem; font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:rgba(148,163,184,.5); background:rgba(13,25,41,.6);">URL</th>
+                <th style="padding:.6rem 1rem; font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:rgba(148,163,184,.5); background:rgba(13,25,41,.6);">Eventos</th>
+                <th style="padding:.6rem 1rem; font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:rgba(148,163,184,.5); background:rgba(13,25,41,.6);">Status</th>
+                <th style="padding:.6rem 1rem; font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:rgba(148,163,184,.5); background:rgba(13,25,41,.6);">Criado em</th>
+                <th style="padding:.6rem 1rem; text-align:center; font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:rgba(148,163,184,.5); background:rgba(13,25,41,.6);">Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach($webhooks as $webhook)
+            <tr style="border-bottom:1px solid rgba(14,165,233,.06); transition:background .15s;" onmouseover="this.style.background='rgba(14,165,233,.04)'" onmouseout="this.style.background=''">
+                <td style="padding:.75rem 1rem; color:rgba(226,232,240,.8); max-width:280px;">
+                    <div class="text-truncate" style="font-family:monospace; font-size:.8rem; color:#38BDF8;" title="{{ $webhook->url }}">{{ $webhook->url }}</div>
+                    @if($webhook->description)
+                        <div style="font-size:.72rem; color:rgba(148,163,184,.5); margin-top:.15rem;">{{ $webhook->description }}</div>
+                    @endif
+                </td>
+                <td style="padding:.75rem 1rem;">
+                    @php $events = $webhook->events ?? []; @endphp
+                    @if(in_array('*', $events))
+                        <span class="badge" style="background:rgba(14,165,233,.15); color:#38BDF8; font-size:.68rem;">Todos os eventos</span>
+                    @else
+                        <div class="d-flex flex-wrap gap-1">
+                            @foreach(array_slice($events, 0, 3) as $evt)
+                                <span class="badge" style="background:rgba(13,25,41,.8); border:1px solid rgba(14,165,233,.2); color:rgba(226,232,240,.7); font-size:.65rem;">{{ $evt }}</span>
+                            @endforeach
+                            @if(count($events) > 3)
+                                <span class="badge" style="background:rgba(148,163,184,.1); color:rgba(148,163,184,.6); font-size:.65rem;">+{{ count($events) - 3 }}</span>
+                            @endif
+                        </div>
+                    @endif
+                </td>
+                <td style="padding:.75rem 1rem;">
+                    @if($webhook->active)
+                        <span class="d-inline-flex align-items-center gap-1" style="background:rgba(34,197,94,.12); color:#4ade80; border-radius:999px; padding:.15rem .6rem; font-size:.7rem; font-weight:600;">
+                            <span style="width:6px;height:6px;border-radius:50%;background:#4ade80;"></span>Ativo
+                        </span>
+                    @else
+                        <span class="d-inline-flex align-items-center gap-1" style="background:rgba(239,68,68,.12); color:#f87171; border-radius:999px; padding:.15rem .6rem; font-size:.7rem; font-weight:600;">
+                            <span style="width:6px;height:6px;border-radius:50%;background:#f87171;"></span>Inativo
+                        </span>
+                    @endif
+                </td>
+                <td style="padding:.75rem 1rem; font-size:.78rem; color:rgba(148,163,184,.6);">{{ $webhook->created_at->format('d/m/Y') }}</td>
+                <td style="padding:.75rem 1rem;">
+                    <div class="d-flex gap-2 justify-content-center">
+                        <a href="{{ route('webhooks.show', $webhook) }}" class="btn-action" style="font-size:.75rem; padding:.25rem .75rem; border-radius:.4rem; border:1px solid rgba(14,165,233,.25); background:rgba(14,165,233,.1); color:#38BDF8; text-decoration:none;">
+                            <i class="bi bi-eye me-1"></i>Ver
+                        </a>
+                        <a href="{{ route('webhooks.edit', $webhook) }}" class="btn-action" style="font-size:.75rem; padding:.25rem .75rem; border-radius:.4rem; border:1px solid rgba(234,179,8,.25); background:rgba(234,179,8,.1); color:#facc15; text-decoration:none;">
+                            <i class="bi bi-pencil me-1"></i>Editar
+                        </a>
+                        <form action="{{ route('webhooks.destroy', $webhook) }}" method="POST" class="m-0"
+                              onsubmit="return confirm('Excluir este webhook?')">
+                            @csrf @method('DELETE')
+                            <button type="submit" style="font-size:.75rem; padding:.25rem .75rem; border-radius:.4rem; border:1px solid rgba(239,68,68,.25); background:rgba(239,68,68,.1); color:#f87171; cursor:pointer;">
+                                <i class="bi bi-trash3"></i>
+                            </button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            @endforeach
+        </tbody>
+    </table>
+</div>
+@endif
 @endsection
