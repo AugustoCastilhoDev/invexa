@@ -27,6 +27,7 @@ use App\Http\Controllers\SuperAdmin\SuperAdminController;
 use App\Http\Controllers\TwoFactorController;
 use App\Http\Controllers\UpgradeController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\UserInviteController;
 use Illuminate\Support\Facades\Route;
 
 // ── Landing Page (pública)
@@ -38,6 +39,10 @@ Route::get('/pricing', fn () => view('pricing'))->name('pricing');
 // ── Webhook Stripe (sem CSRF, sem auth)
 Route::post('/stripe/webhook', [StripeWebhookController::class, 'handleWebhook'])
     ->name('cashier.webhook');
+
+// ── Convite por e-mail (público — token no link)
+Route::get('/invite/{token}',  [UserInviteController::class, 'showAccept'])->name('invite.show');
+Route::post('/invite/{token}', [UserInviteController::class, 'accept'])->name('invite.accept');
 
 // ── Autenticação (pública)
 Route::get('/login',  [AuthenticatedSessionController::class, 'create'])->name('login');
@@ -216,5 +221,6 @@ Route::middleware(['auth', 'company', 'trial', 'onboarding'])->group(function ()
     });
 
     Route::resource('users', UserController::class);
-    Route::patch('/users/{user}/toggle', [UserController::class, 'toggleActive'])->name('users.toggle-active');
+    Route::patch('/users/{user}/toggle',  [UserController::class, 'toggleActive'])->name('users.toggle-active');
+    Route::post('/users/{user}/invite',   [UserInviteController::class, 'send'])->name('users.invite.send');
 });
