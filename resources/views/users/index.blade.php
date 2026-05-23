@@ -24,6 +24,13 @@
             </div>
         @endif
 
+        @if (session('error'))
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                {{ session('error') }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
+            </div>
+        @endif
+
         @if ($errors->any())
             <div class="alert alert-danger alert-dismissible fade show" role="alert">
                 <ul class="mb-0">
@@ -78,6 +85,7 @@
                         <th>E-mail</th>
                         <th>Perfil</th>
                         <th>Status</th>
+                        <th>Convite</th>
                         <th class="text-end">Ações</th>
                     </tr>
                 </thead>
@@ -96,8 +104,32 @@
                                     {{ $user->active ? 'Ativo' : 'Inativo' }}
                                 </span>
                             </td>
+                            <td>
+                                @if ($user->invite_accepted_at)
+                                    <span class="badge" style="background:rgba(34,197,94,.15);color:#4ade80;border:1px solid rgba(34,197,94,.3);">
+                                        <i class="bi bi-check-circle me-1"></i>Aceito
+                                    </span>
+                                @elseif ($user->invite_sent_at)
+                                    <span class="badge" style="background:rgba(234,179,8,.12);color:#facc15;border:1px solid rgba(234,179,8,.3);" title="Enviado em {{ $user->invite_sent_at->format('d/m/Y H:i') }}">
+                                        <i class="bi bi-clock me-1"></i>Pendente
+                                    </span>
+                                @else
+                                    <span class="text-soft" style="font-size:.8rem;">—</span>
+                                @endif
+                            </td>
                             <td class="text-end">
                                 <div class="d-inline-flex gap-2 flex-wrap justify-content-end">
+
+                                    {{-- Botão Convidar --}}
+                                    @if (! $user->invite_accepted_at && $user->id !== auth()->id())
+                                        <form action="{{ route('users.invite.send', $user) }}" method="POST">
+                                            @csrf
+                                            <button type="submit" class="btn btn-sm btn-outline-info" title="{{ $user->invite_sent_at ? 'Reenviar convite' : 'Enviar convite' }}">
+                                                <i class="bi bi-envelope-arrow-up me-1"></i>{{ $user->invite_sent_at ? 'Reenviar' : 'Convidar' }}
+                                            </button>
+                                        </form>
+                                    @endif
+
                                     <a href="{{ route('users.edit', $user) }}" class="btn btn-sm btn-outline-primary">Editar</a>
 
                                     <form action="{{ route('users.toggle-active', $user) }}" method="POST">
@@ -118,7 +150,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="5" class="text-center py-4 text-soft">Nenhum usuário encontrado.</td>
+                            <td colspan="6" class="text-center py-4 text-soft">Nenhum usuário encontrado.</td>
                         </tr>
                     @endforelse
                 </tbody>
