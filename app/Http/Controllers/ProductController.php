@@ -2,11 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\ImportProductsCsvJob;
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\ProductImport;
 use App\Models\Supplier;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 class ProductController extends Controller
@@ -98,9 +102,9 @@ class ProductController extends Controller
             'description'  => ['nullable', 'string'],
             'unit'         => ['nullable', 'string', 'max:20'],
         ], [
-            'name.required' => 'O nome do produto é obrigatório.',
-            'sku.unique'    => 'Já existe um produto com este SKU.',
-            'price.required'=> 'O preço de venda é obrigatório.',
+            'name.required'  => 'O nome do produto é obrigatório.',
+            'sku.unique'     => 'Já existe um produto com este SKU.',
+            'price.required' => 'O preço de venda é obrigatório.',
         ]);
 
         Product::create(array_merge($validated, [
@@ -148,9 +152,9 @@ class ProductController extends Controller
             'description'  => ['nullable', 'string'],
             'unit'         => ['nullable', 'string', 'max:20'],
         ], [
-            'name.required' => 'O nome do produto é obrigatório.',
-            'sku.unique'    => 'Já existe um produto com este SKU.',
-            'price.required'=> 'O preço de venda é obrigatório.',
+            'name.required'  => 'O nome do produto é obrigatório.',
+            'sku.unique'     => 'Já existe um produto com este SKU.',
+            'price.required' => 'O preço de venda é obrigatório.',
         ]);
 
         $product->update(array_merge($validated, [
@@ -166,6 +170,63 @@ class ProductController extends Controller
         $product->delete();
         return redirect()->route('products.index')->with('success', 'Produto excluído com sucesso.');
     }
+
+    // ── Importação CSV ─────────────────────────────────────────────
+
+    public function importTemplate()
+    {
+        $headers = ['nome','sku','categoria','fornecedor','preco_venda','custo','quantidade','estoque_minimo','unidade','descricao','ativo'];
+        $example = ['Produto Exemplo','SKU001','Categoria A','Fornecedor X','29,90','15,00','100','10','un','Descrição do produto','sim'];
+
+        $csv  = implode(';', $headers) . "\n";
+        $csv .= implode(';', $example) . "\n";
+
+        return response($csv, 200, [
+            'Content-Type'        => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="template-produtos.csv"',
+        ]);
+    }
+
+    public function import(Request $request)
+    {
+        $request->validate([
+            'csv_file' => ['required', 'file', 'mimes:csv,txt', 'max:5120'],
+        ], [
+            'csv_file.required' => 'Selecione um arquivo CSV.',
+            'csv_file.mimes'    => 'O arquivo deve ser do tipo CSV.',
+            'csv_file.max'      => 'O arquivo não pode ultrapassar 5 MB.',
+        ]);
+
+        $user      = Auth::user();
+        $filename  = Str::uuid() . '.csv';
+
+        $request->file('csv_file')->storeAs('imports', $filename);
+
+        $import = ProductImport::create([
+            'company_id' => $user->company_id,
+            'user_id'    => $user->id,
+            'filename'   => $filename,
+            'status'     => 'pending',
+        ]);
+
+        ImportProductsCsvJob::dispatch($import);
+
+        return redirect()
+            ->route('products.import')
+            ->with('success', 'Arquivo enviado com sucesso! A importação está sendo processada. Aguarde e recarregue a página para ver o resultado.');
+    }
+
+    public function importIndex()
+    {
+        $imports = ProductImport::where('company_id', Auth::user()->company_id)
+            ->orderByDesc('created_at')
+            ->limit(20)
+            ->get();
+
+        return view('products.import', compact('imports'));
+    }
+
+    // ── Guards privados ──────────────────────────────────────────
 
     private function authorizeProduct(Product $product): void
     {
