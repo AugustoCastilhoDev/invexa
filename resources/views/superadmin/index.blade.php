@@ -196,7 +196,9 @@
             <tbody>
                 @forelse($companies as $company)
                 <tr>
-                    <td style="color:rgba(148,163,184,.4); font-size:.75rem;">{{ $company->id }}</td>
+                    <td style="color:rgba(148,163,184,.4); font-size:.75rem;">
+                        {{ ($companies->currentPage() - 1) * $companies->perPage() + $loop->iteration }}
+                    </td>
                     <td>
                         <div style="font-weight:600; color:var(--ice);">{{ $company->name }}</div>
                         @if($company->email)
