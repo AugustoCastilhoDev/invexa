@@ -132,6 +132,20 @@
         .toggle-switch input:checked + .toggle-slider:before { transform: translateX(24px); }
         .annual-badge { display: inline-block; background: rgba(34,197,94,.15); border: 1px solid rgba(34,197,94,.3); color: #4ade80; font-size: .68rem; font-weight: 700; padding: .1rem .55rem; border-radius: 999px; }
 
+        /* NOTA TRIAL */
+        .trial-notice {
+            display: inline-flex; align-items: flex-start; gap: .65rem;
+            background: rgba(251,146,60,.08);
+            border: 1px solid rgba(251,146,60,.35);
+            border-radius: 10px;
+            padding: .85rem 1.25rem;
+            font-size: .82rem;
+            color: #FED7AA;
+            max-width: 600px;
+        }
+        .trial-notice i { color: #FB923C; font-size: 1rem; flex-shrink: 0; margin-top: .05rem; }
+        .trial-notice strong { color: #FDBA74; }
+
         /* FAQ */
         .faq { background: rgba(13,25,41,.4); }
         .faq .accordion-item { background: rgba(13,25,41,.7); border: 1px solid rgba(14,165,233,.1); border-radius: 10px !important; margin-bottom: .75rem; }
@@ -501,12 +515,14 @@
         </div>
 
         {{-- Nota sobre trial --}}
-        <div class="text-center mt-4">
-            <p style="font-size:.82rem; color:rgba(148,163,184,.55);">
-                <i class="bi bi-info-circle me-1"></i>
-                Todos os planos incluem <strong style="color:rgba(226,232,240,.6);">14 dias de trial gratuito</strong> com acesso completo.
-                Após o trial, é necessário assinar um plano para continuar usando o sistema. Seus dados são preservados.
-            </p>
+        <div class="d-flex justify-content-center mt-4">
+            <div class="trial-notice">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                <span>
+                    <strong>Atenção:</strong> após os 14 dias de trial, o acesso ao sistema é <strong>bloqueado</strong> até a assinatura de um plano.
+                    Seus dados (produtos, clientes, vendas) são preservados e você retoma exatamente de onde parou.
+                </span>
+            </div>
         </div>
     </div>
 </section>
