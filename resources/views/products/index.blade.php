@@ -10,6 +10,9 @@
     </div>
     <div class="d-flex flex-wrap gap-2">
         <a href="{{ route('dashboard') }}" class="btn btn-outline-light">Voltar ao Dashboard</a>
+        <a href="{{ route('products.import') }}" class="btn btn-outline-info">
+            <i class="bi bi-upload me-1"></i> Importar CSV
+        </a>
         <a href="{{ route('products.create') }}" class="btn btn-primary">
             <i class="bi bi-plus-circle me-1"></i> Novo Produto
         </a>
@@ -264,6 +267,11 @@
                                     <div class="mt-2">
                                         <a href="{{ route('products.create') }}" class="btn btn-sm btn-primary">
                                             Cadastrar primeiro produto
+                                        </a>
+                                    </div>
+                                    <div class="mt-2">
+                                        <a href="{{ route('products.import') }}" class="btn btn-sm btn-outline-info">
+                                            <i class="bi bi-upload me-1"></i> Importar via CSV
                                         </a>
                                     </div>
                                 @endif
