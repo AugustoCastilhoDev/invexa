@@ -15,7 +15,7 @@
                         var(--brand-abyss);
             min-height:100vh; color:#e2e8f0; font-family:'Segoe UI',system-ui,sans-serif;
         }
-        .upgrade-wrap{max-width:960px;}
+        .upgrade-wrap{max-width:860px;}
         .trial-banner{background:linear-gradient(90deg,rgba(245,158,11,.12),rgba(245,158,11,.06));border:1px solid rgba(245,158,11,.35);border-radius:12px;padding:14px 20px;}
         .trial-expired-banner{background:linear-gradient(90deg,rgba(239,68,68,.12),rgba(239,68,68,.06));border:1px solid rgba(239,68,68,.35);border-radius:12px;padding:14px 20px;}
         .billing-toggle{background:rgba(255,255,255,.06);border-radius:30px;padding:4px;display:inline-flex;gap:2px;}
@@ -41,6 +41,19 @@
         .guarantee-item{display:flex;align-items:center;gap:8px;font-size:.82rem;color:rgba(226,232,240,.6);}
         .guarantee-item i{font-size:1rem;color:var(--brand-sky2);}
         .logo-wrap svg{filter:drop-shadow(0 0 6px rgba(14,165,233,.4));}
+        /* Nota de bloqueio pós-trial */
+        .trial-block-notice {
+            display: inline-flex; align-items: flex-start; gap: .65rem;
+            background: rgba(251,146,60,.08);
+            border: 1px solid rgba(251,146,60,.35);
+            border-radius: 10px;
+            padding: .85rem 1.25rem;
+            font-size: .84rem;
+            color: #FED7AA;
+            max-width: 620px;
+        }
+        .trial-block-notice i { color: #FB923C; font-size: 1.05rem; flex-shrink: 0; margin-top: .1rem; }
+        .trial-block-notice strong { color: #FDBA74; }
     </style>
 </head>
 <body>
@@ -92,37 +105,8 @@
 
     <div class="row g-4 justify-content-center mb-4">
 
-        {{-- FREE --}}
-        <div class="col-md-4">
-            <div class="plan-card {{ $currentPlan === 'free' && !$hasActiveSubscription ? 'current-plan' : '' }}">
-                <div>
-                    <div class="d-flex align-items-center justify-content-between mb-3">
-                        <span class="plan-label" style="color:rgba(226,232,240,.45);">Free</span>
-                        @if($currentPlan === 'free' && !$hasActiveSubscription)
-                            <span class="badge-current">Plano atual</span>
-                        @endif
-                    </div>
-                    <div class="plan-price mb-1">R$ 0 <small>/mês</small></div>
-                    <p class="plan-desc" style="color:rgba(226,232,240,.45);">Para começar sem custo.</p>
-                    <ul class="list-unstyled feature-list mb-4">
-                        <li><i class="bi bi-check-circle-fill"></i>Até 50 produtos</li>
-                        <li><i class="bi bi-check-circle-fill"></i>Até 100 clientes</li>
-                        <li><i class="bi bi-check-circle-fill"></i>2 usuários</li>
-                        <li><i class="bi bi-check-circle-fill"></i>Relatórios básicos</li>
-                        <li><i class="bi bi-x-circle"></i>PDV avançado</li>
-                        <li><i class="bi bi-x-circle"></i>Exportação PDF/CSV</li>
-                        <li><i class="bi bi-x-circle"></i>API REST</li>
-                        <li><i class="bi bi-x-circle"></i>Suporte prioritário</li>
-                    </ul>
-                </div>
-                <div class="mt-auto">
-                    <a href="{{ route('home') }}" class="btn btn-outline-secondary w-100">Continuar grátis</a>
-                </div>
-            </div>
-        </div>
-
         {{-- PRO --}}
-        <div class="col-md-4">
+        <div class="col-md-5">
             <div class="plan-card featured {{ in_array($currentPlan, ['pro','pro_launch']) && $hasActiveSubscription ? 'current-plan' : '' }}">
                 <div>
                     <div class="d-flex align-items-center justify-content-between mb-3">
@@ -174,11 +158,11 @@
         </div>
 
         {{-- BUSINESS --}}
-        <div class="col-md-4">
+        <div class="col-md-5">
             <div class="plan-card {{ $currentPlan === 'business' && $hasActiveSubscription ? 'current-plan' : '' }}">
                 <div>
                     <div class="d-flex align-items-center justify-content-between mb-3">
-                        <span class="plan-label" style="color:rgba(226,232,240,.45);">Business</span>
+                        <span class="plan-label" style="color:rgba(226,232,240,.65);">Business</span>
                         @if($currentPlan === 'business' && $hasActiveSubscription)
                             <span class="badge-current">Plano atual</span>
                         @endif
@@ -223,6 +207,17 @@
 
     </div>
 
+    {{-- Aviso de bloqueio pós-trial --}}
+    <div class="d-flex justify-content-center mb-4">
+        <div class="trial-block-notice">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            <span>
+                <strong>Atenção:</strong> após os 14 dias de trial, o acesso ao sistema é <strong>bloqueado</strong> até a assinatura de um plano.
+                Seus dados (produtos, clientes, vendas e histórico) são <strong>totalmente preservados</strong> — basta assinar para retomar de onde parou.
+            </span>
+        </div>
+    </div>
+
     <div class="guarantee-strip mb-4">
         <div class="row g-3 justify-content-center text-center">
             <div class="col-6 col-md-3"><div class="guarantee-item justify-content-center"><i class="bi bi-shield-check"></i><span>14 dias de garantia</span></div></div>
@@ -251,17 +246,14 @@ function setBilling(type) {
     document.getElementById('btn-monthly').classList.toggle('active', !isAnnual);
     document.getElementById('btn-annual').classList.toggle('active', isAnnual);
 
-    // preços Pro
     document.getElementById('pro-price-monthly').style.display = isAnnual ? 'none' : '';
     document.getElementById('pro-price-annual').style.display  = isAnnual ? '' : 'none';
 
-    // preços Business
     document.getElementById('biz-price-monthly').style.display = isAnnual ? 'none' : '';
     document.getElementById('biz-price-annual').style.display  = isAnnual ? '' : 'none';
 
-    // atualiza campos hidden + texto dos botões
-    const proB = document.getElementById('pro-billing');
-    const bizB = document.getElementById('biz-billing');
+    const proB   = document.getElementById('pro-billing');
+    const bizB   = document.getElementById('biz-billing');
     const proBtn = document.getElementById('pro-btn');
     const bizBtn = document.getElementById('biz-btn');
 
