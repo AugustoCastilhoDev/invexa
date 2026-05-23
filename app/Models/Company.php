@@ -78,7 +78,7 @@ class Company extends Model
      * Empresa tem acesso pleno ao app?
      * - Trial ativo: sim
      * - Assinatura paga ativa: sim
-     * - Free sem trial ou com trial expirado: NÃO (exige upgrade)
+     * - Trial expirado sem assinatura: NÃO (exige upgrade)
      */
     public function isAccessible(): bool
     {
@@ -105,10 +105,20 @@ class Company extends Model
     }
 
     // ── Limites por plano
+    // Durante o trial, a empresa tem acesso completo independente do campo `plan`.
     public function planLimits(): array
     {
+        if ($this->isOnTrial()) {
+            return [
+                'products'        => PHP_INT_MAX,
+                'customers'       => PHP_INT_MAX,
+                'suppliers'       => PHP_INT_MAX,
+                'users'           => PHP_INT_MAX,
+                'purchase_orders' => PHP_INT_MAX,
+            ];
+        }
+
         return match ($this->plan) {
-            'free'     => ['products' => 50,          'customers' => 100,          'suppliers' => 10,          'users' => 2,           'purchase_orders' => 20],
             'pro'      => ['products' => 500,         'customers' => 1000,         'suppliers' => 100,         'users' => 10,          'purchase_orders' => 200],
             'business' => ['products' => PHP_INT_MAX, 'customers' => PHP_INT_MAX,  'suppliers' => PHP_INT_MAX, 'users' => PHP_INT_MAX, 'purchase_orders' => PHP_INT_MAX],
             default    => ['products' => 50,          'customers' => 100,          'suppliers' => 10,          'users' => 2,           'purchase_orders' => 20],
