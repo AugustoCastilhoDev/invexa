@@ -237,7 +237,6 @@ a.app-link:hover, .app-link:hover { color:#93c5fd !important; }
                 <div class="kpi-lbl mb-2">Produtos</div>
                 <div class="kpi-val">{{ $totalProducts??0 }}</div>
                 <div class="kpi-desc mt-1">Ativos no estoque</div>
-                <span class="kpi-trend neutral"><i class="bi bi-dash"></i> Sem comparativo</span>
             </div>
         </div>
     </div>
@@ -247,7 +246,6 @@ a.app-link:hover, .app-link:hover { color:#93c5fd !important; }
                 <div class="kpi-lbl mb-2">Categorias</div>
                 <div class="kpi-val">{{ $totalCategories??0 }}</div>
                 <div class="kpi-desc mt-1">Cadastradas</div>
-                <span class="kpi-trend neutral"><i class="bi bi-dash"></i> Sem comparativo</span>
             </div>
         </div>
     </div>
@@ -257,7 +255,6 @@ a.app-link:hover, .app-link:hover { color:#93c5fd !important; }
                 <div class="kpi-lbl mb-2">Vendas</div>
                 <div class="kpi-val">{{ $totalSales??0 }}</div>
                 <div class="kpi-desc mt-1">No período</div>
-                <span class="kpi-trend neutral"><i class="bi bi-dash"></i> Sem comparativo</span>
             </div>
         </div>
     </div>
