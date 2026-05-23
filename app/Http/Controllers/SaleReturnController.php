@@ -7,12 +7,12 @@ use App\Models\Sale;
 use App\Models\SaleReturn;
 use App\Models\SaleReturnItem;
 use App\Models\StockMovement;
+use App\Services\WebhookDispatcher;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class SaleReturnController extends Controller
 {
-    /** Lista todas as devoluções da empresa **/
     public function index(Request $request)
     {
         $companyId = auth()->user()->company_id;
@@ -20,12 +20,8 @@ class SaleReturnController extends Controller
         $query = SaleReturn::with(['sale', 'user', 'items.product'])
             ->where('company_id', $companyId);
 
-        if ($request->filled('from')) {
-            $query->whereDate('created_at', '>=', $request->from);
-        }
-        if ($request->filled('to')) {
-            $query->whereDate('created_at', '<=', $request->to);
-        }
+        if ($request->filled('from')) { $query->whereDate('created_at', '>=', $request->from); }
+        if ($request->filled('to'))   { $query->whereDate('created_at', '<=', $request->to); }
 
         $returns       = $query->orderByDesc('created_at')->paginate(15)->withQueryString();
         $totalReturned = (clone $query)->sum('total');
@@ -34,16 +30,13 @@ class SaleReturnController extends Controller
         return view('returns.index', compact('returns', 'totalReturned', 'countReturns'));
     }
 
-    /** Formulário de nova devolução vinculada a uma venda **/
     public function create(Request $request)
     {
         $companyId = auth()->user()->company_id;
         $saleId    = $request->query('sale_id', old('sale_id'));
 
         $sale = $saleId
-            ? Sale::with('items.product')
-                ->where('company_id', $companyId)
-                ->find($saleId)
+            ? Sale::with('items.product')->where('company_id', $companyId)->find($saleId)
             : null;
 
         $sales = Sale::where('company_id', $companyId)
@@ -54,7 +47,6 @@ class SaleReturnController extends Controller
         return view('returns.create', compact('sale', 'sales'));
     }
 
-    /** Salva a devolução, atualiza estoque e registra StockMovement **/
     public function store(Request $request)
     {
         $companyId = auth()->user()->company_id;
@@ -77,8 +69,10 @@ class SaleReturnController extends Controller
             return back()->withInput()->with('error', 'Selecione ao menos um item para devolver.');
         }
 
+        $company = auth()->user()->company;
+
         try {
-            DB::transaction(function () use ($validated, $selectedItems, $companyId) {
+            DB::transaction(function () use ($validated, $selectedItems, $companyId, &$return) {
                 $total = $selectedItems->sum(fn($i) => $i['quantity'] * $i['price']);
 
                 $return = SaleReturn::create([
@@ -101,9 +95,8 @@ class SaleReturnController extends Controller
 
                     $product = Product::lockForUpdate()->findOrFail($item['product_id']);
                     $product = $product->fresh();
-
-                    $before = $product->quantity;
-                    $after  = $before + (int) $item['quantity'];
+                    $before  = $product->quantity;
+                    $after   = $before + (int) $item['quantity'];
 
                     $product->update(['quantity' => $after]);
 
@@ -123,6 +116,16 @@ class SaleReturnController extends Controller
                 }
             });
 
+            // ── Webhook: sale.returned
+            $return->load('sale');
+            WebhookDispatcher::dispatch($company, 'sale.returned', [
+                'id'       => $return->id,
+                'sale_id'  => $return->sale_id,
+                'total'    => (float) $return->total,
+                'reason'   => $return->reason,
+                'items'    => $selectedItems->values()->toArray(),
+            ]);
+
             return redirect()->route('returns.index')
                 ->with('success', 'Devolução registrada com sucesso. Estoque atualizado.');
 
@@ -131,22 +134,14 @@ class SaleReturnController extends Controller
         }
     }
 
-    /** Detalhe de uma devolução **/
     public function show(SaleReturn $saleReturn)
     {
         abort_if($saleReturn->company_id !== auth()->user()->company_id, 403);
         $saleReturn->load(['sale.items.product', 'items.product', 'user']);
-
-        // Alias para manter compatibilidade com a view que usa $return
         $return = $saleReturn;
-
         return view('returns.show', compact('return'));
     }
 
-    /**
-     * Busca os itens de uma venda via AJAX (rota: returns.items)
-     * Retorna qtd já devolvida para controle de máximo no frontend.
-     */
     public function getSaleItems(Sale $sale)
     {
         abort_if($sale->company_id !== auth()->user()->company_id, 403);

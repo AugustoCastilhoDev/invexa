@@ -9,6 +9,7 @@ use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\SaleReturnItem;
 use App\Models\StockMovement;
+use App\Services\WebhookDispatcher;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -90,12 +91,12 @@ class SaleController extends Controller
         }
 
         $saleDateTime = Carbon::parse($validated['sale_date'])->setTimeFrom(now());
+        $company      = auth()->user()->company;
+        $lowStockProducts = [];
 
         try {
-            DB::transaction(function () use ($validated, $companyId, $customer, $customerName, $saleDateTime) {
-                // Usa ?? 0 para tratar NULL quando não há vendas anteriores (NULL + 1 = NULL no MySQL)
+            DB::transaction(function () use ($validated, $companyId, $customer, $customerName, $saleDateTime, &$sale, &$lowStockProducts) {
                 $saleNumber = (Sale::where('company_id', $companyId)->max('sale_number') ?? 0) + 1;
-
                 $total = collect($validated['items'])->sum(fn($i) => $i['quantity'] * $i['price']);
 
                 $sale = Sale::create([
@@ -142,9 +143,18 @@ class SaleController extends Controller
                         'source_type'     => Sale::class,
                         'source_id'       => $sale->id,
                     ]);
+
+                    // Coleta produtos que ficaram abaixo do estoque mínimo
+                    if ($product->min_stock !== null && $after <= $product->min_stock) {
+                        $lowStockProducts[] = [
+                            'id'        => $product->id,
+                            'name'      => $product->name,
+                            'quantity'  => $after,
+                            'min_stock' => $product->min_stock,
+                        ];
+                    }
                 }
 
-                // Cria Receivable apenas para vendas com cliente cadastrado
                 if ($sale->customer_id && $sale->status !== 'cancelada') {
                     $isConcluida = $sale->status === 'concluida';
 
@@ -164,6 +174,20 @@ class SaleController extends Controller
                     ]);
                 }
             });
+
+            // ── Webhooks (fora da transaction para não bloquear em caso de falha de rede)
+            WebhookDispatcher::dispatch($company, 'sale.created', [
+                'id'            => $sale->id,
+                'sale_number'   => $sale->sale_number,
+                'customer_name' => $sale->customer_name,
+                'total'         => (float) $sale->total,
+                'status'        => $sale->status,
+                'sale_date'     => $sale->sale_date,
+            ]);
+
+            foreach ($lowStockProducts as $p) {
+                WebhookDispatcher::dispatch($company, 'stock.low', $p);
+            }
 
             return redirect()->route('sales.index')->with('success', 'Venda registrada com sucesso.');
         } catch (\Exception $e) {
