@@ -1,18 +1,19 @@
-# Invexa — Sistema de Gestão Comercial
+# Invexa — Sistema de Gestão Comercial SaaS
 
-> Aplicação web SaaS multi-tenant para gestão completa de estoque, vendas, compras, financeiro e relatórios, desenvolvida com **Laravel 13** e **Bootstrap 5**.
+> Aplicação web **SaaS multi-tenant** para gestão completa de estoque, vendas, compras, financeiro e relatórios, desenvolvida com **Laravel 13** e **Bootstrap 5**.
 
 ![PHP](https://img.shields.io/badge/PHP-8.3-777BB4?style=flat-square&logo=php&logoColor=white)
 ![Laravel](https://img.shields.io/badge/Laravel-13-FF2D20?style=flat-square&logo=laravel&logoColor=white)
 ![Bootstrap](https://img.shields.io/badge/Bootstrap-5.3-7952B3?style=flat-square&logo=bootstrap&logoColor=white)
 ![MySQL](https://img.shields.io/badge/MySQL-8-4479A1?style=flat-square&logo=mysql&logoColor=white)
 ![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)
+![Status](https://img.shields.io/badge/status-em%20desenvolvimento-orange?style=flat-square)
 
 ---
 
 ## Sobre o Projeto
 
-O **Invexa** é um sistema de gestão comercial completo voltado a pequenas e médias empresas. A arquitetura multi-tenant garante isolamento total de dados por empresa — produtos, vendas, compras, clientes, financeiro e usuários são sempre segregados por `company_id`. O controle de acesso é baseado em papéis (admin, gerente, vendedor), com cada papel tendo visibilidade e permissões distintas na interface e nas rotas.
+O **Invexa** é um ERP leve voltado a pequenas e médias empresas, distribuído como SaaS com planos **Free / Pro / Business**. A arquitetura multi-tenant garante isolamento total de dados por empresa — produtos, vendas, compras, clientes, financeiro e usuários são sempre segregados por `company_id`. O controle de acesso é baseado em papéis (`admin`, `gerente`, `vendedor`), com visibilidades e permissões distintas em toda a interface e nas rotas.
 
 ---
 
@@ -24,10 +25,58 @@ O **Invexa** é um sistema de gestão comercial completo voltado a pequenas e m�
 | Frontend | Bootstrap 5.3, Bootstrap Icons, Chart.js |
 | Bundler | Vite |
 | Template | Blade (layouts, componentes) |
-| Banco de dados | MySQL 8 (compatível com SQLite para desenvolvimento) |
+| Banco de dados | MySQL 8 (SQLite para desenvolvimento local) |
 | Geração de PDF | barryvdh/laravel-dompdf 3.x |
+| Auth | Laravel Breeze customizado |
+| Filas | Database driver |
 | Testes | PHPUnit 12 |
 | Dev tools | Laravel Pint, Laravel Pail, Concurrently |
+
+---
+
+## Estado Atual do Desenvolvimento
+
+### ✅ Módulos Implementados e Funcionando
+
+| Módulo | Status |
+|---|---|
+| Autenticação & Multi-Tenant | ✅ Completo |
+| Papéis e Permissões | ✅ Completo |
+| Dashboard Analítico | ✅ Completo |
+| Produtos & Categorias | ✅ Completo |
+| Vendas (PDV + itens) | ✅ Completo |
+| Clientes | ✅ Completo |
+| Devoluções | ✅ Completo |
+| Fornecedores | ✅ Completo |
+| Ordens de Compra | ✅ Completo |
+| Contas a Pagar (bills) | ✅ Completo |
+| Contas a Receber (receivables) | ✅ Completo |
+| Relatório de Vendas | ✅ Completo |
+| Relatório de Compras | ✅ Completo |
+| Gestão de Usuários | ✅ Completo |
+| Painel Super-Admin | ✅ Completo |
+| Audit Log (estrutura base) | ✅ Estrutura criada |
+| Notificações internas | ✅ Model + Controller criados |
+| Testes automatizados | ✅ 8 testes (Feature + Unit) |
+
+### 🔴 Pendente — Crítico para produção
+
+| Item | Descrição |
+|---|---|
+| Cobrança / Assinaturas | Integração Asaas ou Stripe — sem isso qualquer empresa usa qualquer plano de graça |
+| Trial Period | Campo `trial_ends_at` + middleware de expiração + banner de aviso |
+| Página de Planos | View pública `/pricing` + tela `/settings/subscription` |
+| E-mail Transacional | Configurar Resend/Mailgun — hoje `MAIL_MAILER=log` (nenhum e-mail chega) |
+| Landing Page | Rota `/` redireciona para login — não existe apresentação do produto |
+
+### 🟠 Pendente — Profissionaliza o produto
+
+| Item | Descrição |
+|---|---|
+| Limites de plano no backend | `canAddProduct()` e `canAddUser()` existem mas não são chamados nos Controllers |
+| Upload de logo da empresa | Campo `logo` existe em `companies` mas upload não implementado |
+| Onboarding wizard | Pós-registro cai em dashboard vazio, sem guia |
+| Scheduler financeiro | `CheckFinancialAlerts.php` existe mas não está registrado no scheduler |
 
 ---
 
@@ -49,10 +98,11 @@ O **Invexa** é um sistema de gestão comercial completo voltado a pequenas e m�
 | **admin** | Acesso total — inclui gestão de usuários e todas as funcionalidades de gerente |
 | **gerente** | Estoque, Compras, Financeiro, Relatórios, Vendas (edição e exclusão incluídas) |
 | **vendedor** | Dashboard (parcial), Vendas, Clientes e Devoluções |
+| **superadmin** | Painel global do SaaS — gerencia todas as empresas |
 
 ### Dashboard Analítico
 
-Visão geral em tempo real com filtro de intervalo (Hoje / 7 dias / Mês).
+Visão geral em tempo real com filtro de intervalo (Hoje / 7 dias / Este mês / Personalizado).
 
 **KPI Cards — visíveis para todos os papéis:**
 - Total de produtos ativos no estoque
@@ -66,20 +116,16 @@ Visão geral em tempo real com filtro de intervalo (Hoje / 7 dias / Mês).
 - Saldo Previsto (A Receber − A Pagar)
 - Contador de vencimentos nos próximos 7 dias
 
-**Fluxo de Caixa — exclusivo para Gerente e Admin:**
-- Gráfico de barras empilhadas (Chart.js) com 4 séries: A Receber, Já Recebido, A Pagar, Saldo Acumulado
-- Eixo Y secundário para o saldo acumulado
-- Cores distintas: verde (receber), vermelho (pagar), âmbar (saldo +), roxo (saldo −)
-- Filtro de intervalo (Hoje / 7 dias / Mês)
+**Gráficos — visíveis conforme papel:**
+- Evolução de Vendas: barras com 3 séries (Vendas / Devoluções / Líquido) — toggle interativo por série
+- Fluxo de Caixa: barras com 5 séries (A Receber / Recebido / A Pagar / Pago / Saldo) — exclusivo Gerente+
+- Top Produtos: doughnut chart com legenda e centro dinâmico ao hover
+- Ranking de Vendas: lista ranqueada com barra de progresso e percentual
 
-**Tabelas e métricas — visíveis para todos os papéis:**
-- Próximos vencimentos (7 dias) com alerta visual para os que vencem hoje
-- Gráfico de faturamento por dia (bruto × devoluções, tooltip com líquido)
-- Resumo rápido: faturamento bruto, devoluções, faturamento líquido, venda de hoje, ticket médio, variação de receita
-- Últimas 5 vendas com badge de status
+**Tabelas:**
+- Últimas 5 vendas com badge de status e `sale_number` sequencial
 - Produtos com estoque abaixo do mínimo
-- Devoluções recentes (últimos 5 registros)
-- Ações rápidas: Exportar CSV/PDF (gerente+), Nova Venda, Nova Devolução
+- Últimas devoluções (5 registros)
 
 ### Produtos
 
@@ -98,14 +144,15 @@ Visão geral em tempo real com filtro de intervalo (Hoje / 7 dias / Mês).
 ### Vendas
 
 - Criação de vendas com múltiplos itens (`SaleItem`)
-- Campos: data, nome do cliente, status, total calculado automaticamente
+- Numeração sequencial automática por empresa (`sale_number`) — ex.: `#1`, `#2`, `#3`
+- Campos: data, cliente, status, total calculado automaticamente
 - Status disponíveis: `concluida`, `pendente`, `cancelada`
 - Edição e exclusão restritas a **gerente** e **admin**
 - Visualização de detalhes disponível para todos os papéis
 
 ### Clientes
 
-- CRUD de clientes vinculados à empresa
+- CRUD completo vinculado à empresa
 - Campos: nome, e-mail, telefone, CPF/CNPJ, endereço, observações
 - Relacionamento com vendas
 - Acesso a **vendedor**, **gerente** e **admin**
@@ -115,7 +162,7 @@ Visão geral em tempo real com filtro de intervalo (Hoje / 7 dias / Mês).
 - Registro de devoluções vinculadas a uma venda existente
 - Campos: motivo, itens devolvidos, valor estornado
 - Estorno automático no estoque dos produtos devolvidos
-- Badge de label de motivo no detalhe e no dashboard
+- Badge de motivo no detalhe e no dashboard
 - Acesso a **vendedor**, **gerente** e **admin**
 
 ### Fornecedores
@@ -128,11 +175,10 @@ Visão geral em tempo real com filtro de intervalo (Hoje / 7 dias / Mês).
 ### Ordens de Compra
 
 - CRUD completo com fluxo de status: `rascunho → enviada → recebida_parcial → recebida` (ou `cancelada`)
-- Campos do cabeçalho: número automático (OC-000001), fornecedor, data prevista, notas, total
+- Número automático único por empresa (ex.: `OC-000001`)
 - Itens da OC: produto, quantidade, preço unitário, subtotal
 - Ações de transição: Enviar, Receber, Cancelar (habilitadas conforme status atual)
 - Entrada automática no estoque ao receber a OC
-- Número único por empresa gerado automaticamente
 - Acesso restrito a **gerente** e **admin**
 
 ### Financeiro — Contas a Pagar
@@ -155,7 +201,7 @@ Visão geral em tempo real com filtro de intervalo (Hoje / 7 dias / Mês).
 
 ### Relatório de Vendas
 
-- Filtros por período (7d / 30d / 90d / 1 ano / personalizado), com seletor de datas
+- Filtros por período (7d / 30d / 90d / 1 ano / personalizado)
 - KPIs: total de vendas, faturamento bruto, devoluções, faturamento líquido
 - Tabela de vendedores por volume
 - Top produtos mais vendidos (quantidade, pedidos, receita)
@@ -169,7 +215,7 @@ Visão geral em tempo real com filtro de intervalo (Hoje / 7 dias / Mês).
 - KPIs: total de OCs, valor total, valor recebido, valor pendente
 - Tabela de compras por fornecedor (quantidade + total)
 - Top produtos mais comprados (quantidade, OCs, custo total)
-- Tabela detalhada de OCs no período com coluna de Recebimento
+- Tabela detalhada de OCs no período
 - Exportação em **PDF** e **CSV**
 - Acesso restrito a **gerente** e **admin**
 
@@ -179,6 +225,15 @@ Visão geral em tempo real com filtro de intervalo (Hoje / 7 dias / Mês).
 - Toggle de ativo/inativo via `PATCH /users/{user}/toggle-active`
 - Campos: nome, e-mail, papel, empresa vinculada, status ativo
 - Edição de perfil próprio disponível para todos os papéis
+
+### Painel Super-Admin
+
+- Acesso exclusivo para o papel `superadmin` via `/admin`
+- **Métricas globais do SaaS:** MRR estimado, total de empresas, novas no mês, churn no mês
+- **Distribuição de planos:** Free / Pro / Business com barra de progresso percentual
+- **Tabela de empresas:** numeração sequencial (1, 2, 3...) independente de exclusões, plano, status, usuários, trial, data de criação
+- Ações por empresa: Entrar como (impersonation para suporte), Ativar/Desativar, Excluir
+- Interface standalone (fora do layout do app)
 
 ### Audit Log
 
@@ -192,6 +247,8 @@ Visão geral em tempo real com filtro de intervalo (Hoje / 7 dias / Mês).
 ```
 invexa/
 ├── app/
+│   ├── Console/Commands/
+│   │   └── CheckFinancialAlerts.php
 │   ├── Http/
 │   │   ├── Controllers/
 │   │   │   ├── Auth/
@@ -206,6 +263,8 @@ invexa/
 │   │   │   ├── ReturnController.php
 │   │   │   ├── SaleController.php
 │   │   │   ├── SupplierController.php
+│   │   │   ├── SuperAdmin/
+│   │   │   │   └── CompanyController.php
 │   │   │   └── UserController.php
 │   │   └── Middleware/
 │   │       ├── CheckRole.php
@@ -238,10 +297,12 @@ invexa/
 │   ├── purchase-orders/
 │   ├── receivables/
 │   ├── reports/
-│   │   ├── index.blade.php       # Relatório de vendas
-│   │   └── purchases.blade.php   # Relatório de compras
+│   │   ├── index.blade.php        # Relatório de vendas
+│   │   └── purchases.blade.php    # Relatório de compras
 │   ├── returns/
 │   ├── sales/
+│   ├── superadmin/
+│   │   └── index.blade.php        # Painel Super-Admin
 │   ├── suppliers/
 │   ├── users/
 │   └── dashboard.blade.php
@@ -288,12 +349,12 @@ users → audit_logs
 
 | Tabela | Descrição |
 |---|---|
-| `users` | Usuários com papel (admin/gerente/vendedor), empresa e flag ativo |
-| `companies` | Empresas — unidade de isolamento multi-tenant |
+| `users` | Usuários com papel (superadmin/admin/gerente/vendedor), empresa e flag ativo |
+| `companies` | Empresas — unidade de isolamento multi-tenant, plano (free/pro/business) |
 | `categories` | Categorias de produtos por empresa |
 | `products` | Produtos com estoque, preços, estoque mínimo e categoria |
 | `customers` | Clientes vinculados à empresa |
-| `sales` | Cabeçalho da venda (cliente, data, status, total) |
+| `sales` | Cabeçalho da venda (cliente, data, status, total, sale_number) |
 | `sale_items` | Itens de cada venda (produto, qtd, preço unitário) |
 | `returns` | Devoluções vinculadas a vendas |
 | `suppliers` | Fornecedores por empresa |
@@ -406,6 +467,15 @@ Sobe simultaneamente:
 | PATCH | `/users/{id}/toggle-active` | admin | Ativar/desativar usuário |
 | GET/PUT | `/profile` | vendedor | Editar perfil próprio |
 
+### Super-Admin (papel superadmin)
+
+| Método | URI | Descrição |
+|---|---|---|
+| GET | `/admin` | Painel global — métricas do SaaS + listagem de empresas |
+| POST | `/admin/companies/{company}/impersonate` | Entrar como admin de uma empresa (suporte) |
+| PATCH | `/admin/companies/{company}/toggle` | Ativar ou desativar empresa |
+| DELETE | `/admin/companies/{company}` | Excluir empresa e todos os seus usuários |
+
 ---
 
 ## Design e Interface
@@ -417,7 +487,7 @@ A interface utiliza tema escuro personalizado consistente em todas as telas:
 - **Dashboard cards**: fundo `rgba(15,23,42,.88)` com borda sutil `rgba(148,163,184,.14)`
 - **Badges de status**: pill translúcidos com ponto indicador colorido
 - **Tabelas**: cabeçalho uppercase em fonte menor com separação visual sutil
-- **Gráficos**: Chart.js com paleta escura e tooltip personalizado em `pt-BR`
+- **Gráficos**: Chart.js com paleta escura, tooltip personalizado em `pt-BR` e toggle interativo de séries
 - **Alerta de estoque**: badge pulsante vermelho no menu (animação CSS)
 - **Barra de ação em lote**: flutuante no rodapé, aparece ao selecionar checkboxes
 
