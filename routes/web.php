@@ -28,6 +28,7 @@ use App\Http\Controllers\TwoFactorController;
 use App\Http\Controllers\UpgradeController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserInviteController;
+use App\Http\Controllers\WebhookEndpointController;
 use Illuminate\Support\Facades\Route;
 
 // ── Landing Page (pública)
@@ -225,4 +226,9 @@ Route::middleware(['auth', 'company', 'trial', 'onboarding'])->group(function ()
     Route::resource('users', UserController::class);
     Route::patch('/users/{user}/toggle',  [UserController::class, 'toggleActive'])->name('users.toggle-active');
     Route::post('/users/{user}/invite',   [UserInviteController::class, 'send'])->name('users.invite.send');
+
+    // ── Webhooks (Business only — verificação via controller)
+    Route::resource('webhooks', WebhookEndpointController::class);
+    Route::post('/webhooks/{webhook}/regenerate-secret', [WebhookEndpointController::class, 'regenerateSecret'])->name('webhooks.regenerate-secret');
+    Route::post('/webhooks/{webhook}/test',              [WebhookEndpointController::class, 'test'])->name('webhooks.test');
 });
