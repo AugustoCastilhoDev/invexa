@@ -165,9 +165,12 @@ Route::middleware(['auth', 'company', 'trial', 'onboarding'])->group(function ()
     Route::post('/stock',       [StockMovementController::class, 'store'])->name('stock.store');
     Route::delete('/stock/{stock}', [StockMovementController::class, 'destroy'])->name('stock.destroy');
 
-    Route::resource('products', ProductController::class);
-    Route::post('/products/import', [ProductController::class, 'import'])->name('products.import');
+    // ── Produtos
+    Route::get('/products/import',          [ProductController::class, 'importIndex'])->name('products.import');
+    Route::post('/products/import',         [ProductController::class, 'import'])->name('products.import.store');
     Route::get('/products/import/template', [ProductController::class, 'importTemplate'])->name('products.import.template');
+    Route::resource('products', ProductController::class);
+
     Route::resource('categories', CategoryController::class);
 
     Route::get('/customers/search', [CustomerController::class, 'search'])->name('customers.search');
@@ -214,7 +217,6 @@ Route::middleware(['auth', 'company', 'trial', 'onboarding'])->group(function ()
         Route::get('/returns',                 [ReportController::class, 'returns'])->name('returns');
         Route::get('/returns/pdf',             [ReportController::class, 'returnsPdf'])->name('returns.pdf');
         Route::get('/returns/csv',             [ReportController::class, 'returnsCsv'])->name('returns.csv');
-        // ── Lucratividade
         Route::get('/profitability',           [ReportController::class, 'profitability'])->name('profitability');
         Route::get('/profitability/pdf',       [ReportController::class, 'profitabilityPdf'])->name('profitability.pdf');
         Route::get('/profitability/csv',       [ReportController::class, 'profitabilityCsv'])->name('profitability.csv');
