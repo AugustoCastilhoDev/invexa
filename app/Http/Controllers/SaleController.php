@@ -144,7 +144,6 @@ class SaleController extends Controller
                         'source_id'       => $sale->id,
                     ]);
 
-                    // Coleta produtos que ficaram abaixo do estoque mínimo
                     if ($product->min_stock !== null && $after <= $product->min_stock) {
                         $lowStockProducts[] = [
                             'id'        => $product->id,
@@ -175,7 +174,7 @@ class SaleController extends Controller
                 }
             });
 
-            // ── Webhooks (fora da transaction para não bloquear em caso de falha de rede)
+            // Webhooks (fora da transaction para não bloquear em caso de falha de rede)
             WebhookDispatcher::dispatch($company, 'sale.created', [
                 'id'            => $sale->id,
                 'sale_number'   => $sale->sale_number,
@@ -186,7 +185,7 @@ class SaleController extends Controller
             ]);
 
             foreach ($lowStockProducts as $p) {
-                WebhookDispatcher::dispatch($company, 'stock.low', $p);
+                WebhookDispatcher::dispatch($company, 'product.low_stock', $p);
             }
 
             return redirect()->route('sales.index')->with('success', 'Venda registrada com sucesso.');
@@ -363,6 +362,7 @@ class SaleController extends Controller
             return back()->with('error', 'Esta venda já está cancelada.');
         }
         $companyId = auth()->user()->company_id;
+        $company   = auth()->user()->company;
         try {
             DB::transaction(function () use ($sale, $companyId) {
                 $sale->load('items.product', 'receivable');
@@ -389,6 +389,16 @@ class SaleController extends Controller
                     $sale->receivable->update(['status' => 'cancelado']);
                 }
             });
+
+            // Webhook sale.cancelled
+            WebhookDispatcher::dispatch($company, 'sale.cancelled', [
+                'id'            => $sale->id,
+                'sale_number'   => $sale->sale_number,
+                'customer_name' => $sale->customer_name,
+                'total'         => (float) $sale->total,
+                'cancelled_at'  => now()->toIso8601String(),
+            ]);
+
             return back()->with('success', 'Venda cancelada e estoque estornado com sucesso.');
         } catch (\Exception $e) {
             return back()->with('error', $e->getMessage());
@@ -398,6 +408,15 @@ class SaleController extends Controller
     public function destroy(Sale $sale)
     {
         $companyId = auth()->user()->company_id;
+        $company   = auth()->user()->company;
+
+        $webhookPayload = [
+            'id'          => $sale->id,
+            'sale_number' => $sale->sale_number,
+            'total'       => (float) $sale->total,
+            'deleted_at'  => now()->toIso8601String(),
+        ];
+
         if ($sale->status !== 'cancelada') {
             DB::transaction(function () use ($sale, $companyId) {
                 $sale->load('items.product');
@@ -421,7 +440,12 @@ class SaleController extends Controller
                 }
             });
         }
+
         $sale->delete();
+
+        // Webhook sale.deleted
+        WebhookDispatcher::dispatch($company, 'sale.deleted', $webhookPayload);
+
         return redirect()->route('sales.index')->with('success', 'Venda movida para a lixeira com sucesso.');
     }
 
