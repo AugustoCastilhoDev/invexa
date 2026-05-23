@@ -487,7 +487,7 @@ a.app-link:hover, .app-link:hover { color:#93c5fd !important; }
                     <tbody>
                     @forelse($latestSales as $sale)
                     <tr>
-                        <td class="ps-3">{{ $sale->id }}</td>
+                        <td class="ps-3">{{ $sale->sale_number }}</td>
                         <td>{{ $sale->customer_name ?: '—' }}</td>
                         <td>@php
                             $bc = match($sale->status){
@@ -559,7 +559,7 @@ a.app-link:hover, .app-link:hover { color:#93c5fd !important; }
                     @foreach($latestReturns as $ret)
                     <tr>
                         <td class="ps-3">{{ $ret->id }}</td>
-                        <td>#{{ optional($ret->sale)->id??'—' }}</td>
+                        <td>#{{ optional($ret->sale)->sale_number ?? '—' }}</td>
                         <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ $ret->reason??'—' }}</td>
                         <td>{{ $ret->created_at->timezone('America/Sao_Paulo')->format('d/m/Y H:i') }}</td>
                         <td class="pe-3 text-end fw-semibold val-neg">R$ {{ number_format($ret->total,2,',','.') }}</td>
