@@ -53,6 +53,8 @@ class Company extends Model
     // ── Trial / Acesso
     public function isOnTrial(): bool
     {
+        // Plano pago (manual ou via Stripe) nunca exibe banner de trial
+        if (in_array($this->plan, ['pro', 'business'])) return false;
         if ($this->hasActiveSubscription()) return false;
         return $this->trial_ends_at !== null && $this->trial_ends_at->isFuture();
     }
@@ -77,11 +79,13 @@ class Company extends Model
     /**
      * Empresa tem acesso pleno ao app?
      * - Trial ativo: sim
-     * - Assinatura paga ativa: sim
+     * - Plano pago (pro/business) manualmente definido: sim
+     * - Assinatura paga ativa (Stripe): sim
      * - Trial expirado sem assinatura: NÃO (exige upgrade)
      */
     public function isAccessible(): bool
     {
+        if (in_array($this->plan, ['pro', 'business'])) return true;
         if ($this->isOnTrial()) return true;
         return $this->hasActiveSubscription();
     }
