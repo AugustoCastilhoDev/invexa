@@ -1,0 +1,59 @@
+<?php
+
+namespace App\Providers;
+
+use App\Listeners\SendWelcomeEmail;
+use App\Models\Bill;
+use App\Models\Company;
+use App\Models\Customer;
+use App\Models\Product;
+use App\Models\Receivable;
+use App\Models\Sale;
+use App\Observers\BillObserver;
+use App\Observers\CustomerObserver;
+use App\Observers\ProductObserver;
+use App\Observers\ReceivableObserver;
+use App\Observers\SaleObserver;
+use App\Policies\BillPolicy;
+use App\Policies\ReceivablePolicy;
+use App\Policies\SalePolicy;
+use Illuminate\Auth\Events\Registered;
+use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Pagination\Paginator;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\ServiceProvider;
+
+class AppServiceProvider extends ServiceProvider
+{
+    public function register(): void
+    {
+        //
+    }
+
+    public function boot(): void
+    {
+        // Paginação: usa tema Bootstrap 5
+        Paginator::useBootstrapFive();
+
+        // Garante que o Cashier use 'App\\Models\\Company' como billable_type
+        Relation::morphMap([
+            'company' => Company::class,
+        ]);
+
+        // Observers — Audit Log
+        Sale::observe(SaleObserver::class);
+        Bill::observe(BillObserver::class);
+        Receivable::observe(ReceivableObserver::class);
+        Product::observe(ProductObserver::class);
+        Customer::observe(CustomerObserver::class);
+
+        // Policies
+        Gate::policy(Sale::class, SalePolicy::class);
+        Gate::policy(Bill::class, BillPolicy::class);
+        Gate::policy(Receivable::class, ReceivablePolicy::class);
+
+        // Events
+        Event::listen(Registered::class, SendWelcomeEmail::class);
+    }
+}

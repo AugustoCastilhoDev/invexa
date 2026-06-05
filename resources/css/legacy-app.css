@@ -1,0 +1,50 @@
+/* Cores Base do Projeto */
+:root {
+    --primary-color: #2c3e50; /* Azul Petróleo Escuro */
+    --secondary-color: #34495e;
+    --accent-color: #3498db; /* Azul Destaque */
+    --success-color: #27ae60; /* Verde para estoque positivo */
+    --danger-color: #e74c3c; /* Vermelho para alertas/exclusão */
+    --warning-color: #f39c12; /* Amarelo para avisos */
+    --light-bg: #f8f9fa;
+    --text-color: #333;
+    --white: #ffffff;
+}
+
+body {
+    background-color: var(--light-bg);
+    color: var(--text-color);
+    font-family: "Inter", "Segoe UI", Arial, sans-serif;
+}
+
+/* Estilização da Tela de Categorias */
+.card-inventory {
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    background-color: var(--white);
+}
+
+.inventory-header {
+    background-color: var(--primary-color);
+    color: var(--white);
+    padding: 1.5rem;
+    border-radius: 8px 8px 0 0;
+}
+
+.btn-add-category {
+    background-color: var(--success-color);
+    color: var(--white);
+    border: none;
+    transition: 0.3s;
+}
+
+.btn-add-category:hover {
+    background-color: #219150;
+    color: var(--white);
+}
+
+.table-inventory thead {
+    background-color: var(--secondary-color);
+    color: var(--white);
+}
