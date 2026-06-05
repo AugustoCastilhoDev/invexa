@@ -41,6 +41,10 @@ use Illuminate\Support\Facades\Route;
 // Landing
 Route::get('/', [LandingController::class, 'index'])->name('landing');
 
+// Páginas legais (públicas, sem autenticação)
+Route::get('/privacidade', fn () => view('legal.privacidade'))->name('privacidade');
+Route::get('/termos',      fn () => view('legal.termos'))->name('termos');
+
 // Auth
 Route::middleware('guest')->group(function () {
     Route::get('/register', [RegisteredUserController::class, 'create'])->name('register');
@@ -69,6 +73,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/upgrade/checkout', [SubscriptionController::class, 'checkout'])->name('subscription.checkout');
     Route::get('/upgrade/success', [SubscriptionController::class, 'success'])->name('subscription.success');
     Route::post('/upgrade/cancel', [SubscriptionController::class, 'cancel'])->name('subscription.cancel');
+    Route::get('/upgrade/checkout-redirect', [SubscriptionController::class, 'checkoutRedirect'])->name('subscription.checkout.redirect');
 
     // Todas as rotas protegidas por 2FA + paywall
     Route::middleware(['two-factor', 'trial'])->group(function () {
