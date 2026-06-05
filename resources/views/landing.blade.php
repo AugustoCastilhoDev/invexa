@@ -165,6 +165,23 @@
         .lp-footer a:hover { color: #7DD3FC; }
     </style>
 </head>
+<!-- WhatsApp Suporte Invexa -->
+<a href="https://wa.me/5532999669302?text=Ol%C3%A1%2C%20tenho%20interesse%20no%20Invexa%20e%20gostaria%20de%20tirar%20uma%20d%C3%BAvida."
+   target="_blank"
+   rel="noopener noreferrer"
+   title="Falar com suporte"
+   style="position:fixed;bottom:24px;right:24px;z-index:9999;
+          background:#25D366;border-radius:50%;width:56px;height:56px;
+          display:flex;align-items:center;justify-content:center;
+          box-shadow:0 4px 16px rgba(0,0,0,0.25);text-decoration:none;
+          transition:transform 0.2s ease,box-shadow 0.2s ease;"
+   onmouseover="this.style.transform='scale(1.1)';this.style.boxShadow='0 6px 20px rgba(0,0,0,0.3)'"
+   onmouseout="this.style.transform='scale(1)';this.style.boxShadow='0 4px 16px rgba(0,0,0,0.25)'">
+  <svg width="30" height="30" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
+    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+    <path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.532 5.862L.057 23.55a.75.75 0 00.919.908l5.8-1.522A11.954 11.954 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.75a9.714 9.714 0 01-4.964-1.362l-.356-.211-3.644.956.973-3.533-.231-.365A9.714 9.714 0 012.25 12C2.25 6.615 6.615 2.25 12 2.25S21.75 6.615 21.75 12 17.385 21.75 12 21.75z"/>
+  </svg>
+</a>
 <body>
 
 {{-- NAV --}}
@@ -369,6 +386,94 @@
 </section>
 
 <div class="divider"></div>
+
+{{-- SCREENSHOTS --}}
+<section style="padding: 80px 0; background: rgba(8,13,26,.7);" id="screenshots">
+    <div class="container">
+        <div class="text-center mb-5">
+            <span class="section-label">Interface real</span>
+            <h2 class="section-title">Veja o sistema em ação</h2>
+            <p class="section-sub">Telas reais do Invexa — sem demonstrações fabricadas.</p>
+        </div>
+
+        {{-- Home --}}
+        <div class="row align-items-center g-5 mb-5">
+            <div class="col-lg-6">
+                <span class="section-label">Página inicial</span>
+                <h3 style="color:#f1f5f9;font-weight:700;font-size:1.4rem;margin-bottom:.75rem;">Tudo ao seu alcance ao fazer login</h3>
+                <p style="color:rgba(226,232,240,.65);font-size:.95rem;line-height:1.7;">Assim que entra no sistema, você vê o resumo do dia: vendas, receita, contas vencendo — além de acesso rápido a todos os módulos.</p>
+                <ul style="list-style:none;padding:0;margin-top:1rem;">
+                    <li style="color:rgba(226,232,240,.7);font-size:.88rem;padding:.35rem 0;display:flex;gap:.6rem;align-items:center;"><i class="bi bi-check-circle-fill" style="color:#0EA5E9;"></i> Resumo financeiro do dia</li>
+                    <li style="color:rgba(226,232,240,.7);font-size:.88rem;padding:.35rem 0;display:flex;gap:.6rem;align-items:center;"><i class="bi bi-check-circle-fill" style="color:#0EA5E9;"></i> Acesso direto a todos os módulos</li>
+                    <li style="color:rgba(226,232,240,.7);font-size:.88rem;padding:.35rem 0;display:flex;gap:.6rem;align-items:center;"><i class="bi bi-check-circle-fill" style="color:#0EA5E9;"></i> Visão do seu plano e limites</li>
+                </ul>
+            </div>
+            <div class="col-lg-6">
+                <div style="border-radius:14px;overflow:hidden;border:1px solid rgba(14,165,233,.2);box-shadow:0 8px 40px rgba(0,0,0,.4);">
+                    <img src="{{ asset('images/screenshots/home.jpeg') }}" alt="Página inicial do Invexa" class="img-fluid w-100" style="display:block;">
+                </div>
+            </div>
+        </div>
+
+        {{-- Dashboard --}}
+        <div class="row align-items-center g-5 mb-5 flex-lg-row-reverse">
+            <div class="col-lg-6">
+                <span class="section-label">Dashboard analítico</span>
+                <h3 style="color:#f1f5f9;font-weight:700;font-size:1.4rem;margin-bottom:.75rem;">Visão completa do desempenho do negócio</h3>
+                <p style="color:rgba(226,232,240,.65);font-size:.95rem;line-height:1.7;">Acompanhe faturamento, evolução de vendas, fluxo de caixa, top produtos e ranking — tudo com filtros por período e em tempo real.</p>
+                <ul style="list-style:none;padding:0;margin-top:1rem;">
+                    <li style="color:rgba(226,232,240,.7);font-size:.88rem;padding:.35rem 0;display:flex;gap:.6rem;align-items:center;"><i class="bi bi-check-circle-fill" style="color:#0EA5E9;"></i> KPIs de vendas e financeiro</li>
+                    <li style="color:rgba(226,232,240,.7);font-size:.88rem;padding:.35rem 0;display:flex;gap:.6rem;align-items:center;"><i class="bi bi-check-circle-fill" style="color:#0EA5E9;"></i> Gráficos de evolução e fluxo de caixa</li>
+                    <li style="color:rgba(226,232,240,.7);font-size:.88rem;padding:.35rem 0;display:flex;gap:.6rem;align-items:center;"><i class="bi bi-check-circle-fill" style="color:#0EA5E9;"></i> Ranking e top produtos vendidos</li>
+                </ul>
+            </div>
+            <div class="col-lg-6">
+                <div style="border-radius:14px;overflow:hidden;border:1px solid rgba(14,165,233,.2);box-shadow:0 8px 40px rgba(0,0,0,.4);">
+                    <img src="{{ asset('images/screenshots/dash.jpeg') }}" alt="Dashboard do Invexa" class="img-fluid w-100" style="display:block;">
+                </div>
+            </div>
+        </div>
+
+        {{-- Vendas --}}
+        <div class="row align-items-center g-5 mb-5">
+            <div class="col-lg-6">
+                <span class="section-label">Gestão de vendas</span>
+                <h3 style="color:#f1f5f9;font-weight:700;font-size:1.4rem;margin-bottom:.75rem;">Controle total sobre cada pedido</h3>
+                <p style="color:rgba(226,232,240,.65);font-size:.95rem;line-height:1.7;">Acompanhe todas as vendas com status em tempo real, filtros por cliente e período, e tenha a receita total sempre visível no topo.</p>
+                <ul style="list-style:none;padding:0;margin-top:1rem;">
+                    <li style="color:rgba(226,232,240,.7);font-size:.88rem;padding:.35rem 0;display:flex;gap:.6rem;align-items:center;"><i class="bi bi-check-circle-fill" style="color:#0EA5E9;"></i> Status por pedido (pendente, concluído)</li>
+                    <li style="color:rgba(226,232,240,.7);font-size:.88rem;padding:.35rem 0;display:flex;gap:.6rem;align-items:center;"><i class="bi bi-check-circle-fill" style="color:#0EA5E9;"></i> Filtros por cliente, data e status</li>
+                    <li style="color:rgba(226,232,240,.7);font-size:.88rem;padding:.35rem 0;display:flex;gap:.6rem;align-items:center;"><i class="bi bi-check-circle-fill" style="color:#0EA5E9;"></i> Receita total acumulada no período</li>
+                </ul>
+            </div>
+            <div class="col-lg-6">
+                <div style="border-radius:14px;overflow:hidden;border:1px solid rgba(14,165,233,.2);box-shadow:0 8px 40px rgba(0,0,0,.4);">
+                    <img src="{{ asset('images/screenshots/vendas.jpeg') }}" alt="Gestão de vendas do Invexa" class="img-fluid w-100" style="display:block;">
+                </div>
+            </div>
+        </div>
+
+        {{-- Produtos --}}
+        <div class="row align-items-center g-5 flex-lg-row-reverse">
+            <div class="col-lg-6">
+                <span class="section-label">Controle de estoque</span>
+                <h3 style="color:#f1f5f9;font-weight:700;font-size:1.4rem;margin-bottom:.75rem;">Catálogo com margem e estoque em tempo real</h3>
+                <p style="color:rgba(226,232,240,.65);font-size:.95rem;line-height:1.7;">Gerencie o catálogo com SKU, categoria, preço de venda, margem calculada automaticamente, quantidade e estoque mínimo configurável.</p>
+                <ul style="list-style:none;padding:0;margin-top:1rem;">
+                    <li style="color:rgba(226,232,240,.7);font-size:.88rem;padding:.35rem 0;display:flex;gap:.6rem;align-items:center;"><i class="bi bi-check-circle-fill" style="color:#0EA5E9;"></i> Margem de lucro calculada por produto</li>
+                    <li style="color:rgba(226,232,240,.7);font-size:.88rem;padding:.35rem 0;display:flex;gap:.6rem;align-items:center;"><i class="bi bi-check-circle-fill" style="color:#0EA5E9;"></i> Alerta de estoque mínimo</li>
+                    <li style="color:rgba(226,232,240,.7);font-size:.88rem;padding:.35rem 0;display:flex;gap:.6rem;align-items:center;"><i class="bi bi-check-circle-fill" style="color:#0EA5E9;"></i> Importação em massa via CSV</li>
+                </ul>
+            </div>
+            <div class="col-lg-6">
+                <div style="border-radius:14px;overflow:hidden;border:1px solid rgba(14,165,233,.2);box-shadow:0 8px 40px rgba(0,0,0,.4);">
+                    <img src="{{ asset('images/screenshots/produtos.jpeg') }}" alt="Controle de estoque do Invexa" class="img-fluid w-100" style="display:block;">
+                </div>
+            </div>
+        </div>
+
+    </div>
+</section>
 
 {{-- DEPOIMENTOS --}}
 <section class="testimonials" id="testimonials">
