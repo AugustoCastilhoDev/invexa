@@ -110,7 +110,22 @@ class ReceivableController extends Controller
         return redirect()->route('receivables.index')->with('success', 'Recebível atualizado com sucesso.');
     }
 
-    public function markAsReceived(Request $request, Receivable $receivable)
+    public function cancel(Receivable $receivable)
+    {
+        $this->authorizeReceivable($receivable);
+
+        if (in_array($receivable->status, ['recebida', 'cancelada'])) {
+            return redirect()->route('receivables.show', $receivable)
+                ->with('error', 'Esta conta não pode ser cancelada.');
+        }
+
+        $receivable->update(['status' => 'cancelada']);
+
+        return redirect()->route('receivables.show', $receivable)
+            ->with('success', 'Conta cancelada com sucesso.');
+    }
+
+    public function receive(Request $request, Receivable $receivable)
     {
         $this->authorizeReceivable($receivable);
         $company = auth()->user()->company;

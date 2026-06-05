@@ -123,8 +123,6 @@ Route::middleware('auth')->group(function () {
         Route::post('/purchase-orders/{purchaseOrder}/receive', [PurchaseOrderController::class, 'receive'])->name('purchase-orders.receive');
 
         // Products & Categories
-        // ATENÇÃO: rotas estáticas de /products devem vir ANTES do resource
-        // para não serem interceptadas pelo binding de {product}
         Route::get('/products/import',          [ProductController::class, 'importIndex'])->name('products.import');
         Route::post('/products/import',         [ProductController::class, 'import'])->name('products.import.store');
         Route::get('/products/import/template', [ProductController::class, 'importTemplate'])->name('products.import.template');
@@ -141,6 +139,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/receivables/bulk-receive', [ReceivableController::class, 'bulkReceive'])->name('receivables.bulk-receive');
         Route::resource('receivables', ReceivableController::class);
         Route::post('/receivables/{receivable}/receive', [ReceivableController::class, 'receive'])->name('receivables.receive');
+        Route::patch('/receivables/{receivable}/cancel', [ReceivableController::class, 'cancel'])->name('receivables.cancel');
 
         // Reports
         Route::prefix('reports')->name('reports.')->group(function () {
