@@ -177,7 +177,7 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <form action="{{ route('bills.pay', $bill) }}" method="POST">
-                @csrf @method('PATCH')
+                @csrf
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label text-soft fw-semibold" style="font-size:.8rem;">Valor Pago (R$) <span class="text-danger">*</span></label>
