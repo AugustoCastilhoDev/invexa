@@ -176,7 +176,7 @@
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <form action="{{ route('bills.markAsPaid', $bill) }}" method="POST">
+            <form action="{{ route('bills.pay', $bill) }}" method="POST">
                 @csrf @method('PATCH')
                 <div class="modal-body">
                     <div class="mb-3">

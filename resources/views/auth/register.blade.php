@@ -94,7 +94,7 @@
                 </div>
             @endif
 
-            <form method="POST" action="{{ route('register.store') }}">
+            <form method="POST" action="{{ route('register.post') }}">
                 @csrf
                 {{-- Passa plano e billing para o controller --}}
                 <input type="hidden" name="plan"    value="{{ $selectedPlan }}">
