@@ -23,8 +23,19 @@
                         <i class="bi bi-arrow-return-left me-1"></i>Registrar Devolução
                     </a>
                 @endif
-
-                @if(auth()->user()->hasRole(['admin','gerente']))
+	@if($sale->status === 'pendente')
+    <form action="{{ route('sales.status', $sale) }}" method="POST" class="d-inline">
+        @csrf
+        @method('PATCH')
+        <input type="hidden" name="status" value="concluida">
+        <button type="submit"
+                class="btn btn-success btn-sm"
+                onclick="return confirm('Confirmar esta venda como concluída?')">
+            <i class="bi bi-check-circle me-1"></i>Confirmar Venda
+        </button>
+    </form>
+@endif
+                @if(auth()->user()->hasLegacyRole(['admin','gerente']))
                     @if($sale->status !== 'cancelada')
                         <a href="{{ route('sales.edit', $sale) }}" class="btn btn-outline-primary btn-sm">
                             <i class="bi bi-pencil me-1"></i>Editar
@@ -226,7 +237,7 @@
             </div>
         @endif
 
-        @if(auth()->user()->hasRole(['admin','gerente']))
+        @if(auth()->user()->hasLegacyRole(['admin','gerente']))
         <div class="d-flex gap-2 mt-4 flex-wrap">
             @if($sale->status !== 'cancelada')
                 <a href="{{ route('sales.edit', $sale) }}" class="btn btn-warning">
@@ -249,7 +260,7 @@
                 </button>
             </form>
 
-            @if(auth()->user()->hasRole(['admin']))
+            @if(auth()->user()->hasLegacyRole(['admin']))
                 <form action="{{ route('sales.force-destroy', $sale->id) }}" method="POST"
                       onsubmit="return confirm('ATENÇÃO: Excluir permanentemente esta venda? Esta ação não pode ser desfeita.')">
                     @csrf @method('DELETE')

@@ -402,7 +402,32 @@ class SaleController extends Controller
             return back()->with('error', $e->getMessage());
         }
     }
+	public function updateStatus(Request $request, Sale $sale)
+{
+    $request->validate([
+        'status' => 'required|in:concluida,pendente',
+    ]);
 
+    if ($sale->company_id !== auth()->user()->company_id) {
+        abort(403);
+    }
+
+    if ($sale->status === 'cancelada') {
+        return back()->with('error', 'Não é possível alterar o status de uma venda cancelada.');
+    }
+
+    $sale->update(['status' => $request->status]);
+
+    // Atualiza conta a receber se existir
+    if ($sale->receivable) {
+        $sale->receivable->update([
+            'status' => $request->status === 'concluida' ? 'recebida' : 'pendente',
+        ]);
+    }
+
+    $label = $request->status === 'concluida' ? 'concluída' : 'marcada como pendente';
+    return back()->with('success', "Venda {$label} com sucesso.");
+}
     public function destroy(Sale $sale)
     {
         $companyId = auth()->user()->company_id;

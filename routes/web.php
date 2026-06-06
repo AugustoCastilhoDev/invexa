@@ -98,6 +98,7 @@ Route::middleware('auth')->group(function () {
         // Sales
         Route::resource('sales', SaleController::class);
         Route::post('/sales/{sale}/cancel', [SaleController::class, 'cancel'])->name('sales.cancel');
+	Route::patch('/sales/{sale}/status', [SaleController::class, 'updateStatus'])->name('sales.status');
         Route::get('/sales/{sale}/nf', [SaleController::class, 'nf'])->name('sales.nf');
         Route::get('/sales/{sale}/pdf', [SaleController::class, 'pdf'])->name('sales.pdf');
         Route::post('/sales/{id}/restore', [SaleController::class, 'restore'])->name('sales.restore');
