@@ -214,9 +214,9 @@ class PurchaseOrderController extends Controller
             'received_at' => now()->toIso8601String(),
             'items_count' => $purchase_order->items->count(),
         ]);
+        AuditLogger::action('purchase_order.received', $purchase_order);
 
         return redirect()->route('purchase-orders.show', $purchase_order)
-        AuditLogger::action('purchase_order.received', $purchase_order);
             ->with('success', 'Ordem de compra recebida e estoque atualizado com sucesso.');
     }
 
