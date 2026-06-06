@@ -12,7 +12,6 @@
         @if($purchaseOrder->canReceive() && auth()->user()->isGerente())
             <form action="{{ route('purchase-orders.receive', $purchaseOrder) }}" method="POST">
                 @csrf
-                @method('PATCH')
                 <button type="submit" class="btn btn-success btn-sm"
                         onclick="return confirm('Confirmar o recebimento desta ordem de compra?')">
                     <i class="bi bi-box-arrow-in-down me-1"></i>Registrar Recebimento

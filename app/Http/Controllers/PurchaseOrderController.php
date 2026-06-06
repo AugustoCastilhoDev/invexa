@@ -113,7 +113,7 @@ class PurchaseOrderController extends Controller
         $suppliers = Supplier::where('company_id', $companyId)->orderBy('name')->get(['id', 'name']);
         $products  = Product::where('company_id', $companyId)->where('active', true)->orderBy('name')->get(['id', 'name', 'price']);
         $purchaseOrder->load('items.product');
-        return view('purchase_orders.form', compact('purchaseOrder', 'suppliers', 'products'));
+        return view('purchase_orders.form', compact('purchase_order', 'suppliers', 'products'));
     }
 
     public function update(Request $request, PurchaseOrder $purchaseOrder)
@@ -158,20 +158,22 @@ class PurchaseOrderController extends Controller
         return redirect()->route('purchase-orders.index')->with('success', 'Ordem de compra atualizada com sucesso.');
     }
 
-    public function receive(Request $request, PurchaseOrder $purchaseOrder)
+    public function receive(Request $request, PurchaseOrder $purchase_order)
     {
-        $this->authorizeOrder($purchaseOrder);
-        if ($purchaseOrder->status === 'recebida') {
+       
+	\Log::info('RECEIVE CHAMADO', ['id' => $purchase_order->id]);
+	 $this->authorizeOrder($purchase_order);
+        if ($purchase_order->status === 'recebida') {
             return back()->with('error', 'Esta ordem já foi recebida.');
         }
 
         $companyId = auth()->user()->company_id;
         $company   = auth()->user()->company;
 
-        DB::transaction(function () use ($purchaseOrder, $companyId) {
-            $purchaseOrder->load('items.product');
+        DB::transaction(function () use ($purchase_order, $companyId) {
+            $purchase_order->load('items.product');
 
-            foreach ($purchaseOrder->items as $item) {
+            foreach ($purchase_order->items as $item) {
                 $product = Product::lockForUpdate()->find($item->product_id);
                 if (!$product) continue;
 
@@ -191,27 +193,27 @@ class PurchaseOrderController extends Controller
                     'quantity_before' => $before,
                     'quantity_after'  => $after,
                     'reason'          => 'compra',
-                    'notes'           => "Recebimento da Ordem de Compra #{$purchaseOrder->id}",
+                    'notes'           => "Recebimento da Ordem de Compra #{$purchase_order->id}",
                     'source_type'     => PurchaseOrder::class,
-                    'source_id'       => $purchaseOrder->id,
+                    'source_id'       => $purchase_order->id,
                 ]);
             }
 
-            $purchaseOrder->update([
+            $purchase_order->update([
                 'status'      => 'recebida',
                 'received_at' => now(),
             ]);
         });
 
         WebhookDispatcher::dispatch($company, 'purchase_order.received', [
-            'id'          => $purchaseOrder->id,
-            'supplier'    => $purchaseOrder->supplier?->name,
-            'total'       => (float) $purchaseOrder->total,
+            'id'          => $purchase_order->id,
+            'supplier'    => $purchase_order->supplier?->name,
+            'total'       => (float) $purchase_order->total,
             'received_at' => now()->toIso8601String(),
-            'items_count' => $purchaseOrder->items->count(),
+            'items_count' => $purchase_order->items->count(),
         ]);
 
-        return redirect()->route('purchase-orders.show', $purchaseOrder)
+        return redirect()->route('purchase-orders.show', $purchase_order)
             ->with('success', 'Ordem de compra recebida e estoque atualizado com sucesso.');
     }
 

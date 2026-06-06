@@ -119,8 +119,9 @@ Route::middleware('auth')->group(function () {
         Route::resource('suppliers', SupplierController::class);
 
         // Purchase Orders
-        Route::resource('purchase-orders', PurchaseOrderController::class);
-        Route::post('/purchase-orders/{purchaseOrder}/receive', [PurchaseOrderController::class, 'receive'])->name('purchase-orders.receive');
+       	Route::resource('purchase-orders', PurchaseOrderController::class);
+	Route::post('/purchase-orders/{purchase_order}/receive', [PurchaseOrderController::class, 'receive'])
+   	 ->name('purchase-orders.receive');
 
         // Products & Categories
         Route::get('/products/import',          [ProductController::class, 'importIndex'])->name('products.import');
