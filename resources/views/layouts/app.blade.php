@@ -194,11 +194,13 @@
 <body>
 
 @php
-    $authCompany = Auth::check() ? Auth::user()->company : null;
-    $companyLogo = $authCompany?->logo ? Storage::url($authCompany->logo) : null;
-    $companyName = $authCompany?->name ?? 'Invexa';
-    $currentPlan = $authCompany?->plan ?? 'free';
+    $authCompany  = Auth::check() ? Auth::user()->company : null;
+    $companyLogo  = $authCompany?->logo ? Storage::url($authCompany->logo) : null;
+    $companyName  = $authCompany?->name ?? 'Invexa';
+    $currentPlan  = $authCompany?->plan ?? 'free';
     $isOnTrialApp = $authCompany?->isOnTrial() ?? false;
+    $trialDaysApp = $authCompany?->trialDaysLeft() ?? 0;
+    $isUrgentApp  = $isOnTrialApp && $trialDaysApp <= 3;
 @endphp
 
 <nav class="navbar navbar-expand-lg navbar-main sticky-top">
@@ -393,7 +395,7 @@
                                     <span class="badge mt-1 bg-opacity-25 bg-{{ Auth::user()->role_badge }} text-{{ Auth::user()->role_badge }}" style="font-size:.65rem;">
                                         {{ Auth::user()->role_label }}
                                     </span>
-                                    @if(Auth::user()->hasRole('admin') && Auth::user()->company)
+                                    @if(Auth::user()->isAdmin() && Auth::user()->company)
                                         @php
                                             $planColors = ['free'=>'#94a3b8','pro'=>'#38BDF8','business'=>'#c084fc'];
                                             $pc = $planColors[Auth::user()->company->plan] ?? '#94a3b8';
@@ -411,7 +413,7 @@
                                 <i class="bi bi-person-gear me-2"></i>Editar Perfil
                             </a>
                         </li>
-                        @if(Auth::check() && Auth::user()->hasRole('admin'))
+                        @if(Auth::check() && Auth::user()->isAdmin())
                         <li>
                             <a class="dropdown-item {{ request()->routeIs('upgrade') ? 'active' : '' }}" href="{{ route('upgrade') }}">
                                 <i class="bi bi-rocket-takeoff me-2"></i>Meu Plano
@@ -477,27 +479,26 @@
 </div>
 @endif
 
+{{--
+    TRIAL BANNER
+    Corrigido: usa isAdmin() (método legado do campo `role`) em vez de hasRole('admin') do Spatie.
+    Também usa as variáveis já calculadas no @php do topo para evitar queries duplicadas.
+--}}
 @auth
-    @php
-        $company   = auth()->user()->company;
-        $trialDays = $company?->trialDaysLeft() ?? 0;
-        $isOnTrial = $company?->isOnTrial() ?? false;
-        $isUrgent  = $isOnTrial && $trialDays <= 3;
-    @endphp
-    @if($isOnTrial && auth()->user()->hasRole('admin'))
-        <div class="trial-banner {{ $isUrgent ? 'urgent' : '' }}">
+    @if($isOnTrialApp && Auth::user()->isAdmin())
+        <div class="trial-banner {{ $isUrgentApp ? 'urgent' : '' }}">
             <div class="container d-flex align-items-center justify-content-between flex-wrap gap-2">
                 <div class="d-flex align-items-center gap-2">
-                    <i class="bi bi-clock{{ $isUrgent ? '-fill text-danger' : ' text-warning' }}"></i>
-                    @if($trialDays === 0)
-                        <span class="{{ $isUrgent ? 'text-danger' : 'text-warning' }} fw-semibold">Seu período de teste encerra <strong>hoje</strong>!</span>
-                    @elseif($trialDays === 1)
-                        <span class="{{ $isUrgent ? 'text-danger' : 'text-warning' }} fw-semibold">Seu período de teste encerra <strong>amanhã</strong>!</span>
+                    <i class="bi bi-clock{{ $isUrgentApp ? '-fill text-danger' : ' text-warning' }}"></i>
+                    @if($trialDaysApp === 0)
+                        <span class="{{ $isUrgentApp ? 'text-danger' : 'text-warning' }} fw-semibold">Seu período de teste encerra <strong>hoje</strong>!</span>
+                    @elseif($trialDaysApp === 1)
+                        <span class="{{ $isUrgentApp ? 'text-danger' : 'text-warning' }} fw-semibold">Seu período de teste encerra <strong>amanhã</strong>!</span>
                     @else
-                        <span style="color:rgba(226,232,240,.8);">Trial gratuito: <strong class="{{ $isUrgent ? 'text-danger' : 'text-warning' }}">{{ $trialDays }} dias restantes</strong></span>
+                        <span style="color:rgba(226,232,240,.8);">Trial gratuito: <strong class="{{ $isUrgentApp ? 'text-danger' : 'text-warning' }}">{{ $trialDaysApp }} dias restantes</strong></span>
                     @endif
                 </div>
-                <a href="{{ route('upgrade') }}" class="btn btn-sm {{ $isUrgent ? 'btn-danger' : 'btn-warning' }} fw-semibold py-0 px-3" style="font-size:.78rem; height:1.75rem; line-height:1.75rem;">
+                <a href="{{ route('upgrade') }}" class="btn btn-sm {{ $isUrgentApp ? 'btn-danger' : 'btn-warning' }} fw-semibold py-0 px-3" style="font-size:.78rem; height:1.75rem; line-height:1.75rem;">
                     <i class="bi bi-rocket-takeoff me-1"></i>Ver planos
                 </a>
             </div>
