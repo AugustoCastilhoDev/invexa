@@ -111,6 +111,20 @@
         .vs-table .ic-yes  { color: #4ade80; font-size: 1.1rem; }
         .vs-table .ic-no   { color: #f87171; font-size: 1.1rem; }
         .vs-table .ic-par  { color: #fbbf24; font-size: .85rem; }
+        /* CTA pós-tabela */
+        .vs-cta-block {
+            background: linear-gradient(135deg, rgba(14,165,233,.1), rgba(56,189,248,.05));
+            border: 1px solid rgba(14,165,233,.2);
+            border-radius: 16px;
+            padding: 2rem 2.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+        }
+        .vs-cta-block .vs-cta-text p { margin: 0; font-size: .88rem; color: rgba(226,232,240,.6); margin-top: .3rem; }
+        .vs-cta-block .vs-cta-text strong { font-size: 1.05rem; color: #f1f5f9; font-weight: 700; }
         /* Cards de vantagens */
         .adv-card { background: rgba(13,25,41,.8); border: 1px solid rgba(14,165,233,.1); border-radius: 14px; padding: 24px; height: 100%; transition: border-color .25s, transform .2s; }
         .adv-card:hover { border-color: rgba(14,165,233,.3); transform: translateY(-3px); }
@@ -504,7 +518,7 @@
         </div>
 
         {{-- Tabela comparativa --}}
-        <div class="vs-table-wrap mb-5">
+        <div class="vs-table-wrap mb-4">
             <table class="vs-table">
                 <thead>
                     <tr>
@@ -561,6 +575,17 @@
                     </tr>
                 </tbody>
             </table>
+        </div>
+
+        {{-- CTA pós-tabela --}}
+        <div class="vs-cta-block mb-5">
+            <div class="vs-cta-text">
+                <strong>Pronto para sair das planilhas de vez?</strong>
+                <p>Crie sua conta grátis agora — sem cartão, sem burocracia. Em 3 minutos você já tem tudo funcionando.</p>
+            </div>
+            <a href="{{ route('register') }}" class="btn-hero-primary flex-shrink-0" style="white-space:nowrap;">
+                <i class="bi bi-rocket-takeoff me-2"></i>Começar grátis por 14 dias
+            </a>
         </div>
 
         {{-- Cards de vantagens --}}
@@ -733,7 +758,7 @@
                             <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">Preciso de cartão de crédito para testar?</button>
                         </h2>
                         <div id="faq1" class="accordion-collapse collapse show" data-bs-parent="#faqAccordion">
-                            <div class="accordion-body">Não. O trial de 14 dias é totalmente gratuito e não exige dados de pagamento. Você só escolhe um plano quando decidir continuar.</div>
+                            <div class="accordion-body">Não. O trial de 14 dias é totalmente gratuito e não exige dados de pagamento. Você só escolhe um um plano quando decidir continuar.</div>
                         </div>
                     </div>
                     <div class="accordion-item">
