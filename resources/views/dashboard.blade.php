@@ -314,7 +314,7 @@ a.app-link:hover, .app-link:hover { color:#93c5fd !important; }
     <div class="col-6 col-xl-3">
         <div class="fin-card h-100">
             <div class="fin-lbl text-muted-soft mb-1">Saldo Previsto</div>
-            <div class="fin-val {{ $balPos?'val-pos':'val-neg' }}">{{ $balPos?'':'&minus;' }}R$ {{ number_format(abs($finCashBalance),2,',','.') }}</div>
+            <div class="fin-val {{ $balPos?'val-pos':'val-neg' }}">{{ $balPos?'':'-' }}R$ {{ number_format(abs($finCashBalance),2,',','.') }}</div>
             <small class="text-muted-soft" style="font-size:.68rem;">Receber menos Pagar</small>
             <div class="mt-2"><span style="font-size:.68rem;" class="{{ $balPos?'val-pos':'val-neg' }}"><i class="bi bi-{{ $balPos?'arrow-up-circle':'arrow-down-circle' }} me-1"></i>{{ $balPos?'Positivo':'Negativo' }}</span></div>
         </div>

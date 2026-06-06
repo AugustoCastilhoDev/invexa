@@ -129,9 +129,9 @@
                     Vencimento: <strong class="{{ $bill->isOverdue() ? 'text-danger' : 'text-white' }}">{{ $bill->due_date->format('d/m/Y') }}</strong>
                 </p>
                 @if($bill->isOverdue())
-                    <p class="text-danger mb-3"><i class="bi bi-exclamation-triangle-fill me-1"></i>Esta conta está vencida há {{ $bill->due_date->diffInDays(now()) }} dia(s).</p>
+                    <p class="text-danger mb-3"><i class="bi bi-exclamation-triangle-fill me-1"></i>Esta conta está vencida há {{ (int) $bill->due_date->diffInDays(now()) }} dia(s).</p>
                 @else
-                    <p class="text-soft mb-3">Vence em {{ now()->diffInDays($bill->due_date) }} dia(s).</p>
+                    <p class="text-soft mb-3">Vence em {{ (int) now()->diffInDays($bill->due_date) }} dia(s).</p>
                 @endif
                 <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#markAsPaidModal">
                     <i class="bi bi-check-circle me-1"></i>Registrar Pagamento
