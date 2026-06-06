@@ -92,6 +92,7 @@ class PurchaseOrderController extends Controller
             }
         });
 
+        AuditLogger::action('purchase_order.created', $purchaseOrder);
         return redirect()->route('purchase-orders.index')->with('success', 'Ordem de compra criada com sucesso.');
     }
 
@@ -155,6 +156,7 @@ class PurchaseOrderController extends Controller
             }
         });
 
+        AuditLogger::action('purchase_order.updated', $purchase_order);
         return redirect()->route('purchase-orders.index')->with('success', 'Ordem de compra atualizada com sucesso.');
     }
 
@@ -214,6 +216,7 @@ class PurchaseOrderController extends Controller
         ]);
 
         return redirect()->route('purchase-orders.show', $purchase_order)
+        AuditLogger::action('purchase_order.received', $purchase_order);
             ->with('success', 'Ordem de compra recebida e estoque atualizado com sucesso.');
     }
 
@@ -225,6 +228,7 @@ class PurchaseOrderController extends Controller
         }
         $purchaseOrder->items()->delete();
         $purchaseOrder->delete();
+        AuditLogger::action('purchase_order.deleted', $purchase_order);
         return redirect()->route('purchase-orders.index')->with('success', 'Ordem de compra excluída.');
     }
 

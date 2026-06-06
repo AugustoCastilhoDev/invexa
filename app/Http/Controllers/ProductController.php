@@ -131,6 +131,7 @@ class ProductController extends Controller
             }
         });
 
+        AuditLogger::action('product.created', $product);
         return redirect()->route('products.index')->with('success', 'Produto criado com sucesso.');
     }
 
@@ -201,6 +202,7 @@ class ProductController extends Controller
             }
         });
 
+        AuditLogger::action('product.updated', $product);
         return redirect()->route('products.index')->with('success', 'Produto atualizado com sucesso.');
     }
 
@@ -208,6 +210,7 @@ class ProductController extends Controller
     {
         $this->authorizeProduct($product);
         $product->delete();
+        AuditLogger::action('product.deleted', $product);
         return redirect()->route('products.index')->with('success', 'Produto excluído com sucesso.');
     }
 

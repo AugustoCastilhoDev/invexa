@@ -187,7 +187,8 @@ class SaleController extends Controller
                 WebhookDispatcher::dispatch($company, 'product.low_stock', $p);
             }
 
-            return redirect()->route('sales.index')->with('success', 'Venda registrada com sucesso.');
+            AuditLogger::action("sale.created", $sale);
+        return redirect()->route('sales.index')->with('success', 'Venda registrada com sucesso.');
         } catch (\Exception $e) {
             return back()->withInput()->with('error', $e->getMessage());
         }
@@ -349,6 +350,7 @@ class SaleController extends Controller
                 }
             });
 
+            AuditLogger::action("sale.updated", $sale);
             return redirect()->route('sales.index')->with('success', 'Venda atualizada com sucesso.');
         } catch (\Exception $e) {
             return back()->withInput()->with('error', $e->getMessage());
@@ -397,6 +399,7 @@ class SaleController extends Controller
                 'cancelled_at'  => now()->toIso8601String(),
             ]);
 
+            AuditLogger::action('sale.cancelled', $sale);
             return back()->with('success', 'Venda cancelada e estoque estornado com sucesso.');
         } catch (\Exception $e) {
             return back()->with('error', $e->getMessage());
@@ -466,6 +469,7 @@ class SaleController extends Controller
 
         $sale->delete();
 
+        AuditLogger::action('sale.deleted', $sale);
         WebhookDispatcher::dispatch($company, 'sale.deleted', $webhookPayload);
 
         return redirect()->route('sales.index')->with('success', 'Venda movida para a lixeira com sucesso.');

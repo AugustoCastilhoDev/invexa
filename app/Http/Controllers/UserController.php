@@ -81,6 +81,7 @@ class UserController extends Controller
 
         return redirect()
             ->route('users.index')
+        AuditLogger::action('user.created', $user);
             ->with('success', 'Usuário criado com sucesso.');
     }
 
@@ -122,6 +123,7 @@ class UserController extends Controller
 
         return redirect()
             ->route('users.index')
+        AuditLogger::action('user.updated', $user);
             ->with('success', 'Usuário atualizado com sucesso.');
     }
 
@@ -140,6 +142,7 @@ class UserController extends Controller
 
         return redirect()
             ->route('users.index')
+        AuditLogger::action('user.deleted', $user);
             ->with('success', 'Usuário excluído com sucesso.');
     }
 
@@ -158,6 +161,7 @@ class UserController extends Controller
 
         return redirect()
             ->route('users.index')
+        AuditLogger::action('user.status_changed', $user);
             ->with('success', 'Status do usuário atualizado com sucesso.');
     }
 

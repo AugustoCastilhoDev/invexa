@@ -65,6 +65,7 @@ class CustomerController extends Controller
             'document' => $customer->document,
         ]);
 
+        AuditLogger::action('customer.created', $customer);
         return redirect()->route('customers.index')->with('success', 'Cliente cadastrado com sucesso.');
     }
 
@@ -132,6 +133,7 @@ class CustomerController extends Controller
 
         $customer->update($data);
 
+        AuditLogger::action('customer.updated', $customer);
         return redirect()->route('customers.index')->with('success', 'Cliente atualizado com sucesso.');
     }
 
@@ -139,6 +141,7 @@ class CustomerController extends Controller
     {
         $this->authorizeCustomer($customer);
         $customer->delete();
+        AuditLogger::action('customer.deleted', $customer);
         return redirect()->route('customers.index')->with('success', 'Cliente removido com sucesso.');
     }
 

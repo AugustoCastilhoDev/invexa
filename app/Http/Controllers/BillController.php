@@ -82,6 +82,7 @@ class BillController extends Controller
             'status'     => 'pendente',
         ]));
 
+        AuditLogger::action('bill.created', $bill);
         return redirect()->route('bills.index')->with('success', 'Conta a pagar criada com sucesso.');
     }
 
@@ -111,6 +112,7 @@ class BillController extends Controller
 
         $bill->update($data);
 
+        AuditLogger::action('bill.updated', $bill);
         return redirect()->route('bills.index')->with('success', 'Conta atualizada com sucesso.');
     }
 
@@ -139,6 +141,7 @@ class BillController extends Controller
             'paid_at'     => $bill->paid_at,
         ]);
 
+        AuditLogger::action('bill.paid', $bill);
         return redirect()->route('bills.index')->with('success', 'Conta marcada como paga.');
     }
 
@@ -193,6 +196,7 @@ class BillController extends Controller
     {
         $this->authorizeBill($bill);
         $bill->delete();
+        AuditLogger::action('bill.deleted', $bill);
         return redirect()->route('bills.index')->with('success', 'Conta removida com sucesso.');
     }
 

@@ -81,6 +81,7 @@ class SupplierController extends Controller
             'active'     => $request->boolean('active', true),
         ]));
 
+        AuditLogger::action('supplier.created', $supplier);
         return redirect()->route('suppliers.index')->with('success', 'Fornecedor cadastrado com sucesso.');
     }
 
@@ -131,6 +132,7 @@ class SupplierController extends Controller
             'active' => $request->boolean('active'),
         ]));
 
+        AuditLogger::action('supplier.updated', $supplier);
         return redirect()->route('suppliers.index')->with('success', 'Fornecedor atualizado com sucesso.');
     }
 
@@ -138,6 +140,7 @@ class SupplierController extends Controller
     {
         $this->authorizeSupplier($supplier);
         $supplier->delete();
+        AuditLogger::action('supplier.deleted', $supplier);
         return redirect()->route('suppliers.index')->with('success', 'Fornecedor removido com sucesso.');
     }
 
