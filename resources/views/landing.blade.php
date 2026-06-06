@@ -92,15 +92,31 @@
         .feature-card h5 { color: #f1f5f9; font-weight: 700; font-size: 1rem; }
         .feature-card p { font-size: .875rem; color: rgba(226,232,240,.6); margin: 0; }
 
-        /* DEPOIMENTOS */
-        .testimonials { background: var(--abyss); }
-        .testimonial-card { background: rgba(13,25,41,.85); border: 1px solid rgba(14,165,233,.1); border-radius: 14px; padding: 28px; height: 100%; }
-        .testimonial-card .stars { color: #FBBF24; font-size: .85rem; margin-bottom: .75rem; letter-spacing: .05em; }
-        .testimonial-card blockquote { font-size: .9rem; color: rgba(226,232,240,.8); line-height: 1.65; font-style: italic; margin: 0 0 1.25rem; }
-        .testimonial-card blockquote::before { content: '\201C'; color: var(--sky); font-size: 1.6rem; line-height: 0; vertical-align: -0.45em; margin-right: .15rem; }
-        .testimonial-avatar { width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, var(--sky), var(--electric)); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: .85rem; color: var(--abyss); flex-shrink: 0; }
-        .testimonial-name { font-size: .85rem; font-weight: 700; color: #e2e8f0; }
-        .testimonial-role { font-size: .75rem; color: rgba(148,163,184,.6); }
+        /* VS PLANILHAS */
+        .vs-section { background: var(--abyss); }
+        .vs-table-wrap { overflow-x: auto; }
+        .vs-table { width: 100%; border-collapse: separate; border-spacing: 0; border-radius: 14px; overflow: hidden; }
+        .vs-table thead tr th { padding: 1rem 1.25rem; font-size: .78rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+        .vs-table thead .th-feature { background: rgba(13,25,41,.9); color: rgba(148,163,184,.6); width: 40%; }
+        .vs-table thead .th-invexa  { background: rgba(14,165,233,.15); color: var(--electric); text-align: center; border-left: 1px solid rgba(14,165,233,.2); }
+        .vs-table thead .th-sheet   { background: rgba(30,30,30,.7); color: rgba(148,163,184,.5); text-align: center; border-left: 1px solid rgba(255,255,255,.05); }
+        .vs-table tbody tr { border-bottom: 1px solid rgba(255,255,255,.04); }
+        .vs-table tbody tr:last-child { border-bottom: none; }
+        .vs-table tbody tr:hover .td-feature,
+        .vs-table tbody tr:hover .td-invexa,
+        .vs-table tbody tr:hover .td-sheet { background-color: rgba(255,255,255,.025); }
+        .vs-table .td-feature { padding: .9rem 1.25rem; font-size: .875rem; color: #e2e8f0; background: rgba(13,25,41,.7); }
+        .vs-table .td-invexa  { padding: .9rem 1.25rem; text-align: center; background: rgba(14,165,233,.06); border-left: 1px solid rgba(14,165,233,.1); }
+        .vs-table .td-sheet   { padding: .9rem 1.25rem; text-align: center; background: rgba(13,25,41,.5); border-left: 1px solid rgba(255,255,255,.04); }
+        .vs-table .ic-yes  { color: #4ade80; font-size: 1.1rem; }
+        .vs-table .ic-no   { color: #f87171; font-size: 1.1rem; }
+        .vs-table .ic-par  { color: #fbbf24; font-size: .85rem; }
+        /* Cards de vantagens */
+        .adv-card { background: rgba(13,25,41,.8); border: 1px solid rgba(14,165,233,.1); border-radius: 14px; padding: 24px; height: 100%; transition: border-color .25s, transform .2s; }
+        .adv-card:hover { border-color: rgba(14,165,233,.3); transform: translateY(-3px); }
+        .adv-icon { width: 44px; height: 44px; border-radius: 10px; background: rgba(14,165,233,.12); display: flex; align-items: center; justify-content: center; font-size: 1.3rem; color: var(--sky); margin-bottom: .85rem; flex-shrink: 0; }
+        .adv-card h6 { color: #f1f5f9; font-weight: 700; font-size: .95rem; margin-bottom: .35rem; }
+        .adv-card p  { font-size: .82rem; color: rgba(226,232,240,.6); margin: 0; line-height: 1.55; }
 
         /* PLANOS */
         .plans { background: rgba(8,13,26,.6); }
@@ -202,6 +218,7 @@
             <ul class="navbar-nav ms-auto align-items-lg-center gap-2">
                 <li class="nav-item"><a class="nav-link" href="#how">Como funciona</a></li>
                 <li class="nav-item"><a class="nav-link" href="#features">Funcionalidades</a></li>
+                <li class="nav-item"><a class="nav-link" href="#vs">Vs. Planilhas</a></li>
                 <li class="nav-item"><a class="nav-link" href="#plans">Planos</a></li>
                 <li class="nav-item"><a class="nav-link" href="#faq">FAQ</a></li>
                 <li class="nav-item ms-lg-2">
@@ -475,52 +492,119 @@
     </div>
 </section>
 
-{{-- DEPOIMENTOS --}}
-<section class="testimonials" id="testimonials">
+<div class="divider"></div>
+
+{{-- INVEXA VS PLANILHAS --}}
+<section class="vs-section" id="vs">
     <div class="container">
         <div class="text-center mb-5">
-            <span class="section-label">Quem já usa</span>
-            <h2 class="section-title">O que nossos clientes dizem</h2>
-            <p class="section-sub">Pequenas empresas que ganharam tempo e clareza financeira com o Invexa.</p>
+            <span class="section-label">Por que trocar?</span>
+            <h2 class="section-title">Invexa vs. Planilhas</h2>
+            <p class="section-sub">Planilhas até funcionam no começo — mas chegam rápido no limite. Veja o que muda quando você usa um sistema feito para o seu negócio.</p>
         </div>
-        <div class="row g-4">
-            <div class="col-md-4">
-                <div class="testimonial-card">
-                    <div class="stars">★★★★★</div>
-                    <blockquote>Antes eu controlava tudo em planilha e perdia horas toda semana. Com o Invexa, sei exatamente o que vendi, o que lucrei e o que tenho em estoque em tempo real.</blockquote>
-                    <div class="d-flex align-items-center gap-2">
-                        <div class="testimonial-avatar">MC</div>
-                        <div>
-                            <div class="testimonial-name">Mariana C.</div>
-                            <div class="testimonial-role">Loja de roupas — MG</div>
-                        </div>
-                    </div>
+
+        {{-- Tabela comparativa --}}
+        <div class="vs-table-wrap mb-5">
+            <table class="vs-table">
+                <thead>
+                    <tr>
+                        <th class="th-feature">Recurso</th>
+                        <th class="th-invexa"><i class="bi bi-stars me-1"></i>Invexa</th>
+                        <th class="th-sheet"><i class="bi bi-file-earmark-spreadsheet me-1"></i>Planilha</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="td-feature">Estoque atualizado automaticamente a cada venda</td>
+                        <td class="td-invexa"><i class="bi bi-check-circle-fill ic-yes"></i></td>
+                        <td class="td-sheet"><i class="bi bi-x-circle-fill ic-no"></i></td>
+                    </tr>
+                    <tr>
+                        <td class="td-feature">Alertas de estoque mínimo em tempo real</td>
+                        <td class="td-invexa"><i class="bi bi-check-circle-fill ic-yes"></i></td>
+                        <td class="td-sheet"><i class="bi bi-x-circle-fill ic-no"></i></td>
+                    </tr>
+                    <tr>
+                        <td class="td-feature">Contas a pagar e receber integradas</td>
+                        <td class="td-invexa"><i class="bi bi-check-circle-fill ic-yes"></i></td>
+                        <td class="td-sheet"><i class="bi bi-x-circle-fill ic-no"></i></td>
+                    </tr>
+                    <tr>
+                        <td class="td-feature">Relatórios e gráficos gerados automaticamente</td>
+                        <td class="td-invexa"><i class="bi bi-check-circle-fill ic-yes"></i></td>
+                        <td class="td-sheet"><span class="ic-par">Manual e trabalhoso</span></td>
+                    </tr>
+                    <tr>
+                        <td class="td-feature">Múltiplos usuários com permissões separadas</td>
+                        <td class="td-invexa"><i class="bi bi-check-circle-fill ic-yes"></i></td>
+                        <td class="td-sheet"><i class="bi bi-x-circle-fill ic-no"></i></td>
+                    </tr>
+                    <tr>
+                        <td class="td-feature">Histórico de vendas e movimentações auditável</td>
+                        <td class="td-invexa"><i class="bi bi-check-circle-fill ic-yes"></i></td>
+                        <td class="td-sheet"><span class="ic-par">Fácil de apagar por acidente</span></td>
+                    </tr>
+                    <tr>
+                        <td class="td-feature">Acesso pelo celular sem instalar nada</td>
+                        <td class="td-invexa"><i class="bi bi-check-circle-fill ic-yes"></i></td>
+                        <td class="td-sheet"><span class="ic-par">Limitado</span></td>
+                    </tr>
+                    <tr>
+                        <td class="td-feature">Dados seguros com backup automático</td>
+                        <td class="td-invexa"><i class="bi bi-check-circle-fill ic-yes"></i></td>
+                        <td class="td-sheet"><i class="bi bi-x-circle-fill ic-no"></i></td>
+                    </tr>
+                    <tr>
+                        <td class="td-feature">Tempo para registrar uma venda</td>
+                        <td class="td-invexa" style="color:#4ade80; font-weight:700; font-size:.82rem;">Segundos</td>
+                        <td class="td-sheet" style="color:#f87171; font-size:.82rem;">Minutos (manual)</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        {{-- Cards de vantagens --}}
+        <div class="row g-3">
+            <div class="col-sm-6 col-lg-4">
+                <div class="adv-card">
+                    <div class="adv-icon"><i class="bi bi-lightning-charge-fill"></i></div>
+                    <h6>Zero retrabalho</h6>
+                    <p>Cada venda atualiza estoque, financeiro e relatórios automaticamente. Sem copiar e colar dados entre abas.</p>
                 </div>
             </div>
-            <div class="col-md-4">
-                <div class="testimonial-card">
-                    <div class="stars">★★★★★</div>
-                    <blockquote>Sistema simples e completo. Cadastrei os produtos, treinei minha equipe em menos de uma tarde e já estávamos vendendo. O relatório de lucratividade por produto é incrível.</blockquote>
-                    <div class="d-flex align-items-center gap-2">
-                        <div class="testimonial-avatar">RF</div>
-                        <div>
-                            <div class="testimonial-name">Ricardo F.</div>
-                            <div class="testimonial-role">Distribuidora de alimentos — SP</div>
-                        </div>
-                    </div>
+            <div class="col-sm-6 col-lg-4">
+                <div class="adv-card">
+                    <div class="adv-icon"><i class="bi bi-shield-check"></i></div>
+                    <h6>Dados sempre seguros</h6>
+                    <p>Backup automático diário na nuvem. Nada se perde por acidente, travamento ou exclusão acidental.</p>
                 </div>
             </div>
-            <div class="col-md-4">
-                <div class="testimonial-card">
-                    <div class="stars">★★★★★</div>
-                    <blockquote>O controle financeiro me salvou. Agora consigo ver contas a pagar e receber lado a lado, nunca mais perdi um vencimento. Recomendo para qualquer pequeno negócio.</blockquote>
-                    <div class="d-flex align-items-center gap-2">
-                        <div class="testimonial-avatar">AP</div>
-                        <div>
-                            <div class="testimonial-name">Ana P.</div>
-                            <div class="testimonial-role">Assistência técnica — RJ</div>
-                        </div>
-                    </div>
+            <div class="col-sm-6 col-lg-4">
+                <div class="adv-card">
+                    <div class="adv-icon"><i class="bi bi-graph-up-arrow"></i></div>
+                    <h6>Decisões baseadas em dados</h6>
+                    <p>Dashboard com gráficos em tempo real. Saiba o que vende mais, qual produto dá mais lucro e quando pagar suas contas.</p>
+                </div>
+            </div>
+            <div class="col-sm-6 col-lg-4">
+                <div class="adv-card">
+                    <div class="adv-icon"><i class="bi bi-people-fill"></i></div>
+                    <h6>Toda a equipe na mesma página</h6>
+                    <p>Vendedor registra a venda, gerente acompanha em tempo real. Cada um com seu acesso e permissões.</p>
+                </div>
+            </div>
+            <div class="col-sm-6 col-lg-4">
+                <div class="adv-card">
+                    <div class="adv-icon"><i class="bi bi-alarm-fill"></i></div>
+                    <h6>Nunca mais perca um vencimento</h6>
+                    <p>Alertas de contas vencendo, estoque crítico e inadimplência — tudo visível logo na tela inicial.</p>
+                </div>
+            </div>
+            <div class="col-sm-6 col-lg-4">
+                <div class="adv-card">
+                    <div class="adv-icon"><i class="bi bi-clock-history"></i></div>
+                    <h6>Horas devolvidas por semana</h6>
+                    <p>Tudo o que antes tomava horas em planilhas fica pronto em minutos. Você foca no negócio, o Invexa cuida dos números.</p>
                 </div>
             </div>
         </div>
@@ -729,6 +813,8 @@
                 <a href="#how">Como funciona</a>
                 <span class="mx-2" style="opacity:.3;">·</span>
                 <a href="#features">Funcionalidades</a>
+                <span class="mx-2" style="opacity:.3;">·</span>
+                <a href="#vs">Vs. Planilhas</a>
                 <span class="mx-2" style="opacity:.3;">·</span>
                 <a href="#plans">Planos</a>
                 <span class="mx-2" style="opacity:.3;">·</span>
