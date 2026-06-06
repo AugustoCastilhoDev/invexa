@@ -56,7 +56,7 @@ class RegisteredUserController extends Controller
             'email'                => $request->email,
             'plan'                 => 'free',
             'active'               => true,
-            'trial_ends_at'        => Carbon::now()->addDays(14),
+            'trial_ends_at'        => Carbon::now()->addDays(30),
             'onboarding_completed' => false,
         ]);
 

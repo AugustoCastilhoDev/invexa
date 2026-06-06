@@ -36,7 +36,7 @@
     <p>Sua conta foi criada com sucesso. Você tem acesso completo ao Invexa durante o seu período de teste gratuito.</p>
 
     <div class="trial-badge">
-      🎁 <strong>14 dias de trial gratuito</strong> — explore todas as funcionalidades sem precisar de cartão de crédito.
+      🎁 <strong>30 dias de trial gratuito</strong> — explore todas as funcionalidades sem precisar de cartão de crédito.
     </div>
 
     <p><strong>O que você pode fazer agora:</strong></p>
