@@ -822,7 +822,7 @@
 {{-- FOOTER --}}
 <footer class="lp-footer">
     <div class="container">
-        <div class="row align-items-center">
+        <div class="row align-items-start">
             <div class="col-md-4 mb-3 mb-md-0">
                 <div class="d-flex align-items-center gap-2 mb-1">
                     <svg width="20" height="20" viewBox="0 0 32 32" fill="none">
@@ -833,6 +833,11 @@
                     <span class="fw-bold" style="color:rgba(226,232,240,.6);">INVEXA</span>
                 </div>
                 <div>Gestão de Estoque e Vendas</div>
+                <div class="mt-1">
+                    <a href="mailto:contato@invexa-app.com.br" style="color:var(--electric); font-size:.78rem;">
+                        <i class="bi bi-envelope me-1"></i>contato@invexa-app.com.br
+                    </a>
+                </div>
             </div>
             <div class="col-md-4 text-md-center mb-3 mb-md-0">
                 <a href="#how">Como funciona</a>
