@@ -849,6 +849,10 @@
                 <a href="#plans">Planos</a>
                 <span class="mx-2" style="opacity:.3;">·</span>
                 <a href="#faq">FAQ</a>
+		<span class="mx-2" style="opacity:.3;">·</span>
+		<a href="{{ route('privacidade') }}">Privacidade</a>
+		<span class="mx-2" style="opacity:.3;">·</span>
+		<a href="{{ route('termos') }}">Termos de Uso</a>
             </div>
             <div class="col-md-4 text-md-end">
                 <div>© {{ date('Y') }} Invexa · Desenvolvido por</div>

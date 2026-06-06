@@ -34,6 +34,9 @@
         .section-divider { border-color:rgba(14,165,233,.1); margin:1.25rem 0; }
         .section-label { font-size:.68rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--sky); margin-bottom:.75rem; }
         .plan-badge { background:rgba(14,165,233,.12); border:1px solid rgba(14,165,233,.3); border-radius:10px; padding:10px 14px; font-size:.85rem; }
+        .form-check-input { background-color:rgba(8,13,26,.7)!important; border:1px solid rgba(14,165,233,.3)!important; }
+        .form-check-input:checked { background-color:var(--sky)!important; border-color:var(--sky)!important; }
+        .form-check-input:focus { box-shadow:0 0 0 .2rem rgba(14,165,233,.2)!important; }
     </style>
 </head>
 <body>
@@ -143,6 +146,28 @@
                     <input type="password" class="form-control"
                            id="password_confirmation" name="password_confirmation"
                            placeholder="Repita sua senha" required>
+                </div>
+
+                {{-- Aceite dos Termos de Uso e Política de Privacidade --}}
+                <div class="mb-3">
+                    <div class="form-check">
+                        <input class="form-check-input @error('terms_accepted') is-invalid @enderror"
+                               type="checkbox"
+                               name="terms_accepted"
+                               id="terms_accepted"
+                               value="1"
+                               required
+                               {{ old('terms_accepted') ? 'checked' : '' }}>
+                        <label class="form-check-label text-soft" for="terms_accepted" style="font-size:.82rem;">
+                            Li e concordo com os
+                            <a href="{{ route('termos') }}" target="_blank">Termos de Uso</a>
+                            e a
+                            <a href="{{ route('privacidade') }}" target="_blank">Política de Privacidade</a>
+                        </label>
+                        @error('terms_accepted')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
                 </div>
 
                 <button type="submit" class="btn btn-sky w-100 mb-3 py-2">

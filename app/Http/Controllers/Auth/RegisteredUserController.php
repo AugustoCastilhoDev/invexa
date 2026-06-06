@@ -33,6 +33,7 @@ class RegisteredUserController extends Controller
             'password'     => ['required', 'confirmed', Rules\Password::min(8)->letters()->numbers()],
             'plan'         => ['nullable', 'in:free,pro,pro_launch,business'],
             'billing'      => ['nullable', 'in:monthly,annual'],
+            'terms_accepted' => ['accepted'],
         ], [
             'company_name.required' => 'Informe o nome da empresa.',
             'company_name.min'      => 'O nome da empresa deve ter pelo menos 2 caracteres.',
@@ -43,6 +44,7 @@ class RegisteredUserController extends Controller
             'password.required'     => 'Informe uma senha.',
             'password.confirmed'    => 'As senhas não conferem.',
             'password.min'          => 'A senha deve ter pelo menos 8 caracteres com letras e números.',
+            'terms_accepted.accepted' => 'Você precisa aceitar os Termos de Uso e a Política de Privacidade para continuar.',
         ]);
 
         $plan    = $request->input('plan', 'free');
