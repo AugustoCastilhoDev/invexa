@@ -112,6 +112,7 @@ Route::middleware('auth')->group(function () {
 
         // Customers
         Route::resource('customers', CustomerController::class);
+        Route::get('/customers/search', [CustomerController::class, 'search'])->name('customers.search');
 
         // Returns
         Route::resource('returns', SaleReturnController::class);

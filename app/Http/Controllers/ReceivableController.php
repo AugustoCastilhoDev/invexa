@@ -123,8 +123,8 @@ class ReceivableController extends Controller
 
         $receivable->update(['status' => 'cancelada']);
 
-        return redirect()->route('receivables.show', $receivable)
         AuditLogger::action('receivable.cancelled', $receivable);
+        return redirect()->route('receivables.show', $receivable)
             ->with('success', 'Conta cancelada com sucesso.');
     }
 

@@ -78,10 +78,10 @@ class UserController extends Controller
         } catch (\Throwable $e) {
             Log::warning('WelcomeMail não enviado para ' . $user->email . ': ' . $e->getMessage());
         }
+        AuditLogger::action('user.created', $user);
 
         return redirect()
             ->route('users.index')
-        AuditLogger::action('user.created', $user);
             ->with('success', 'Usuário criado com sucesso.');
     }
 
@@ -120,10 +120,10 @@ class UserController extends Controller
         }
 
         $user->update($data);
+        AuditLogger::action('user.updated', $user);
 
         return redirect()
             ->route('users.index')
-        AuditLogger::action('user.updated', $user);
             ->with('success', 'Usuário atualizado com sucesso.');
     }
 
@@ -139,10 +139,10 @@ class UserController extends Controller
         }
 
         $user->delete();
+        AuditLogger::action('user.deleted', $user);
 
         return redirect()
             ->route('users.index')
-        AuditLogger::action('user.deleted', $user);
             ->with('success', 'Usuário excluído com sucesso.');
     }
 
@@ -158,10 +158,10 @@ class UserController extends Controller
         }
 
         $user->update(['active' => ! $user->active]);
+        AuditLogger::action('user.status_changed', $user);
 
         return redirect()
             ->route('users.index')
-        AuditLogger::action('user.status_changed', $user);
             ->with('success', 'Status do usuário atualizado com sucesso.');
     }
 

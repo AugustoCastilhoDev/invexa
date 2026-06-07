@@ -137,6 +137,21 @@ class CustomerController extends Controller
         return redirect()->route('customers.index')->with('success', 'Cliente atualizado com sucesso.');
     }
 
+    public function search(Request $request)
+    {
+        $companyId = auth()->user()->company_id;
+        $term = ->get('q', '');
+        $customers = Customer::where('company_id', $companyId)
+            ->where(function($query) use ($term) {
+                $query->where('name', 'like', "%{$term}%")
+                      ->orWhere('email', 'like', "%{$term}%")
+                      ->orWhere('phone', 'like', "%{$term}%");
+            })
+            ->limit(10)
+            ->get(['id', 'name', 'email', 'phone']);
+        return response()->json($customers);
+    }
+
     public function destroy(Customer $customer)
     {
         $this->authorizeCustomer($customer);
