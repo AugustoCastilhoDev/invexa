@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\AuditLogger;
 use App\Models\Customer;
 use App\Models\Product;
 use App\Models\Receivable;

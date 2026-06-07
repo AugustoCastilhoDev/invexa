@@ -36,8 +36,8 @@ class FinancialReportTest extends TestCase
         Receivable::factory()->create([
             'company_id' => $this->company->id,
             'amount'     => 1000.00,
-            'status'     => 'recebido',
-            'paid_at'    => now(),
+            'status'      => 'recebida',
+            'received_at' => now(),
             'due_date'   => now(),
         ]);
 
@@ -45,7 +45,7 @@ class FinancialReportTest extends TestCase
             'company_id' => $this->company->id,
             'amount'     => 400.00,
             'status'     => 'pago',
-            'paid_at'    => now(),
+            'paid_at'     => now(),
             'due_date'   => now(),
         ]);
 

@@ -140,7 +140,7 @@ class CustomerController extends Controller
     public function search(Request $request)
     {
         $companyId = auth()->user()->company_id;
-        $term = ->get('q', '');
+        $term = $request->get('q', '');
         $customers = Customer::where('company_id', $companyId)
             ->where(function($query) use ($term) {
                 $query->where('name', 'like', "%{$term}%")
