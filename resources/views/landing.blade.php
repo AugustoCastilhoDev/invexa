@@ -644,7 +644,7 @@
         <div class="text-center mb-4">
             <span class="section-label">Planos &amp; Preços</span>
             <h2 class="section-title">Simples, transparente e justo</h2>
-            <p class="section-sub mb-0">Comece grátis por 30 dias. Sem cartão de crédito. Cancele quando quiser.</p>
+            <p class="section-sub mb-0">Plano Free para sempre, ou comece o trial de 30 dias dos planos pagos. Sem cartão de crédito.</p>
         </div>
 
         <div class="billing-toggle">
@@ -656,11 +656,44 @@
             <span class="toggle-label" id="label-annual">Anual <span class="annual-badge ms-1">-20%</span></span>
         </div>
 
-        <div class="row g-4 justify-content-center">
+        {{-- PLANOS — 3 cards: Free · Pro · Business --}}
+        <div class="row g-4 justify-content-center align-items-stretch">
+
+            {{-- FREE --}}
+            <div class="col-md-4">
+                <div class="plan-card h-100 d-flex flex-column">
+                    <div class="plan-name" style="color:#94a3b8;">Free</div>
+
+                    <div class="price-monthly">
+                        <div class="plan-price" style="color:#94a3b8;">R$ 0 <span>/mês</span></div>
+                        <div class="plan-price-billed">para sempre gratuito</div>
+                    </div>
+                    <div class="price-annual" style="display:none;">
+                        <div class="plan-price" style="color:#94a3b8;">R$ 0 <span>/mês</span></div>
+                        <div class="plan-price-billed">para sempre gratuito</div>
+                    </div>
+
+                    <p class="plan-desc mt-2">Para quem está começando e quer testar sem compromisso.</p>
+                    <ul class="list-unstyled plan-features">
+                        <li><i class="bi bi-check-circle-fill"></i> Até 50 produtos</li>
+                        <li><i class="bi bi-check-circle-fill"></i> Até 100 clientes</li>
+                        <li><i class="bi bi-check-circle-fill"></i> 2 usuários</li>
+                        <li><i class="bi bi-check-circle-fill"></i> PDV, estoque e financeiro</li>
+                        <li class="disabled"><i class="bi bi-dash-circle-fill"></i> Relatórios PDF/CSV</li>
+                        <li class="disabled"><i class="bi bi-dash-circle-fill"></i> Ordens de compra</li>
+                        <li class="disabled"><i class="bi bi-dash-circle-fill"></i> Suporte por e-mail</li>
+                    </ul>
+                    <a href="{{ route('register') }}"
+                       class="btn w-100 mt-auto"
+                       style="margin-top:1.5rem; border:1px solid rgba(148,163,184,.3); color:#94a3b8; font-weight:600; background:transparent;">
+                        Criar conta gratuita
+                    </a>
+                </div>
+            </div>
 
             {{-- PRO --}}
             <div class="col-md-4">
-                <div class="plan-card featured">
+                <div class="plan-card featured h-100 d-flex flex-column">
                     <span class="plan-badge">Mais popular</span>
                     <div class="plan-name">Pro</div>
                     <div class="plan-offer-badge"><i class="bi bi-lightning-fill"></i> Oferta de Lançamento</div>
@@ -687,8 +720,8 @@
                     </ul>
                     <a id="btn-pro"
                        href="{{ route('register') }}?plan=pro_launch&billing=monthly"
-                       class="btn btn-primary w-100 mt-4"
-                       style="background:var(--sky); border:none; font-weight:700;">
+                       class="btn btn-primary w-100 mt-auto"
+                       style="margin-top:1.5rem; background:var(--sky); border:none; font-weight:700;">
                         Começar trial grátis — Pro
                     </a>
                 </div>
@@ -696,7 +729,7 @@
 
             {{-- BUSINESS --}}
             <div class="col-md-4">
-                <div class="plan-card">
+                <div class="plan-card h-100 d-flex flex-column">
                     <div class="plan-name">Business</div>
 
                     <div class="price-monthly">
@@ -720,7 +753,8 @@
                     </ul>
                     <a id="btn-business"
                        href="{{ route('register') }}?plan=business&billing=monthly"
-                       class="btn btn-outline-primary w-100 mt-4">
+                       class="btn btn-outline-primary w-100 mt-auto"
+                       style="margin-top:1.5rem;">
                         Começar trial grátis — Business
                     </a>
                 </div>
@@ -728,7 +762,7 @@
 
         </div>
 
-        {{-- Nota sobre trial --}}
+                {{-- Nota sobre trial --}}
         <div class="d-flex justify-content-center mt-4">
             <div class="trial-notice">
                 <i class="bi bi-exclamation-triangle-fill"></i>
