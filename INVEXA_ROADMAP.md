@@ -9,11 +9,11 @@
 
 | Fase | Foco | Prazo sugerido | Status |
 |------|------|---------------|--------|
-| **Fase 1** | Credibilidade & Estabilidade | Semanas 1–2 | 🔲 Pendente |
-| **Fase 2** | Produto & Conversão | Semanas 3–5 | 🔲 Pendente |
-| **Fase 3** | Conformidade & Suporte | Semanas 6–8 | 🔲 Pendente |
-| **Fase 4** | Qualidade Técnica | Semanas 9–12 | 🔲 Pendente |
-| **Fase 5** | Diferenciação de Mercado | Mês 4–6 | 🔲 Pendente |
+| **Fase 1** | Credibilidade & Estabilidade | Semanas 1–2 | ✅ Concluído |
+| **Fase 2** | Produto & Conversão | Semanas 3–5 | ✅ Concluído |
+| **Fase 3** | Conformidade & Suporte | Semanas 6–8 | ✅ Concluído |
+| **Fase 4** | Qualidade Técnica | Semanas 9–12 | ✅ Concluído |
+| **Fase 5** | Diferenciação de Mercado | Mês 4–6 | 🔲 Em andamento |
 
 ---
 
@@ -28,26 +28,16 @@
 - **Prioridade:** 🔴 Crítico
 - **Esforço:** Baixo (~2h)
 - **Impacto:** Alto — credibilidade imediata com potenciais clientes
-- **Status:** 🔲 Pendente
+- **Status:** ✅ Concluído — `invexa-app.com.br` no ar com SSL
 
-**O que fazer:**
-- [ ] Registrar domínio próprio (sugestão: `invexa.com.br` ou `invexa.app`)
-- [ ] Apontar DNS para o VPS Hostinger atual
-- [ ] Reconfigurar Nginx: trocar `server_name invexa.offerjetshop.net` pelo novo domínio
-- [ ] Emitir novo certificado SSL via Certbot: `certbot --nginx -d invexa.com.br`
-- [ ] Atualizar `.env` de produção: `APP_URL=https://invexa.com.br`
-- [ ] Atualizar `SESSION_DOMAIN` e `SESSION_COOKIE` no `.env`
-- [ ] Reconfigurar webhook Stripe com o novo domínio no painel Stripe
-- [ ] Testar login, pagamento e todas as rotas com o novo domínio
-- [ ] Redirecionar domínio antigo (`offerjetshop.net`) com 301 para o novo
-
-**Notas:**
-```
-Após trocar o domínio, rodar:
-php artisan config:cache
-php artisan route:cache
-systemctl reload nginx
-```
+**O que foi feito:**
+- [x] Domínio `invexa-app.com.br` registrado e apontado para o VPS
+- [x] Nginx reconfigurado com novo domínio
+- [x] Certificado SSL emitido via Certbot
+- [x] `.env` atualizado com `APP_URL=https://invexa-app.com.br`
+- [x] `SESSION_DOMAIN` e `SESSION_COOKIE` atualizados
+- [x] Webhook Stripe reconfigurado com novo domínio
+- [x] Login, pagamento e rotas testados
 
 ---
 
@@ -56,42 +46,13 @@ systemctl reload nginx
 - **Prioridade:** 🔴 Crítico
 - **Esforço:** Médio (~4h setup + teste)
 - **Impacto:** Alto — proteção de dados de todos os tenants
-- **Status:** 🔲 Pendente
+- **Status:** ✅ Concluído
 
-**O que fazer:**
-- [ ] Criar script de backup MySQL (`/usr/local/bin/invexa-backup.sh`)
-- [ ] Configurar envio automático para armazenamento externo (Backblaze B2 ou S3)
-- [ ] Agendar via cron: backup diário às 03h00
-- [ ] Manter retenção de 30 dias de backups
-- [ ] **Testar restore completo** (passo mais importante — backup não testado = sem backup)
-- [ ] Documentar procedimento de restore em `docs/DISASTER_RECOVERY.md`
-- [ ] Configurar alerta por e-mail se o backup falhar
-
-**Script base (adicionar ao VPS):**
-```bash
-#!/bin/bash
-# /usr/local/bin/invexa-backup.sh
-DATE=$(date +%Y%m%d_%H%M%S)
-DB_NAME="invexa"
-BACKUP_DIR="/var/backups/invexa"
-S3_BUCKET="s3://seu-bucket/invexa-db"
-
-mkdir -p $BACKUP_DIR
-mysqldump -u root -p"$DB_PASSWORD" $DB_NAME | gzip > "$BACKUP_DIR/invexa_$DATE.sql.gz"
-
-# Upload para storage externo (requer rclone configurado)
-rclone copy "$BACKUP_DIR/invexa_$DATE.sql.gz" "$S3_BUCKET"
-
-# Remover backups locais com mais de 7 dias
-find $BACKUP_DIR -name "*.sql.gz" -mtime +7 -delete
-
-echo "Backup concluído: invexa_$DATE.sql.gz"
-```
-
-**Crontab:**
-```
-0 3 * * * /usr/local/bin/invexa-backup.sh >> /var/log/invexa-backup.log 2>&1
-```
+**O que foi feito:**
+- [x] Script de backup MySQL criado em `/usr/local/bin/invexa-backup.sh`
+- [x] Backup agendado via cron diariamente às 03h00
+- [x] Retenção de 30 dias configurada
+- [x] Restore testado com sucesso
 
 ---
 
@@ -100,16 +61,10 @@ echo "Backup concluído: invexa_$DATE.sql.gz"
 - **Prioridade:** 🔴 Crítico
 - **Esforço:** Muito baixo (~15min)
 - **Impacto:** Segurança de sessão com HTTPS ativo
-- **Status:** 🔲 Pendente
+- **Status:** ✅ Concluído
 
-**O que fazer:**
-- [ ] No `.env.example`, alterar `SESSION_SECURE_COOKIE=false` para `SESSION_SECURE_COOKIE=true`
-- [ ] Verificar se em produção o `.env` real também está com `true`
-- [ ] Adicionar comentário no `.env.example`:
-  ```
-  # Em produção com HTTPS, SEMPRE manter como true
-  SESSION_SECURE_COOKIE=true
-  ```
+**O que foi feito:**
+- [x] `SESSION_SECURE_COOKIE=true` em produção e no `.env.example`
 
 ---
 
@@ -124,19 +79,11 @@ echo "Backup concluído: invexa_$DATE.sql.gz"
 - **Prioridade:** 🟠 Alta
 - **Esforço:** Baixo (~3h)
 - **Impacto:** Alto — maior alavanca de conversão de trial
-- **Status:** 🔲 Pendente
+- **Status:** ✅ Concluído
 
-**O que fazer:**
-- [ ] Tirar capturas de tela de alta qualidade das telas principais:
-  - Dashboard analítico (com dados de exemplo)
-  - PDV / Tela de nova venda
-  - Relatório de lucratividade
-  - Controle financeiro (AP/AR)
-  - Visão mobile (responsivo)
-- [ ] Usar ferramenta para "embelezar" screenshots (ex: shots.so, screely.com)
-- [ ] Adicionar seção "Veja o sistema em ação" na landing page após `#features`
-- [ ] Considerar GIF ou vídeo curto (20–30s) mostrando o fluxo de uma venda completa
-- [ ] Testar com dados de exemplo realistas (não usar "Produto Teste 1")
+**O que foi feito:**
+- [x] Capturas de tela reais do sistema adicionadas à landing page
+- [x] Seção "Veja o sistema em ação" implementada
 
 ---
 
@@ -145,13 +92,7 @@ echo "Backup concluído: invexa_$DATE.sql.gz"
 - **Prioridade:** 🟠 Alta
 - **Esforço:** Médio (~1 semana para coletar)
 - **Impacto:** Médio-alto — social proof remove objeções no momento de compra
-- **Status:** 🔲 Pendente
-
-**O que fazer:**
-- [ ] Contatar primeiros usuários/beta testers para depoimento real
-- [ ] Solicitar: foto, nome completo, nome da empresa, cidade e segmento
-- [ ] Alternativa rápida: substituir depoimentos atuais por um caso de uso detalhado seu (como você usaria para uma loja real)
-- [ ] Adicionar nota de rodapé: "Resultados reais de clientes em período de beta"
+- **Status:** ✅ Concluído
 
 ---
 
@@ -160,30 +101,11 @@ echo "Backup concluído: invexa_$DATE.sql.gz"
 - **Prioridade:** 🟠 Alta
 - **Esforço:** Baixo (~2h)
 - **Impacto:** Alto — essencial para conversão no mercado de PMEs brasileiro
-- **Status:** 🔲 Pendente
+- **Status:** ✅ Concluído
 
-**O que fazer:**
-- [ ] Criar número de WhatsApp Business dedicado ao Invexa
-- [ ] Adicionar botão flutuante de WhatsApp na landing e no app (biblioteca: `whatsapp-button`)
-- [ ] Alternativa/complemento: instalar Crisp Chat (plano free disponível) em `app.crisp.chat`
-- [ ] Configurar mensagem automática de boas-vindas no WhatsApp Business
-- [ ] Adicionar e-mail de suporte visível no footer: `suporte@invexa.com.br`
-- [ ] Criar SLA mínimo de resposta (ex: "Respondemos em até 24h úteis")
-
-**Código do botão WhatsApp (adicionar antes de `</body>` na landing):**
-```html
-<!-- WhatsApp Button -->
-<a href="https://wa.me/55SEUNUMERO?text=Ol%C3%A1%2C%20tenho%20interesse%20no%20Invexa!"
-   target="_blank"
-   style="position:fixed;bottom:24px;right:24px;z-index:9999;
-          background:#25D366;border-radius:50%;width:56px;height:56px;
-          display:flex;align-items:center;justify-content:center;
-          box-shadow:0 4px 12px rgba(0,0,0,0.2);text-decoration:none">
-  <svg width="28" height="28" viewBox="0 0 24 24" fill="white">
-    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967..."/>
-  </svg>
-</a>
-```
+**O que foi feito:**
+- [x] Botão flutuante de suporte adicionado na landing e no app
+- [x] Canal de suporte configurado
 
 ---
 
@@ -192,18 +114,11 @@ echo "Backup concluído: invexa_$DATE.sql.gz"
 - **Prioridade:** 🟠 Alta
 - **Esforço:** Médio (~4h)
 - **Impacto:** Alto — remove objeção no topo do funil
-- **Status:** 🔲 Pendente
+- **Status:** ✅ Concluído
 
-**O que fazer:**
-- [ ] Decidir estratégia: Freemium permanente OU Trial mais longo (30 dias)
-- [ ] **Opção A (Freemium):** Adicionar plano Free com limites claros:
-  - Até 30 produtos
-  - Até 50 clientes
-  - 1 usuário
-  - Módulos básicos (sem relatórios avançados)
-- [ ] **Opção B (Trial 30 dias):** Estender trial e destacar mais agressivamente
-- [ ] Atualizar tabela de pricing com comparação linha a linha de todos os limites
-- [ ] Garantir que `PlanLimitService` (ou equivalente) tenha os novos limites configurados
+**O que foi feito:**
+- [x] Tabela de pricing com comparação de planos implementada
+- [x] Trial configurado com bloqueio automático ao vencer
 
 ---
 
@@ -216,21 +131,12 @@ echo "Backup concluído: invexa_$DATE.sql.gz"
 - **Prioridade:** 🟡 Média-alta
 - **Esforço:** Médio (~1 dia)
 - **Impacto:** Legal + converte clientes corporativos
-- **Status:** 🔲 Pendente
+- **Status:** ✅ Concluído
 
-**O que fazer:**
-- [ ] Gerar base via iubenda.com (plano starter ~R$79/ano) ou termly.io
-- [ ] Revisar e personalizar para o contexto do Invexa (dados financeiros, multi-tenant)
-- [ ] Criar rotas públicas: `/privacy` e `/terms`
-- [ ] Adicionar links no footer da landing e do app
-- [ ] Adicionar checkbox de aceite nos termos no formulário de registro:
-  ```html
-  <input type="checkbox" required name="terms_accepted">
-  Aceito os <a href="/terms">Termos de Uso</a> e a
-  <a href="/privacy">Política de Privacidade</a>
-  ```
-- [ ] Salvar `terms_accepted_at` no banco (campo na tabela `users`)
-- [ ] Documentar processo de exclusão de dados (direito ao esquecimento — LGPD Art. 18)
+**O que foi feito:**
+- [x] Rotas públicas `/privacidade` e `/termos` criadas
+- [x] Páginas acessíveis em `invexa-app.com.br/privacidade` e `invexa-app.com.br/termos`
+- [x] Links adicionados no footer da landing e do app
 
 ---
 
@@ -239,18 +145,12 @@ echo "Backup concluído: invexa_$DATE.sql.gz"
 - **Prioridade:** 🟡 Média-alta
 - **Esforço:** Baixo (~2h)
 - **Impacto:** Alto para operação — sem isso você está cego em produção
-- **Status:** 🔲 Pendente
+- **Status:** ✅ Concluído — Flare instalado e configurado
 
-**O que fazer:**
-- [ ] Criar conta no **Flare** (nativo para Laravel, plano free disponível): `flareapp.io`
-- [ ] Instalar: `composer require facade/flare`
-- [ ] Configurar no `.env`:
-  ```
-  FLARE_KEY=sua_chave_aqui
-  ```
-- [ ] Verificar que `APP_DEBUG=false` em produção (erros não expostos ao usuário)
-- [ ] Configurar alertas por e-mail para erros novos
-- [ ] Alternativa: Sentry (mais robusto, free tier generoso): `composer require sentry/sentry-laravel`
+**O que foi feito:**
+- [x] Flare instalado e configurado
+- [x] `APP_DEBUG=false` em produção
+- [x] Alertas por e-mail para erros novos configurados
 
 ---
 
@@ -259,33 +159,12 @@ echo "Backup concluído: invexa_$DATE.sql.gz"
 - **Prioridade:** 🟡 Média
 - **Esforço:** Alto (~2–3 dias)
 - **Impacto:** Conformidade financeira + suporte ao cliente
-- **Status:** 🔲 Em andamento (estrutura criada)
+- **Status:** ✅ Concluído
 
-**O que fazer:**
-- [ ] Definir quais eventos devem ser logados (prioridade máxima):
-  - Criação/edição/exclusão de Vendas
-  - Baixa de Contas a Pagar e Receber
-  - Criação/cancelamento de Assinaturas
-  - Login/logout / falhas de autenticação
-  - Criação/exclusão de Usuários
-  - Impersonation (início e fim)
-- [ ] Implementar `AuditLog::record()` nos Controllers críticos
-- [ ] Estrutura sugerida para cada log:
-  ```php
-  AuditLog::create([
-      'company_id'  => auth()->user()->company_id,
-      'user_id'     => auth()->id(),
-      'action'      => 'sale.created',    // entidade.ação
-      'entity_type' => 'Sale',
-      'entity_id'   => $sale->id,
-      'old_values'  => null,
-      'new_values'  => $sale->toArray(),
-      'ip_address'  => request()->ip(),
-  ]);
-  ```
-- [ ] Criar view no painel Admin para consultar logs por empresa
-- [ ] Criar view no painel Super-Admin para logs globais
-- [ ] Definir política de retenção de logs (sugestão: 12 meses)
+**O que foi feito:**
+- [x] `AuditLog::record()` implementado nos Controllers críticos
+- [x] Eventos logados: vendas, financeiro, assinaturas, login/logout, usuários, impersonation
+- [x] View de consulta de logs no painel Admin e Super-Admin
 
 ---
 
@@ -298,34 +177,7 @@ echo "Backup concluído: invexa_$DATE.sql.gz"
 - **Prioridade:** 🟢 Importante
 - **Esforço:** Alto (~1 semana)
 - **Impacto:** Segurança para evoluir o produto sem quebrar o que existe
-- **Status:** 🔲 Pendente
-
-**Meta de cobertura mínima por área:**
-
-| Área | Testes mínimos | Prioridade |
-|------|---------------|-----------|
-| Autenticação (login, 2FA, throttle) | 5 | 🔴 Alta |
-| Multi-tenancy (isolamento de company_id) | 4 | 🔴 Alta |
-| RBAC (acesso por papel por rota) | 6 | 🔴 Alta |
-| Vendas (criar, cancelar, PDF) | 4 | 🟠 Alta |
-| Financeiro (baixa individual e lote) | 4 | 🟠 Alta |
-| Stripe Webhook (checkout, cancel, renewal) | 3 | 🟠 Alta |
-| Estoque (entrada, saída, alerta mínimo) | 3 | 🟡 Média |
-| Onboarding (fluxo completo, skip) | 2 | 🟡 Média |
-| Relatórios (geração PDF/CSV) | 3 | 🟡 Média |
-
-**Arquivos a criar:**
-```
-tests/Feature/Auth/AuthenticationTest.php
-tests/Feature/Auth/TwoFactorTest.php
-tests/Feature/MultiTenancy/DataIsolationTest.php
-tests/Feature/RBAC/RoleAccessTest.php
-tests/Feature/Sales/SaleFlowTest.php
-tests/Feature/Financial/BillTest.php
-tests/Feature/Financial/ReceivableTest.php
-tests/Feature/Billing/StripeWebhookTest.php
-tests/Feature/Stock/StockMovementTest.php
-```
+- **Status:** ✅ Concluído
 
 ---
 
@@ -334,14 +186,7 @@ tests/Feature/Stock/StockMovementTest.php
 - **Prioridade:** 🟢 Importante
 - **Esforço:** Baixo (~2h)
 - **Impacto:** Identificar queries lentas e N+1 antes de virarem problema
-- **Status:** 🔲 Pendente
-
-**O que fazer:**
-- [ ] Instalar Telescope apenas em staging/dev: `composer require laravel/telescope --dev`
-- [ ] Proteger rota `/telescope` com middleware de autenticação
-- [ ] Monitorar: queries lentas (>100ms), jobs falhos, e-mails enviados
-- [ ] Identificar e corrigir top 5 queries mais lentas por módulo
-- [ ] Adicionar índices necessários nas migrations (verificar `company_id` + `created_at` em tabelas grandes)
+- **Status:** ✅ Concluído
 
 ---
 
@@ -350,14 +195,7 @@ tests/Feature/Stock/StockMovementTest.php
 - **Prioridade:** 🟢 Importante (futuro)
 - **Esforço:** Baixo (~3h)
 - **Impacto:** Escalabilidade de jobs e notificações
-- **Status:** 🔲 Pendente (quando atingir >100 usuários ativos)
-
-**O que fazer:**
-- [ ] Instalar Redis no VPS: `apt install redis-server`
-- [ ] Instalar predis: `composer require predis/predis`
-- [ ] Atualizar `.env`: `QUEUE_CONNECTION=redis` e `CACHE_DRIVER=redis`
-- [ ] Rodar `php artisan queue:work` via Supervisor para resiliência
-- [ ] Configurar Supervisor para reiniciar workers automaticamente
+- **Status:** ✅ Concluído
 
 ---
 
@@ -367,23 +205,23 @@ tests/Feature/Stock/StockMovementTest.php
 
 ---
 
-### 5.1 — Integração Pix (Asaas ou Pagar.me)
+### 5.1 — Integração Pix multi-tenant (Asaas por empresa)
 
 - **Prioridade:** 🔵 Estratégica
 - **Esforço:** Alto (~2 semanas)
 - **Impacto:** Altíssimo — feature mais solicitada por PMEs brasileiras
-- **Status:** 🔲 Planejado
+- **Status:** 🔲 Planejado — cada empresa deve usar sua própria conta Asaas
+
+**Decisão tomada:** Pix multi-tenant — cada cliente conecta sua própria conta Asaas.
 
 **O que fazer:**
-- [ ] Avaliar gateway: **Asaas** (melhor DX para Laravel no Brasil) ou **Pagar.me**
-- [ ] Criar conta Asaas e obter chaves de API
-- [ ] Instalar SDK: `composer require asaas/asaas-sdk-php` ou implementar via HTTP
-- [ ] Implementar `PixPaymentService`:
-  - Gerar cobrança Pix na finalização de venda
-  - Retornar QR Code e copia-e-cola
-  - Webhook Asaas para confirmação de pagamento
-  - Baixar automaticamente Conta a Receber ao confirmar Pix
-- [ ] Adicionar campo `payment_method` e `pix_charge_id` na tabela `sales`
+- [ ] Adicionar campos `asaas_api_key` e `asaas_wallet_id` na tabela `companies`
+- [ ] Criar tela de configuração Asaas no painel da empresa
+- [ ] Implementar `PixPaymentService` usando a chave da empresa autenticada
+- [ ] Gerar cobrança Pix na finalização de venda
+- [ ] Retornar QR Code e copia-e-cola
+- [ ] Webhook Asaas para confirmação de pagamento por empresa
+- [ ] Baixar automaticamente Conta a Receber ao confirmar Pix
 - [ ] Exibir QR Code no PDV e na nota/invoice PDF
 - [ ] Testar fluxo completo: venda → Pix → confirmação automática → baixa AR
 
@@ -394,20 +232,24 @@ tests/Feature/Stock/StockMovementTest.php
 - **Prioridade:** 🔵 Estratégica
 - **Esforço:** Muito alto (~4–6 semanas)
 - **Impacto:** Altíssimo — principal driver de upgrade e retenção
-- **Status:** 🔲 Planejado
+- **Status:** 🔲 Em andamento — Focus NFe escolhido, modelo multi-tenant (cada empresa usa sua própria conta)
+
+**Decisão tomada:** Focus NFe, NF-e manual (usuário clica "Emitir"), cada empresa com suas próprias credenciais.
 
 **O que fazer:**
-- [ ] Avaliar API de NF-e: **Focus NFe** (mais simples), **eNotas** ou **NFEio**
-- [ ] Criar conta e obter credenciais de homologação
-- [ ] Implementar `InvoiceService` para NF-e (produtos) e NFS-e (serviços):
-  - Emitir NF-e ao concluir venda (opcional ou automático)
+- [ ] Criar conta Focus NFe e obter credenciais de homologação
+- [ ] Adicionar campos fiscais na tabela `companies`:
+  - CNPJ, IE, regime tributário, série NF, certificado A1 (.pfx)
+  - Campos `focusnfe_token` e `focusnfe_cnpj`
+- [ ] Adicionar campos fiscais na tabela `products`:
+  - NCM, CFOP, CST, alíquotas ICMS/PIS/COFINS
+- [ ] Adicionar campos fiscais na tabela `customers`:
+  - CPF/CNPJ, inscrição estadual
+- [ ] Implementar `NFeService`:
+  - Emitir NF-e ao concluir venda (botão manual)
   - Download do XML e DANFE em PDF
   - Cancelamento de NF-e
   - Carta de correção
-- [ ] Adicionar campos fiscais nos cadastros:
-  - Produto: NCM, CFOP, CST, alíquotas ICMS/PIS/COFINS
-  - Cliente: CPF/CNPJ, inscrição estadual
-  - Empresa: CNPJ, IE, regime tributário, série NF
 - [ ] Adicionar módulo "Fiscal" no menu (gerente+)
 - [ ] Testes extensivos em homologação antes de produção
 - [ ] Documentar configuração fiscal por estado
@@ -457,59 +299,57 @@ tests/Feature/Stock/StockMovementTest.php
 
 ## 📋 Checklist de Status Geral
 
-> Atualizar conforme cada item for concluído.
+> Atualizado em Junho 2026.
 
 ### Fase 1 — Credibilidade & Estabilidade
-- [ ] 1.1 Domínio próprio em produção
-- [ ] 1.2 Backup automatizado e testado
-- [ ] 1.3 SESSION_SECURE_COOKIE corrigido
+- [x] 1.1 Domínio próprio em produção (`invexa-app.com.br`)
+- [x] 1.2 Backup automatizado e testado
+- [x] 1.3 SESSION_SECURE_COOKIE corrigido
 
 ### Fase 2 — Produto & Conversão
-- [ ] 2.1 Screenshots reais na landing page
-- [ ] 2.2 Depoimentos com credibilidade
-- [ ] 2.3 Canal de suporte (WhatsApp / Chat)
-- [ ] 2.4 Plano Free / tabela de comparação clara
+- [x] 2.1 Screenshots reais na landing page
+- [x] 2.2 Depoimentos com credibilidade
+- [x] 2.3 Canal de suporte (WhatsApp / Chat)
+- [x] 2.4 Plano Free / tabela de comparação clara
 
 ### Fase 3 — Conformidade & Segurança
-- [ ] 3.1 LGPD: Política de Privacidade e Termos de Uso
-- [ ] 3.2 Monitoramento de erros (Sentry / Flare)
-- [ ] 3.3 Audit Log completo
+- [x] 3.1 LGPD: Política de Privacidade e Termos de Uso
+- [x] 3.2 Monitoramento de erros (Flare instalado)
+- [x] 3.3 Audit Log completo
 
 ### Fase 4 — Qualidade Técnica
-- [ ] 4.1 Suíte de testes expandida
-- [ ] 4.2 Observabilidade (Laravel Telescope)
-- [ ] 4.3 Migração para Redis (quando necessário)
+- [x] 4.1 Suíte de testes expandida
+- [x] 4.2 Observabilidade (Laravel Telescope)
+- [x] 4.3 Migração para Redis
 
 ### Fase 5 — Diferenciação de Mercado
-- [ ] 5.1 Integração Pix (Asaas / Pagar.me)
-- [ ] 5.2 NF-e / NFS-e integrada
+- [ ] 5.1 Pix multi-tenant (Asaas por empresa)
+- [ ] 5.2 NF-e / NFS-e integrada (Focus NFe — em andamento)
 - [ ] 5.3 App mobile (PWA)
 - [ ] 5.4 API pública documentada
 
 ---
 
-## 🧠 Decisões Pendentes
+## 🧠 Decisões Tomadas
 
-> Registrar decisões estratégicas que precisam ser tomadas antes de implementar.
-
-| # | Decisão | Opções | Prazo | Status |
-|---|---------|--------|-------|--------|
-| D1 | Estratégia de aquisição: Freemium ou Trial longo? | Free permanente c/ limites vs Trial 30 dias | Fase 2 | ⏳ Pendente |
-| D2 | Gateway de pagamento nacional | Asaas vs Pagar.me vs Stripe+Pix | Fase 5 | ⏳ Pendente |
-| D3 | API de NF-e | Focus NFe vs eNotas vs NFEio | Fase 5 | ⏳ Pendente |
-| D4 | Monitoramento de erros | Flare (Laravel-nativo) vs Sentry | Fase 3 | ⏳ Pendente |
+| # | Decisão | Escolha | Data |
+|---|---------|---------|------|
+| D1 | Estratégia de aquisição | Trial com bloqueio automático ao vencer | Jun/2026 |
+| D2 | Gateway Pix | Asaas multi-tenant (cada empresa usa sua conta) | Jun/2026 |
+| D3 | API de NF-e | Focus NFe | Jun/2026 |
+| D4 | Monitoramento de erros | Flare | Jun/2026 |
 
 ---
 
 ## 📈 Métricas de Sucesso por Fase
 
-| Fase | Métrica-chave | Meta |
-|------|--------------|------|
-| Fase 1 | Domínio próprio no ar | ✓ / ✗ |
-| Fase 2 | Taxa de conversão landing → trial | > 5% |
-| Fase 3 | Uptime em produção | > 99.5% |
-| Fase 4 | Cobertura de testes (controllers críticos) | > 60% |
-| Fase 5 | MRR após 6 meses | Definir meta |
+| Fase | Métrica-chave | Meta | Status |
+|------|--------------|------|--------|
+| Fase 1 | Domínio próprio no ar | ✓ / ✗ | ✅ |
+| Fase 2 | Taxa de conversão landing → trial | > 5% | ✅ |
+| Fase 3 | Uptime em produção | > 99.5% | ✅ |
+| Fase 4 | Cobertura de testes (controllers críticos) | > 60% | ✅ |
+| Fase 5 | MRR após 6 meses | Definir meta | 🔲 |
 
 ---
 
@@ -518,11 +358,9 @@ tests/Feature/Stock/StockMovementTest.php
 | Recurso | URL |
 |---------|-----|
 | Flare (monitoramento Laravel) | https://flareapp.io |
-| Sentry para Laravel | https://docs.sentry.io/platforms/php/guides/laravel |
 | Focus NFe API | https://focusnfe.com.br |
 | eNotas API | https://enotas.com.br |
 | Asaas (Pix/boleto BR) | https://asaas.com/developers |
-| Pagar.me | https://pagar.me/developers |
 | iubenda (LGPD) | https://iubenda.com |
 | Laravel Telescope | https://laravel.com/docs/telescope |
 | Laravel Cashier (Stripe) | https://laravel.com/docs/billing |
@@ -530,5 +368,5 @@ tests/Feature/Stock/StockMovementTest.php
 
 ---
 
-*Documento gerado em Junho 2026 — Invexa v1.0 em produção*
+*Documento atualizado em Junho 2026 — Invexa v1.0 em produção*
 *Repositório: https://github.com/AugustoCastilhoDev/invexa*
