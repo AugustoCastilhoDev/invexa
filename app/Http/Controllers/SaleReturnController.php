@@ -168,4 +168,28 @@ class SaleReturnController extends Controller
 
         return response()->json($items);
     }
+
+    public function items(\App\Models\Sale $sale)
+    {
+        $alreadyReturned = \App\Models\SaleReturnItem::whereHas("saleReturn", fn($q) => $q->where("sale_id", $sale->id))
+            ->selectRaw("product_id, SUM(quantity) as total_returned")
+            ->groupBy("product_id")
+            ->pluck("total_returned", "product_id")
+            ->map(fn($v) => (int) $v);
+
+        $items = $sale->items
+            ->filter(fn($i) => $i->product !== null)
+            ->map(fn($i) => [
+                "product_id"       => $i->product_id,
+                "product_name"     => $i->product->name,
+                "quantity"         => $i->quantity,
+                "already_returned" => $alreadyReturned->get($i->product_id, 0),
+                "available"        => max(0, $i->quantity - $alreadyReturned->get($i->product_id, 0)),
+                "price"            => (float) $i->price,
+                "subtotal"         => (float) $i->subtotal,
+            ])
+            ->values();
+
+        return response()->json($items);
+    }
 }

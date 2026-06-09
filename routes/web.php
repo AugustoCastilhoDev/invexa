@@ -116,6 +116,7 @@ Route::middleware('auth')->group(function () {
 
         // Returns
         Route::resource('returns', SaleReturnController::class);
+Route::get('returns/{sale}/items', [SaleReturnController::class, 'items'])->name('returns.items');
 
         // Suppliers
         Route::resource('suppliers', SupplierController::class);
