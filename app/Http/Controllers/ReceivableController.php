@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\AuditLogger;
+
 use App\Models\Receivable;
 use App\Services\WebhookDispatcher;
 use Illuminate\Http\Request;

@@ -175,7 +175,7 @@ class DashboardController extends Controller
             ->join('sales', 'sales.id', '=', 'sale_items.sale_id')
             ->join('products', 'products.id', '=', 'sale_items.product_id')
             ->where('sales.company_id', $companyId)
-            ->where('sales.status', '!=', 'cancelada')
+            ->where('sales.status', 'concluida')
             ->select(
                 'products.id',
                 'products.name',

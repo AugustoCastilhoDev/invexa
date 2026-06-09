@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\AuditLogger;
+
 use App\Mail\WelcomeMail;
 use App\Models\User;
 use Illuminate\Http\Request;

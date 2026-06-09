@@ -13,7 +13,7 @@
                 @endif
             </div>
             <div class="d-flex gap-2 flex-wrap">
-                @if(auth()->user()->hasRole(['admin','gerente']))
+                @if(auth()->user()->hasLegacyRole(['admin','gerente']))
                     <a href="{{ route('suppliers.edit', $supplier) }}" class="btn btn-outline-primary btn-sm">
                         <i class="bi bi-pencil me-1"></i>Editar
                     </a>

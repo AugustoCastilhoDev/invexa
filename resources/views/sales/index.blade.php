@@ -16,7 +16,7 @@
             <p class="text-soft mb-0">Acompanhe pedidos, status e receita com eficiência.</p>
         </div>
         <div class="d-flex flex-wrap gap-2">
-            @if(auth()->user()->hasRole(['admin','gerente']))
+            @if(auth()->user()->hasLegacyRole(['admin','gerente']))
                 @if($showTrashed ?? false)
                     <a href="{{ route('sales.index') }}" class="btn btn-outline-light">
                         <i class="bi bi-arrow-left me-1"></i>Voltar às Vendas
@@ -180,7 +180,7 @@
                                                 <i class="bi bi-arrow-counterclockwise"></i> Restaurar
                                             </button>
                                         </form>
-                                        @if(auth()->user()->hasRole(['admin']))
+                                        @if(auth()->user()->hasLegacyRole(['admin']))
                                         <form action="{{ route('sales.force-destroy', $sale->id) }}" method="POST"
                                               onsubmit="return confirm('Excluir permanentemente? Não há como desfazer.')">
                                             @csrf @method('DELETE')
@@ -192,7 +192,7 @@
                                     @else
                                         <a href="{{ route('sales.show', $sale) }}" class="btn btn-sm btn-outline-light">Ver</a>
 
-                                        @if(auth()->user()->hasRole(['admin','gerente']))
+                                        @if(auth()->user()->hasLegacyRole(['admin','gerente']))
                                             @if($sale->status !== 'cancelada')
                                                 <form action="{{ route('sales.cancel', $sale) }}" method="POST"
                                                       onsubmit="return confirm('Cancelar esta venda e estornar estoque?')">

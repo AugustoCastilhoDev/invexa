@@ -66,7 +66,7 @@
                     <i class="bi bi-person me-1"></i>Dados Pessoais
                 </a>
             </li>
-            @if(Auth::user()->hasRole('admin'))
+            @if(Auth::user()->isAdmin())
             <li class="nav-item">
                 <a class="nav-link" id="tab-empresa" href="#empresa" data-bs-toggle="tab"
                    style="color:rgba(226,232,240,.7); border-color:transparent;">
@@ -182,7 +182,7 @@
             </div>
 
             {{-- ── ABA EMPRESA (somente admin) ── --}}
-            @if(Auth::user()->hasRole('admin'))
+            @if(Auth::user()->isAdmin())
             <div class="tab-pane fade" id="empresa">
                 @php $company = Auth::user()->company; @endphp
 

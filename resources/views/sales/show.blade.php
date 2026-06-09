@@ -23,18 +23,20 @@
                         <i class="bi bi-arrow-return-left me-1"></i>Registrar Devolução
                     </a>
                 @endif
-	@if($sale->status === 'pendente')
-    <form action="{{ route('sales.status', $sale) }}" method="POST" class="d-inline">
-        @csrf
-        @method('PATCH')
-        <input type="hidden" name="status" value="concluida">
-        <button type="submit"
-                class="btn btn-success btn-sm"
-                onclick="return confirm('Confirmar esta venda como concluída?')">
-            <i class="bi bi-check-circle me-1"></i>Confirmar Venda
-        </button>
-    </form>
-@endif
+
+                @if($sale->status === 'pendente')
+                <form action="{{ route('sales.status', $sale) }}" method="POST" class="d-inline">
+                    @csrf
+                    @method('PATCH')
+                    <input type="hidden" name="status" value="concluida">
+                    <button type="submit"
+                            class="btn btn-success btn-sm"
+                            onclick="return confirm('Confirmar esta venda como concluída?')">
+                        <i class="bi bi-check-circle me-1"></i>Confirmar Venda
+                    </button>
+                </form>
+                @endif
+
                 @if(auth()->user()->hasLegacyRole(['admin','gerente']))
                     @if($sale->status !== 'cancelada')
                         <a href="{{ route('sales.edit', $sale) }}" class="btn btn-outline-primary btn-sm">

@@ -159,7 +159,7 @@
 
 {{-- CARD DO PLANO — somente admin da empresa --}}
 @auth
-@if(Auth::user()->hasRole('admin') && Auth::user()->company)
+@if(Auth::user()->isAdmin() && Auth::user()->company)
 @php
     $company   = Auth::user()->company;
     $planLabel = ['free' => 'Free', 'pro' => 'Pro', 'business' => 'Business'][$company->plan] ?? 'Free';
@@ -286,7 +286,7 @@
         </a>
         @endif
 
-        @if(Auth::check() && Auth::user()->hasRole('admin'))
+        @if(Auth::check() && Auth::user()->isAdmin())
         <a href="{{ route('upgrade') }}" class="module-card" style="border-color:rgba(14,165,233,.18);">
             <div class="module-card-icon" style="background:rgba(14,165,233,.12); color:#38BDF8;"><i class="bi bi-rocket-takeoff"></i></div>
             <div>

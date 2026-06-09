@@ -94,14 +94,14 @@
                 <i class="bi bi-arrow-left me-1"></i>Voltar
             </a>
             @if($purchaseOrder->canSend())
-                @if(auth()->user()->hasRole(['admin','gerente']))
+                @if(auth()->user()->hasLegacyRole(['admin','gerente']))
                     <a href="{{ route('purchase-orders.edit', $purchaseOrder) }}" class="btn btn-sm btn-outline-warning">
                         <i class="bi bi-pencil me-1"></i>Editar
                     </a>
                 @endif
             @endif
             @if($purchaseOrder->canReceive())
-                @if(auth()->user()->hasRole(['admin','gerente']))
+                @if(auth()->user()->hasLegacyRole(['admin','gerente']))
                     <form method="POST" action="{{ route('purchase-orders.receive', $purchaseOrder) }}"
                           onsubmit="return confirm('Confirmar recebimento e atualizar estoque?')">
                         @csrf
@@ -113,7 +113,7 @@
                 @endif
             @endif
             @if($purchaseOrder->canCancel())
-                @if(auth()->user()->hasRole(['admin','gerente']))
+                @if(auth()->user()->hasLegacyRole(['admin','gerente']))
                     <form method="POST" action="{{ route('purchase-orders.destroy', $purchaseOrder) }}"
                           onsubmit="return confirm('Excluir esta ordem?')">
                         @csrf @method('DELETE')

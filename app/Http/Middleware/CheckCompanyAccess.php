@@ -43,7 +43,7 @@ class CheckCompanyAccess
             $hasSubscription = false;
         }
 
-        if ($company->isOnTrial() || $hasSubscription) return $next($request);
+        if ($company->isAccessible()) return $next($request);
 
         return redirect()->route('upgrade');
     }

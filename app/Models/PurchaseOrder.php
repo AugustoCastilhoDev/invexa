@@ -40,7 +40,13 @@ class PurchaseOrder extends Model
         static::creating(function (self $order) {
             if (empty($order->number)) {
                 $year  = now()->format('Y');
-                $count = static::whereYear('created_at', $year)->count() + 1;
+                $companyId = $order->company_id ?? auth()->user()?->company_id;
+                $last = static::withTrashed()->whereYear('created_at', $year)->where('company_id', $companyId)->max('number');
+                $count = $last ? ((int) substr($last, -4)) + 1 : 1;
+                // fallback: conta registros se max falhar
+                if ($count === 1 && static::whereYear('created_at', $year)->where('company_id', $companyId)->exists()) {
+                    $count = static::whereYear('created_at', $year)->where('company_id', $companyId)->count() + 1;
+                }
                 $order->number = 'OC-' . $year . '-' . str_pad($count, 4, '0', STR_PAD_LEFT);
             }
             if (empty($order->user_id)) {

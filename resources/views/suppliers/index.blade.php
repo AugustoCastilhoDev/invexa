@@ -11,7 +11,7 @@
         </div>
         <div class="d-flex flex-wrap gap-2">
             <a href="{{ route('dashboard') }}" class="btn btn-outline-light">Dashboard</a>
-            @if(auth()->user()->hasRole(['admin','gerente']))
+            @if(auth()->user()->hasLegacyRole(['admin','gerente']))
                 <a href="{{ route('suppliers.create') }}" class="btn btn-primary">
                     <i class="bi bi-plus-circle me-1"></i>Novo Fornecedor
                 </a>
@@ -150,7 +150,7 @@
                                     <a href="{{ route('suppliers.show', $supplier) }}" class="btn btn-sm btn-outline-light" title="Ver">
                                         <i class="bi bi-eye"></i>
                                     </a>
-                                    @if(auth()->user()->hasRole(['admin','gerente']))
+                                    @if(auth()->user()->hasLegacyRole(['admin','gerente']))
                                         <a href="{{ route('suppliers.edit', $supplier) }}" class="btn btn-sm btn-outline-primary" title="Editar">
                                             <i class="bi bi-pencil"></i>
                                         </a>
@@ -170,7 +170,7 @@
                             <td colspan="6" class="text-center py-5 text-soft">
                                 <i class="bi bi-truck fs-2 d-block mb-2 opacity-25"></i>
                                 Nenhum fornecedor encontrado.
-                                @if(auth()->user()->hasRole(['admin','gerente']))
+                                @if(auth()->user()->hasLegacyRole(['admin','gerente']))
                                     <div class="mt-2">
                                         <a href="{{ route('suppliers.create') }}" class="btn btn-sm btn-primary">Cadastrar primeiro fornecedor</a>
                                     </div>

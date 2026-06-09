@@ -23,7 +23,7 @@
                         </button>
                     </form>
                 @endif
-                @if(auth()->user()->hasRole(['admin']))
+                @if(auth()->user()->hasLegacyRole(['admin']))
                 <form action="{{ route('receivables.destroy', $receivable) }}" method="POST"
                       onsubmit="return confirm('Excluir esta conta permanentemente?')">
                     @csrf @method('DELETE')

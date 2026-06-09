@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\AuditLogger;
+
 use App\Models\Customer;
 use App\Models\Sale;
 use App\Services\WebhookDispatcher;

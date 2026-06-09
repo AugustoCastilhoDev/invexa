@@ -482,7 +482,7 @@
 {{--
     TRIAL BANNER
     Corrigido: usa isAdmin() (método legado do campo `role`) em vez de hasRole('admin') do Spatie.
-    Também usa as variáveis já calculadas no @php do topo para evitar queries duplicadas.
+    Também usa as variáveis já calculadas no @​php do topo para evitar queries duplicadas.
 --}}
 @auth
     @if($isOnTrialApp && Auth::user()->isAdmin())
@@ -527,33 +527,30 @@
 {{-- ── BOTÃO DE SUPORTE FLUTUANTE (diferenciado por plano) ── --}}
 @auth
 @php
-    $userPlan = auth()->user()->company?->plan ?? 'free';
-    $userName = auth()->user()->name ?? '';
+    $userPlan           = auth()->user()->company?->plan ?? 'free';
+    $userName           = auth()->user()->name ?? '';
     $companyNameSupport = auth()->user()->company?->name ?? '';
-    $waMsg = urlencode("Olá! Sou {$userName} da empresa {$companyNameSupport} (Plano " . strtoupper($userPlan) . ") e preciso de suporte.");
+    $waMsg              = urlencode("Olá! Sou {$userName} da empresa {$companyNameSupport} (Plano " . strtoupper($userPlan) . ") e preciso de suporte.");
+    $isOnTrialApp       = $isOnTrialApp ?? false;
 @endphp
-
 @if($userPlan === 'business')
-    {{-- Business: WhatsApp com atendimento prioritário --}}
-    <a href="https://wa.me/5532999669302?text={{ $waMsg }}"
-       target="_blank" rel="noopener noreferrer"
-       class="support-fab whatsapp"
-       title="Suporte prioritário via WhatsApp">
-        <span class="fab-tooltip">Suporte Prioritário</span>
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="white">
-            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
-            <path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.532 5.862L.057 23.55a.75.75 0 00.919.908l5.8-1.522A11.954 11.954 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.75a9.714 9.714 0 01-4.964-1.362l-.356-.211-3.644.956.973-3.533-.231-.365A9.714 9.714 0 012.25 12C2.25 6.615 6.615 2.25 12 2.25S21.75 6.615 21.75 12 17.385 21.75 12 21.75z"/>
-        </svg>
-    </a>
-
+<a href="https://wa.me/5532999669302?text={{ $waMsg }}"
+   target="_blank" rel="noopener noreferrer"
+   class="support-fab whatsapp"
+   title="Suporte prioritário via WhatsApp">
+    <span class="fab-tooltip">Suporte Prioritário</span>
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="white">
+        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+        <path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.532 5.862L.057 23.55a.75.75 0 00.919.908l5.8-1.522A11.954 11.954 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.75a9.714 9.714 0 01-4.964-1.362l-.356-.211-3.644.956.973-3.533-.231-.365A9.714 9.714 0 012.25 12C2.25 6.615 6.615 2.25 12 2.25S21.75 6.615 21.75 12 17.385 21.75 12 21.75z"/>
+    </svg>
+</a>
 @elseif($userPlan === 'pro' || $isOnTrialApp)
-    {{-- Pro / Trial: suporte por e-mail --}}
-    <a href="mailto:contato@invexa-app.com.br?subject=Suporte Invexa - {{ urlencode($companyNameSupport) }}&body=Olá, preciso de ajuda com o Invexa. Meu plano é {{ strtoupper($userPlan) }}.%0A%0ADescreva sua dúvida aqui:"
-       class="support-fab email"
-       title="Suporte via e-mail">
-        <span class="fab-tooltip">{{ $isOnTrialApp ? 'Suporte Trial' : 'Suporte por E-mail' }}</span>
-        <i class="bi bi-envelope-fill" style="color:white; font-size:1.2rem;"></i>
-    </a>
+<a href="mailto:contato@invexa-app.com.br?subject=Suporte Invexa - {{ urlencode($companyNameSupport) }}&body=Olá, preciso de ajuda com o Invexa. Meu plano é {{ strtoupper($userPlan) }}.%0A%0ADescreva sua dúvida aqui:"
+   class="support-fab email"
+   title="Suporte via e-mail">
+    <span class="fab-tooltip">{{ $isOnTrialApp ? 'Suporte Trial' : 'Suporte por E-mail' }}</span>
+    <i class="bi bi-envelope-fill" style="color:white; font-size:1.2rem;"></i>
+</a>
 @endif
 @endauth
 

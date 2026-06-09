@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\AuditLogger;
+
 use App\Jobs\ImportProductsCsvJob;
 use App\Models\Category;
 use App\Models\Product;

@@ -11,7 +11,7 @@
         </div>
         <div class="d-flex flex-wrap gap-2">
             <a href="{{ route('dashboard') }}" class="btn btn-outline-light btn-sm">Dashboard</a>
-            @if(auth()->user()->hasRole(['admin','gerente']))
+            @if(auth()->user()->hasLegacyRole(['admin','gerente']))
                 <a href="{{ route('purchase-orders.create') }}" class="btn btn-primary btn-sm">
                     <i class="bi bi-plus-circle me-1"></i>Nova Ordem
                 </a>
@@ -123,7 +123,7 @@
                                     <a href="{{ route('purchase-orders.show', $order) }}" class="btn btn-sm btn-outline-light" title="Ver">
                                         <i class="bi bi-eye"></i>
                                     </a>
-                                    @if($order->canReceive() && auth()->user()->hasRole(['admin','gerente']))
+                                    @if($order->canReceive() && auth()->user()->hasLegacyRole(['admin','gerente']))
                                         <a href="{{ route('purchase-orders.show', $order) }}" class="btn btn-sm btn-outline-success" title="Receber">
                                             <i class="bi bi-box-arrow-in-down"></i>
                                         </a>
@@ -136,7 +136,7 @@
                             <td colspan="7" class="text-center py-5 text-soft">
                                 <i class="bi bi-cart-x fs-2 d-block mb-2 opacity-25"></i>
                                 Nenhuma ordem de compra encontrada.
-                                @if(auth()->user()->hasRole(['admin','gerente']))
+                                @if(auth()->user()->hasLegacyRole(['admin','gerente']))
                                     <div class="mt-2">
                                         <a href="{{ route('purchase-orders.create') }}" class="btn btn-sm btn-primary">Criar primeira ordem</a>
                                     </div>
