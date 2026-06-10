@@ -51,39 +51,4 @@ class CompanyProfileController extends Controller
 
         return back()->with('success', 'Logo removido com sucesso.');
     }
-    public function updateAsaas(Request $request)
-    {
-        $request->validate([
-            'asaas_api_key'     => ['nullable', 'string', 'max:255'],
-            'asaas_environment' => ['required', 'in:sandbox,production'],
-        ]);
-
-        $company = auth()->user()->company;
-        $data    = ['asaas_environment' => $request->asaas_environment];
-
-        if ($request->boolean('remove_api_key')) {
-            $data['asaas_api_key']   = null;
-            $data['asaas_wallet_id'] = null;
-            $company->update($data);
-            return back()->with('success', 'Integração Asaas removida.');
-        }
-
-        if ($request->filled('asaas_api_key')) {
-            $data['asaas_api_key'] = encrypt($request->asaas_api_key);
-        }
-
-        $company->update($data);
-
-        if ($request->filled('asaas_api_key')) {
-            $company->refresh();
-            $service = new \App\Services\PixPaymentService($company);
-            if (! $service->testConnection()) {
-                return back()->with('warning', 'Chave salva, mas não foi possível validar a conexão com o Asaas. Verifique a chave e o ambiente selecionado.');
-            }
-            return back()->with('success', 'Integração Asaas configurada e conexão validada!');
-        }
-
-        return back()->with('success', 'Configurações Asaas atualizadas.');
-    }
-
 }

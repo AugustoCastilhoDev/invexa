@@ -31,7 +31,6 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserInviteController;
 use App\Http\Controllers\WebhookEndpointController;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\AsaasWebhookController;
 
 /*
 |--------------------------------------------------------------------------
@@ -40,10 +39,6 @@ use App\Http\Controllers\AsaasWebhookController;
 */
 
 // Landing
-
-// Webhook Asaas — público (sem autenticação)
-Route::post('/webhook/asaas/{companySlug}', [AsaasWebhookController::class, 'handle'])->name('webhook.asaas');
-
 Route::get('/', [LandingController::class, 'index'])->name('landing');
 
 // Páginas legais (públicas, sem autenticação)
@@ -98,8 +93,6 @@ Route::middleware('auth')->group(function () {
 
         // Company Settings
         Route::patch('/settings/company',       [CompanyProfileController::class, 'update'])->name('settings.company.update');
-
-        Route::post('/settings/asaas', [\App\Http\Controllers\Settings\CompanyProfileController::class, 'updateAsaas'])->name('settings.asaas.update');
         Route::delete('/settings/company/logo', [CompanyProfileController::class, 'destroyLogo'])->name('settings.company.logo.destroy');
 
         // Sales

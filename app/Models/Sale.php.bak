@@ -17,7 +17,6 @@ class Sale extends Model
     protected $fillable = [
         'company_id', 'sale_number', 'customer_id', 'customer_name',
         'sale_date', 'status', 'notes', 'total',
-        'pix_charge_id', 'pix_payload', 'pix_qrcode_image', 'pix_expires_at', 'pix_paid_at',
     ];
 
     protected $casts = ['sale_date' => 'datetime'];

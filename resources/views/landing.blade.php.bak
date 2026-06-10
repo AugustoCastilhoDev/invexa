@@ -6,7 +6,7 @@
 
     {{-- SEO --}}
     <title>Invexa — Sistema de Gestão para Pequenas Empresas</title>
-    <meta name="description" content="Controle vendas, estoque, contas a pagar e receber em um só lugar. Experimente grátis por 14 dias, sem cartão de crédito.">
+    <meta name="description" content="Controle vendas, estoque, contas a pagar e receber em um só lugar. Experimente grátis por 30 dias, sem cartão de crédito.">
     <meta name="keywords" content="sistema de gestão, ERP, controle de estoque, vendas, contas a pagar, pequenas empresas, SaaS">
     <meta name="robots" content="index, follow">
     <link rel="canonical" href="{{ url('/') }}">
@@ -15,7 +15,7 @@
     <meta property="og:type" content="website">
     <meta property="og:url" content="{{ url('/') }}">
     <meta property="og:title" content="Invexa — Sistema de Gestão para Pequenas Empresas">
-    <meta property="og:description" content="Controle vendas, estoque, contas a pagar e receber em um só lugar. 14 dias grátis.">
+    <meta property="og:description" content="Controle vendas, estoque, contas a pagar e receber em um só lugar. 30 dias grátis.">
     <meta property="og:image" content="{{ asset('images/og-image.png') }}">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
@@ -92,15 +92,45 @@
         .feature-card h5 { color: #f1f5f9; font-weight: 700; font-size: 1rem; }
         .feature-card p { font-size: .875rem; color: rgba(226,232,240,.6); margin: 0; }
 
-        /* DEPOIMENTOS */
-        .testimonials { background: var(--abyss); }
-        .testimonial-card { background: rgba(13,25,41,.85); border: 1px solid rgba(14,165,233,.1); border-radius: 14px; padding: 28px; height: 100%; }
-        .testimonial-card .stars { color: #FBBF24; font-size: .85rem; margin-bottom: .75rem; letter-spacing: .05em; }
-        .testimonial-card blockquote { font-size: .9rem; color: rgba(226,232,240,.8); line-height: 1.65; font-style: italic; margin: 0 0 1.25rem; }
-        .testimonial-card blockquote::before { content: '\201C'; color: var(--sky); font-size: 1.6rem; line-height: 0; vertical-align: -0.45em; margin-right: .15rem; }
-        .testimonial-avatar { width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, var(--sky), var(--electric)); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: .85rem; color: var(--abyss); flex-shrink: 0; }
-        .testimonial-name { font-size: .85rem; font-weight: 700; color: #e2e8f0; }
-        .testimonial-role { font-size: .75rem; color: rgba(148,163,184,.6); }
+        /* VS PLANILHAS */
+        .vs-section { background: var(--abyss); }
+        .vs-table-wrap { overflow-x: auto; }
+        .vs-table { width: 100%; border-collapse: separate; border-spacing: 0; border-radius: 14px; overflow: hidden; }
+        .vs-table thead tr th { padding: 1rem 1.25rem; font-size: .78rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+        .vs-table thead .th-feature { background: rgba(13,25,41,.9); color: rgba(148,163,184,.6); width: 40%; }
+        .vs-table thead .th-invexa  { background: rgba(14,165,233,.15); color: var(--electric); text-align: center; border-left: 1px solid rgba(14,165,233,.2); }
+        .vs-table thead .th-sheet   { background: rgba(30,30,30,.7); color: rgba(148,163,184,.5); text-align: center; border-left: 1px solid rgba(255,255,255,.05); }
+        .vs-table tbody tr { border-bottom: 1px solid rgba(255,255,255,.04); }
+        .vs-table tbody tr:last-child { border-bottom: none; }
+        .vs-table tbody tr:hover .td-feature,
+        .vs-table tbody tr:hover .td-invexa,
+        .vs-table tbody tr:hover .td-sheet { background-color: rgba(255,255,255,.025); }
+        .vs-table .td-feature { padding: .9rem 1.25rem; font-size: .875rem; color: #e2e8f0; background: rgba(13,25,41,.7); }
+        .vs-table .td-invexa  { padding: .9rem 1.25rem; text-align: center; background: rgba(14,165,233,.06); border-left: 1px solid rgba(14,165,233,.1); }
+        .vs-table .td-sheet   { padding: .9rem 1.25rem; text-align: center; background: rgba(13,25,41,.5); border-left: 1px solid rgba(255,255,255,.04); }
+        .vs-table .ic-yes  { color: #4ade80; font-size: 1.1rem; }
+        .vs-table .ic-no   { color: #f87171; font-size: 1.1rem; }
+        .vs-table .ic-par  { color: #fbbf24; font-size: .85rem; }
+        /* CTA pós-tabela */
+        .vs-cta-block {
+            background: linear-gradient(135deg, rgba(14,165,233,.1), rgba(56,189,248,.05));
+            border: 1px solid rgba(14,165,233,.2);
+            border-radius: 16px;
+            padding: 2rem 2.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+        }
+        .vs-cta-block .vs-cta-text p { margin: 0; font-size: .88rem; color: rgba(226,232,240,.6); margin-top: .3rem; }
+        .vs-cta-block .vs-cta-text strong { font-size: 1.05rem; color: #f1f5f9; font-weight: 700; }
+        /* Cards de vantagens */
+        .adv-card { background: rgba(13,25,41,.8); border: 1px solid rgba(14,165,233,.1); border-radius: 14px; padding: 24px; height: 100%; transition: border-color .25s, transform .2s; }
+        .adv-card:hover { border-color: rgba(14,165,233,.3); transform: translateY(-3px); }
+        .adv-icon { width: 44px; height: 44px; border-radius: 10px; background: rgba(14,165,233,.12); display: flex; align-items: center; justify-content: center; font-size: 1.3rem; color: var(--sky); margin-bottom: .85rem; flex-shrink: 0; }
+        .adv-card h6 { color: #f1f5f9; font-weight: 700; font-size: .95rem; margin-bottom: .35rem; }
+        .adv-card p  { font-size: .82rem; color: rgba(226,232,240,.6); margin: 0; line-height: 1.55; }
 
         /* PLANOS */
         .plans { background: rgba(8,13,26,.6); }
@@ -202,6 +232,7 @@
             <ul class="navbar-nav ms-auto align-items-lg-center gap-2">
                 <li class="nav-item"><a class="nav-link" href="#how">Como funciona</a></li>
                 <li class="nav-item"><a class="nav-link" href="#features">Funcionalidades</a></li>
+                <li class="nav-item"><a class="nav-link" href="#vs">Vs. Planilhas</a></li>
                 <li class="nav-item"><a class="nav-link" href="#plans">Planos</a></li>
                 <li class="nav-item"><a class="nav-link" href="#faq">FAQ</a></li>
                 <li class="nav-item ms-lg-2">
@@ -218,7 +249,7 @@
 {{-- HERO --}}
 <section class="hero text-center">
     <div class="container">
-        <div class="hero-badge"><i class="bi bi-stars"></i>14 dias grátis · Sem cartão de crédito</div>
+        <div class="hero-badge"><i class="bi bi-stars"></i>30 dias grátis · Sem cartão de crédito</div>
         <h1>Gerencie seu negócio<br><span>com simplicidade e controle</span></h1>
         <p class="lead mx-auto">Invexa é o sistema de gestão completo para pequenas e médias empresas: vendas, estoque, financeiro e relatórios — tudo em um só lugar.</p>
         <div class="d-flex justify-content-center gap-3 flex-wrap">
@@ -226,7 +257,7 @@
             <a href="#how" class="btn-hero-secondary">Ver como funciona</a>
         </div>
         <div class="hero-metrics">
-            <div class="metric-item"><div class="value">14 dias</div><div class="label">Trial gratuito</div></div>
+            <div class="metric-item"><div class="value">30 dias</div><div class="label">Trial gratuito</div></div>
             <div class="metric-item"><div class="value">3 min</div><div class="label">Para começar</div></div>
             <div class="metric-item"><div class="value">100%</div><div class="label">Web — sem instalação</div></div>
             <div class="metric-item"><div class="value">Multi</div><div class="label">Usuários por empresa</div></div>
@@ -475,52 +506,130 @@
     </div>
 </section>
 
-{{-- DEPOIMENTOS --}}
-<section class="testimonials" id="testimonials">
+<div class="divider"></div>
+
+{{-- INVEXA VS PLANILHAS --}}
+<section class="vs-section" id="vs">
     <div class="container">
         <div class="text-center mb-5">
-            <span class="section-label">Quem já usa</span>
-            <h2 class="section-title">O que nossos clientes dizem</h2>
-            <p class="section-sub">Pequenas empresas que ganharam tempo e clareza financeira com o Invexa.</p>
+            <span class="section-label">Por que trocar?</span>
+            <h2 class="section-title">Invexa vs. Planilhas</h2>
+            <p class="section-sub">Planilhas até funcionam no começo — mas chegam rápido no limite. Veja o que muda quando você usa um sistema feito para o seu negócio.</p>
         </div>
-        <div class="row g-4">
-            <div class="col-md-4">
-                <div class="testimonial-card">
-                    <div class="stars">★★★★★</div>
-                    <blockquote>Antes eu controlava tudo em planilha e perdia horas toda semana. Com o Invexa, sei exatamente o que vendi, o que lucrei e o que tenho em estoque em tempo real.</blockquote>
-                    <div class="d-flex align-items-center gap-2">
-                        <div class="testimonial-avatar">MC</div>
-                        <div>
-                            <div class="testimonial-name">Mariana C.</div>
-                            <div class="testimonial-role">Loja de roupas — MG</div>
-                        </div>
-                    </div>
+
+        {{-- Tabela comparativa --}}
+        <div class="vs-table-wrap mb-4">
+            <table class="vs-table">
+                <thead>
+                    <tr>
+                        <th class="th-feature">Recurso</th>
+                        <th class="th-invexa"><i class="bi bi-stars me-1"></i>Invexa</th>
+                        <th class="th-sheet"><i class="bi bi-file-earmark-spreadsheet me-1"></i>Planilha</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="td-feature">Estoque atualizado automaticamente a cada venda</td>
+                        <td class="td-invexa"><i class="bi bi-check-circle-fill ic-yes"></i></td>
+                        <td class="td-sheet"><i class="bi bi-x-circle-fill ic-no"></i></td>
+                    </tr>
+                    <tr>
+                        <td class="td-feature">Alertas de estoque mínimo em tempo real</td>
+                        <td class="td-invexa"><i class="bi bi-check-circle-fill ic-yes"></i></td>
+                        <td class="td-sheet"><i class="bi bi-x-circle-fill ic-no"></i></td>
+                    </tr>
+                    <tr>
+                        <td class="td-feature">Contas a pagar e receber integradas</td>
+                        <td class="td-invexa"><i class="bi bi-check-circle-fill ic-yes"></i></td>
+                        <td class="td-sheet"><i class="bi bi-x-circle-fill ic-no"></i></td>
+                    </tr>
+                    <tr>
+                        <td class="td-feature">Relatórios e gráficos gerados automaticamente</td>
+                        <td class="td-invexa"><i class="bi bi-check-circle-fill ic-yes"></i></td>
+                        <td class="td-sheet"><span class="ic-par">Manual e trabalhoso</span></td>
+                    </tr>
+                    <tr>
+                        <td class="td-feature">Múltiplos usuários com permissões separadas</td>
+                        <td class="td-invexa"><i class="bi bi-check-circle-fill ic-yes"></i></td>
+                        <td class="td-sheet"><i class="bi bi-x-circle-fill ic-no"></i></td>
+                    </tr>
+                    <tr>
+                        <td class="td-feature">Histórico de vendas e movimentações auditável</td>
+                        <td class="td-invexa"><i class="bi bi-check-circle-fill ic-yes"></i></td>
+                        <td class="td-sheet"><span class="ic-par">Fácil de apagar por acidente</span></td>
+                    </tr>
+                    <tr>
+                        <td class="td-feature">Acesso pelo celular sem instalar nada</td>
+                        <td class="td-invexa"><i class="bi bi-check-circle-fill ic-yes"></i></td>
+                        <td class="td-sheet"><span class="ic-par">Limitado</span></td>
+                    </tr>
+                    <tr>
+                        <td class="td-feature">Dados seguros com backup automático</td>
+                        <td class="td-invexa"><i class="bi bi-check-circle-fill ic-yes"></i></td>
+                        <td class="td-sheet"><i class="bi bi-x-circle-fill ic-no"></i></td>
+                    </tr>
+                    <tr>
+                        <td class="td-feature">Tempo para registrar uma venda</td>
+                        <td class="td-invexa" style="color:#4ade80; font-weight:700; font-size:.82rem;">Segundos</td>
+                        <td class="td-sheet" style="color:#f87171; font-size:.82rem;">Minutos (manual)</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        {{-- CTA pós-tabela --}}
+        <div class="vs-cta-block mb-5">
+            <div class="vs-cta-text">
+                <strong>Pronto para sair das planilhas de vez?</strong>
+                <p>Crie sua conta grátis agora — sem cartão, sem burocracia. Em 3 minutos você já tem tudo funcionando.</p>
+            </div>
+            <a href="{{ route('register') }}" class="btn-hero-primary flex-shrink-0" style="white-space:nowrap;">
+                <i class="bi bi-rocket-takeoff me-2"></i>Começar grátis por 30 dias
+            </a>
+        </div>
+
+        {{-- Cards de vantagens --}}
+        <div class="row g-3">
+            <div class="col-sm-6 col-lg-4">
+                <div class="adv-card">
+                    <div class="adv-icon"><i class="bi bi-lightning-charge-fill"></i></div>
+                    <h6>Zero retrabalho</h6>
+                    <p>Cada venda atualiza estoque, financeiro e relatórios automaticamente. Sem copiar e colar dados entre abas.</p>
                 </div>
             </div>
-            <div class="col-md-4">
-                <div class="testimonial-card">
-                    <div class="stars">★★★★★</div>
-                    <blockquote>Sistema simples e completo. Cadastrei os produtos, treinei minha equipe em menos de uma tarde e já estávamos vendendo. O relatório de lucratividade por produto é incrível.</blockquote>
-                    <div class="d-flex align-items-center gap-2">
-                        <div class="testimonial-avatar">RF</div>
-                        <div>
-                            <div class="testimonial-name">Ricardo F.</div>
-                            <div class="testimonial-role">Distribuidora de alimentos — SP</div>
-                        </div>
-                    </div>
+            <div class="col-sm-6 col-lg-4">
+                <div class="adv-card">
+                    <div class="adv-icon"><i class="bi bi-shield-check"></i></div>
+                    <h6>Dados sempre seguros</h6>
+                    <p>Backup automático diário na nuvem. Nada se perde por acidente, travamento ou exclusão acidental.</p>
                 </div>
             </div>
-            <div class="col-md-4">
-                <div class="testimonial-card">
-                    <div class="stars">★★★★★</div>
-                    <blockquote>O controle financeiro me salvou. Agora consigo ver contas a pagar e receber lado a lado, nunca mais perdi um vencimento. Recomendo para qualquer pequeno negócio.</blockquote>
-                    <div class="d-flex align-items-center gap-2">
-                        <div class="testimonial-avatar">AP</div>
-                        <div>
-                            <div class="testimonial-name">Ana P.</div>
-                            <div class="testimonial-role">Assistência técnica — RJ</div>
-                        </div>
-                    </div>
+            <div class="col-sm-6 col-lg-4">
+                <div class="adv-card">
+                    <div class="adv-icon"><i class="bi bi-graph-up-arrow"></i></div>
+                    <h6>Decisões baseadas em dados</h6>
+                    <p>Dashboard com gráficos em tempo real. Saiba o que vende mais, qual produto dá mais lucro e quando pagar suas contas.</p>
+                </div>
+            </div>
+            <div class="col-sm-6 col-lg-4">
+                <div class="adv-card">
+                    <div class="adv-icon"><i class="bi bi-people-fill"></i></div>
+                    <h6>Toda a equipe na mesma página</h6>
+                    <p>Vendedor registra a venda, gerente acompanha em tempo real. Cada um com seu acesso e permissões.</p>
+                </div>
+            </div>
+            <div class="col-sm-6 col-lg-4">
+                <div class="adv-card">
+                    <div class="adv-icon"><i class="bi bi-alarm-fill"></i></div>
+                    <h6>Nunca mais perca um vencimento</h6>
+                    <p>Alertas de contas vencendo, estoque crítico e inadimplência — tudo visível logo na tela inicial.</p>
+                </div>
+            </div>
+            <div class="col-sm-6 col-lg-4">
+                <div class="adv-card">
+                    <div class="adv-icon"><i class="bi bi-clock-history"></i></div>
+                    <h6>Horas devolvidas por semana</h6>
+                    <p>Tudo o que antes tomava horas em planilhas fica pronto em minutos. Você foca no negócio, o Invexa cuida dos números.</p>
                 </div>
             </div>
         </div>
@@ -535,7 +644,7 @@
         <div class="text-center mb-4">
             <span class="section-label">Planos &amp; Preços</span>
             <h2 class="section-title">Simples, transparente e justo</h2>
-            <p class="section-sub mb-0">Comece grátis por 14 dias. Sem cartão de crédito. Cancele quando quiser.</p>
+            <p class="section-sub mb-0">Plano Free para sempre, ou comece o trial de 30 dias dos planos pagos. Sem cartão de crédito.</p>
         </div>
 
         <div class="billing-toggle">
@@ -547,11 +656,44 @@
             <span class="toggle-label" id="label-annual">Anual <span class="annual-badge ms-1">-20%</span></span>
         </div>
 
-        <div class="row g-4 justify-content-center">
+        {{-- PLANOS — 3 cards: Free · Pro · Business --}}
+        <div class="row g-4 justify-content-center align-items-stretch">
+
+            {{-- FREE --}}
+            <div class="col-md-4">
+                <div class="plan-card h-100 d-flex flex-column">
+                    <div class="plan-name" style="color:#94a3b8;">Free</div>
+
+                    <div class="price-monthly">
+                        <div class="plan-price" style="color:#94a3b8;">R$ 0 <span>/mês</span></div>
+                        <div class="plan-price-billed">para sempre gratuito</div>
+                    </div>
+                    <div class="price-annual" style="display:none;">
+                        <div class="plan-price" style="color:#94a3b8;">R$ 0 <span>/mês</span></div>
+                        <div class="plan-price-billed">para sempre gratuito</div>
+                    </div>
+
+                    <p class="plan-desc mt-2">Para quem está começando e quer testar sem compromisso.</p>
+                    <ul class="list-unstyled plan-features">
+                        <li><i class="bi bi-check-circle-fill"></i> Até 50 produtos</li>
+                        <li><i class="bi bi-check-circle-fill"></i> Até 100 clientes</li>
+                        <li><i class="bi bi-check-circle-fill"></i> 2 usuários</li>
+                        <li><i class="bi bi-check-circle-fill"></i> PDV, estoque e financeiro</li>
+                        <li class="disabled"><i class="bi bi-dash-circle-fill"></i> Relatórios PDF/CSV</li>
+                        <li class="disabled"><i class="bi bi-dash-circle-fill"></i> Ordens de compra</li>
+                        <li class="disabled"><i class="bi bi-dash-circle-fill"></i> Suporte por e-mail</li>
+                    </ul>
+                    <a href="{{ route('register') }}"
+                       class="btn w-100 mt-auto"
+                       style="margin-top:1.5rem; border:1px solid rgba(148,163,184,.3); color:#94a3b8; font-weight:600; background:transparent;">
+                        Criar conta gratuita
+                    </a>
+                </div>
+            </div>
 
             {{-- PRO --}}
             <div class="col-md-4">
-                <div class="plan-card featured">
+                <div class="plan-card featured h-100 d-flex flex-column">
                     <span class="plan-badge">Mais popular</span>
                     <div class="plan-name">Pro</div>
                     <div class="plan-offer-badge"><i class="bi bi-lightning-fill"></i> Oferta de Lançamento</div>
@@ -578,8 +720,8 @@
                     </ul>
                     <a id="btn-pro"
                        href="{{ route('register') }}?plan=pro_launch&billing=monthly"
-                       class="btn btn-primary w-100 mt-4"
-                       style="background:var(--sky); border:none; font-weight:700;">
+                       class="btn btn-primary w-100 mt-auto"
+                       style="margin-top:1.5rem; background:var(--sky); border:none; font-weight:700;">
                         Começar trial grátis — Pro
                     </a>
                 </div>
@@ -587,7 +729,7 @@
 
             {{-- BUSINESS --}}
             <div class="col-md-4">
-                <div class="plan-card">
+                <div class="plan-card h-100 d-flex flex-column">
                     <div class="plan-name">Business</div>
 
                     <div class="price-monthly">
@@ -611,7 +753,8 @@
                     </ul>
                     <a id="btn-business"
                        href="{{ route('register') }}?plan=business&billing=monthly"
-                       class="btn btn-outline-primary w-100 mt-4">
+                       class="btn btn-outline-primary w-100 mt-auto"
+                       style="margin-top:1.5rem;">
                         Começar trial grátis — Business
                     </a>
                 </div>
@@ -619,12 +762,12 @@
 
         </div>
 
-        {{-- Nota sobre trial --}}
+                {{-- Nota sobre trial --}}
         <div class="d-flex justify-content-center mt-4">
             <div class="trial-notice">
                 <i class="bi bi-exclamation-triangle-fill"></i>
                 <span>
-                    <strong>Atenção:</strong> após os 14 dias de trial, o acesso ao sistema é <strong>bloqueado</strong> até a assinatura de um plano.
+                    <strong>Atenção:</strong> após os 30 dias de trial, o acesso ao sistema é <strong>bloqueado</strong> até a assinatura de um plano.
                     Seus dados (produtos, clientes, vendas) são preservados e você retoma exatamente de onde parou.
                 </span>
             </div>
@@ -649,7 +792,7 @@
                             <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">Preciso de cartão de crédito para testar?</button>
                         </h2>
                         <div id="faq1" class="accordion-collapse collapse show" data-bs-parent="#faqAccordion">
-                            <div class="accordion-body">Não. O trial de 14 dias é totalmente gratuito e não exige dados de pagamento. Você só escolhe um plano quando decidir continuar.</div>
+                            <div class="accordion-body">Não. O trial de 30 dias é totalmente gratuito e não exige dados de pagamento. Você só escolhe um plano quando decidir continuar.</div>
                         </div>
                     </div>
                     <div class="accordion-item">
@@ -689,7 +832,7 @@
                             <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq6">O que acontece quando o trial termina?</button>
                         </h2>
                         <div id="faq6" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-                            <div class="accordion-body">Após os 14 dias de trial, o acesso ao sistema é bloqueado até que um plano seja assinado. Todos os seus dados são preservados — produtos, clientes, vendas e histórico ficam intactos. Basta assinar um plano para retomar de onde parou.</div>
+                            <div class="accordion-body">Após os 30 dias de trial, o acesso ao sistema é bloqueado até que um plano seja assinado. Todos os seus dados são preservados — produtos, clientes, vendas e histórico ficam intactos. Basta assinar um plano para retomar de onde parou.</div>
                         </div>
                     </div>
                 </div>
@@ -705,7 +848,7 @@
     <div class="container">
         <div class="hero-badge mx-auto mb-3" style="width:fit-content;"><i class="bi bi-rocket-takeoff"></i> Comece agora — é grátis</div>
         <h2>Pronto para ter controle<br>total do seu negócio?</h2>
-        <p class="mt-2 mb-4">14 dias de acesso completo. Sem cartão, sem compromisso.</p>
+        <p class="mt-2 mb-4">30 dias de acesso completo. Sem cartão, sem compromisso.</p>
         <a href="{{ route('register') }}" class="btn-hero-primary">Criar minha conta grátis</a>
     </div>
 </section>
@@ -713,7 +856,7 @@
 {{-- FOOTER --}}
 <footer class="lp-footer">
     <div class="container">
-        <div class="row align-items-center">
+        <div class="row align-items-start">
             <div class="col-md-4 mb-3 mb-md-0">
                 <div class="d-flex align-items-center gap-2 mb-1">
                     <svg width="20" height="20" viewBox="0 0 32 32" fill="none">
@@ -724,15 +867,26 @@
                     <span class="fw-bold" style="color:rgba(226,232,240,.6);">INVEXA</span>
                 </div>
                 <div>Gestão de Estoque e Vendas</div>
+                <div class="mt-1">
+                    <a href="mailto:contato@invexa-app.com.br" style="color:var(--electric); font-size:.78rem;">
+                        <i class="bi bi-envelope me-1"></i>contato@invexa-app.com.br
+                    </a>
+                </div>
             </div>
             <div class="col-md-4 text-md-center mb-3 mb-md-0">
                 <a href="#how">Como funciona</a>
                 <span class="mx-2" style="opacity:.3;">·</span>
                 <a href="#features">Funcionalidades</a>
                 <span class="mx-2" style="opacity:.3;">·</span>
+                <a href="#vs">Vs. Planilhas</a>
+                <span class="mx-2" style="opacity:.3;">·</span>
                 <a href="#plans">Planos</a>
                 <span class="mx-2" style="opacity:.3;">·</span>
                 <a href="#faq">FAQ</a>
+		<span class="mx-2" style="opacity:.3;">·</span>
+		<a href="{{ route('privacidade') }}">Privacidade</a>
+		<span class="mx-2" style="opacity:.3;">·</span>
+		<a href="{{ route('termos') }}">Termos de Uso</a>
             </div>
             <div class="col-md-4 text-md-end">
                 <div>© {{ date('Y') }} Invexa · Desenvolvido por</div>

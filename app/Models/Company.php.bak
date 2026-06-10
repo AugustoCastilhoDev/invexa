@@ -32,11 +32,6 @@ class Company extends Model
         'onboarding_completed' => 'boolean',
     ];
 
-    public function hasAsaasConfigured(): bool
-    {
-        return ! empty($this->asaas_api_key);
-    }
-
     // ── Slug único
     public static function generateSlug(string $name): string
     {
