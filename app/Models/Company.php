@@ -85,9 +85,14 @@ class Company extends Model
      */
     public function isAccessible(): bool
     {
+        // Plano pago manual
         if (in_array($this->plan, ['pro', 'business'])) return true;
+        // Trial ativo — acesso completo
         if ($this->isOnTrial()) return true;
-        return $this->hasActiveSubscription();
+        // Assinatura Stripe ativa
+        if ($this->hasActiveSubscription()) return true;
+        // Plano Free — sempre acessível (com limites aplicados pelo planLimits())
+        return true;
     }
 
     public function syncPlanFromSubscription(): void

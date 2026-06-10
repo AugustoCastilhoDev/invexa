@@ -54,6 +54,10 @@ class PurchaseOrderController extends Controller
 
     public function store(Request $request)
     {
+        $company = auth()->user()->company;
+        if ($company && ! $company->canAdd('purchase_orders')) {
+            return back()->with('error', 'Limite de ordens de compra do plano ' . strtoupper($company->plan) . ' atingido. Faça upgrade para adicionar mais.');
+        }
         $companyId = auth()->user()->company_id;
 
         $data = $request->validate([

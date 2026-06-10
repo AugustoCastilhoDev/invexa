@@ -764,11 +764,12 @@
 
                 {{-- Nota sobre trial --}}
         <div class="d-flex justify-content-center mt-4">
-            <div class="trial-notice">
-                <i class="bi bi-exclamation-triangle-fill"></i>
-                <span>
-                    <strong>Atenção:</strong> após os 30 dias de trial, o acesso ao sistema é <strong>bloqueado</strong> até a assinatura de um plano.
-                    Seus dados (produtos, clientes, vendas) são preservados e você retoma exatamente de onde parou.
+            <div class="trial-notice" style="background:rgba(56,189,248,.07);border-color:rgba(56,189,248,.3);">
+                <i class="bi bi-info-circle-fill" style="color:#38BDF8;"></i>
+                <span style="color:#BAE6FD;">
+                    <strong style="color:#7DD3FC;">Trial Pro por 30 dias:</strong> você experimenta todos os recursos sem restrição.
+                    Ao final, sua conta passa automaticamente para o <strong style="color:#7DD3FC;">plano Free</strong> — sem bloqueio, sem perda de dados.
+                    Quando quiser mais, é só fazer upgrade.
                 </span>
             </div>
         </div>
@@ -832,7 +833,7 @@
                             <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq6">O que acontece quando o trial termina?</button>
                         </h2>
                         <div id="faq6" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-                            <div class="accordion-body">Após os 30 dias de trial, o acesso ao sistema é bloqueado até que um plano seja assinado. Todos os seus dados são preservados — produtos, clientes, vendas e histórico ficam intactos. Basta assinar um plano para retomar de onde parou.</div>
+                            <div class="accordion-body">Após os 30 dias de trial Pro, sua conta passa automaticamente para o plano Free — sem bloqueio e sem perda de dados. No plano Free você continua com acesso ao PDV, estoque e financeiro, com limite de 50 produtos, 100 clientes e 2 usuários. Para voltar a ter recursos ilimitados, basta assinar o plano Pro ou Business quando quiser.</div>
                         </div>
                     </div>
                 </div>

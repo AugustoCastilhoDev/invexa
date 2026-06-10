@@ -45,6 +45,10 @@ class CustomerController extends Controller
 
     public function store(Request $request)
     {
+        $company = auth()->user()->company;
+        if ($company && ! $company->canAdd('customers')) {
+            return back()->with('error', 'Limite de clientes do plano ' . strtoupper($company->plan) . ' atingido. Faça upgrade para adicionar mais.');
+        }
         $companyId = auth()->user()->company_id;
         $company   = auth()->user()->company;
 
