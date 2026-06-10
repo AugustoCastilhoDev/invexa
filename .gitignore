@@ -33,3 +33,5 @@ yarn-error.log
 # Stripe CLI binaries
 stripe.exe
 stripe
+*.bak
+*.bak2
