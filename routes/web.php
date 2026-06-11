@@ -97,9 +97,10 @@ Route::middleware('auth')->group(function () {
         Route::post('/two-factor/disable', [TwoFactorController::class, 'disable'])->name('two-factor.disable');
 
         // Company Settings
+        Route::get('/settings/company',         [CompanyProfileController::class, 'edit'])->name('settings.company');
         Route::patch('/settings/company',       [CompanyProfileController::class, 'update'])->name('settings.company.update');
 
-        Route::post('/settings/asaas', [\App\Http\Controllers\Settings\CompanyProfileController::class, 'updateAsaas'])->name('settings.asaas.update');
+        Route::post('/settings/asaas', [CompanyProfileController::class, 'updateAsaas'])->name('settings.asaas.update');
         Route::delete('/settings/company/logo', [CompanyProfileController::class, 'destroyLogo'])->name('settings.company.logo.destroy');
 
         // Sales
