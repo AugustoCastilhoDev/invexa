@@ -13,7 +13,7 @@
 | **Fase 2** | Produto & Conversão | Semanas 3–5 | ✅ Concluído |
 | **Fase 3** | Conformidade & Suporte | Semanas 6–8 | ✅ Concluído |
 | **Fase 4** | Qualidade Técnica | Semanas 9–12 | ✅ Concluído |
-| **Fase 5** | Diferenciação de Mercado | Mês 4–6 | 🔲 Em andamento |
+| **Fase 5** | Diferenciação de Mercado | Mês 4–6 | 🔄 Em andamento |
 
 ---
 
@@ -210,7 +210,7 @@
 - **Prioridade:** 🔵 Estratégica
 - **Esforço:** Alto (~2 semanas)
 - **Impacto:** Altíssimo — feature mais solicitada por PMEs brasileiras
-- **Status:** 🔲 Planejado — cada empresa deve usar sua própria conta Asaas
+- **Status:** ✅ Concluído — Pix multi-tenant via Asaas funcionando em produção
 
 **Decisão tomada:** Pix multi-tenant — cada cliente conecta sua própria conta Asaas.
 
@@ -323,7 +323,7 @@
 - [x] 4.3 Migração para Redis
 
 ### Fase 5 — Diferenciação de Mercado
-- [ ] 5.1 Pix multi-tenant (Asaas por empresa)
+- [x] 5.1 Pix multi-tenant (Asaas por empresa)
 - [ ] 5.2 NF-e / NFS-e integrada (Focus NFe — em andamento)
 - [ ] 5.3 App mobile (PWA)
 - [ ] 5.4 API pública documentada
