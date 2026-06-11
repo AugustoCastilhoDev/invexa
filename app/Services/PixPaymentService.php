@@ -106,7 +106,7 @@ class PixPaymentService
             'name'              => $customer->name,
             'email'             => $customer->email,
             'phone'             => $customer->phone,
-            'cpfCnpj'           => ->document ?? null,
+            'cpfCnpj'           => $customer->document ?? null,
             'externalReference' => (string) $customer->id,
         ]);
 
