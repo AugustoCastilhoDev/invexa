@@ -97,7 +97,7 @@ class SaleController extends Controller
 
         try {
             DB::transaction(function () use ($validated, $companyId, $customer, $customerName, $saleDateTime, &$sale, &$lowStockProducts) {
-                $saleNumber = (Sale::where('company_id', $companyId)->max('sale_number') ?? 0) + 1;
+                $saleNumber = (Sale::withoutGlobalScope('company')->withTrashed()->where('company_id', $companyId)->max('sale_number') ?? 0) + 1;
                 $total = collect($validated['items'])->sum(fn($i) => $i['quantity'] * $i['price']);
 
                 $sale = Sale::create([
