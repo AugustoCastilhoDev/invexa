@@ -20,7 +20,11 @@ class Sale extends Model
         'pix_charge_id', 'pix_payload', 'pix_qrcode_image', 'pix_expires_at', 'pix_paid_at',
     ];
 
-    protected $casts = ['sale_date' => 'datetime'];
+    protected $casts = [
+        'sale_date'      => 'datetime',
+        'pix_expires_at' => 'datetime',
+        'pix_paid_at'    => 'datetime',
+    ];
 
     /**
      * Isola automaticamente todas as queries pelo company_id do usuário autenticado.
