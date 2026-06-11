@@ -13,6 +13,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        $middleware->validateCsrfTokens(except: [
+            '/webhook/asaas/*',
+            '/stripe/webhook',
+        ]);
         $middleware->web(append: [
             \App\Http\Middleware\ImpersonateBannerMiddleware::class,
         ]);
