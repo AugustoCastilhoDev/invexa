@@ -189,6 +189,9 @@ class SaleController extends Controller
             }
 
             AuditLogger::action("sale.created", $sale);
+        } catch (\Exception $e) {
+            return back()->withInput()->with('error', $e->getMessage());
+        }
 
         // Gera cobrança Pix se empresa configurou Asaas e venda é pendente com cliente
         if ($sale->status === 'pendente' && $sale->customer_id && $company->asaas_api_key) {
@@ -209,9 +212,6 @@ class SaleController extends Controller
         }
 
         return redirect()->route('sales.index')->with('success', 'Venda registrada com sucesso.');
-        } catch (\Exception $e) {
-            return back()->withInput()->with('error', $e->getMessage());
-        }
     }
 
     public function show(Sale $sale)
