@@ -272,6 +272,85 @@
                         <a href="{{ route('dashboard') }}" class="btn btn-outline-secondary">Cancelar</a>
                     </div>
                 </form>
+
+                {{-- ── Integração Pix / Asaas ──────────────────────────── --}}
+                <hr class="my-4" style="border-color:rgba(14,165,233,.15);">
+
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    <div style="width:40px;height:40px;border-radius:10px;background:rgba(14,165,233,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                        <i class="bi bi-qr-code" style="font-size:1.2rem;color:#38BDF8;"></i>
+                    </div>
+                    <div>
+                        <h6 class="mb-0 fw-bold" style="color:#f1f5f9;">Integração Pix — Asaas</h6>
+                        <small style="color:rgba(148,163,184,.6);">Configure sua conta Asaas para receber Pix nas vendas automaticamente</small>
+                    </div>
+                </div>
+
+                @php $asaasConfigured = ! empty($company->asaas_api_key); @endphp
+
+                <div class="mb-3">
+                    @if($asaasConfigured)
+                        <span class="badge" style="background:rgba(74,222,128,.15);color:#4ade80;border:1px solid rgba(74,222,128,.3);">
+                            <i class="bi bi-check-circle-fill me-1"></i>Asaas configurado
+                        </span>
+                    @else
+                        <span class="badge" style="background:rgba(148,163,184,.1);color:#94a3b8;border:1px solid rgba(148,163,184,.2);">
+                            <i class="bi bi-dash-circle me-1"></i>Não configurado
+                        </span>
+                    @endif
+                </div>
+
+                <form method="POST" action="{{ route('settings.asaas.update') }}">
+                    @csrf
+                    <div class="row g-3">
+                        <div class="col-12 col-md-4">
+                            <label class="form-label text-soft" style="font-size:.82rem;">Ambiente</label>
+                            <select name="asaas_environment" class="form-select form-select-sm"
+                                    style="background:rgba(13,25,41,.7);border-color:rgba(14,165,233,.2);color:#e2e8f0;">
+                                <option value="production" {{ ($company->asaas_environment ?? 'production') === 'production' ? 'selected' : '' }}>Produção</option>
+                                <option value="sandbox"    {{ ($company->asaas_environment ?? '') === 'sandbox' ? 'selected' : '' }}>Sandbox (testes)</option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-8">
+                            <label class="form-label text-soft" style="font-size:.82rem;">
+                                API Key Asaas
+                                <a href="https://www.asaas.com/config/index" target="_blank" rel="noopener"
+                                   class="ms-2" style="font-size:.75rem;color:#38BDF8;">
+                                    <i class="bi bi-box-arrow-up-right me-1"></i>Onde encontrar?
+                                </a>
+                            </label>
+                            <input type="password" name="asaas_api_key" class="form-control form-control-sm"
+                                   placeholder="{{ $asaasConfigured ? '●●●●●●●● (deixe em branco para manter)' : '$aact_...' }}"
+                                   autocomplete="new-password"
+                                   style="background:rgba(13,25,41,.7);border-color:rgba(14,165,233,.2);color:#e2e8f0;">
+                            <div class="form-text" style="font-size:.75rem;color:rgba(148,163,184,.5);">
+                                Sua chave nunca é exibida após salva. Para substituir, insira a nova chave.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center gap-2 mt-3">
+                        <button type="submit" class="btn btn-sm btn-primary" style="background:#0EA5E9;border:none;font-weight:600;">
+                            <i class="bi bi-check-lg me-1"></i>
+                            {{ $asaasConfigured ? 'Atualizar integração' : 'Salvar e conectar' }}
+                        </button>
+                        @if($asaasConfigured)
+                        <button type="submit" name="remove_api_key" value="1"
+                                class="btn btn-sm btn-outline-danger"
+                                onclick="return confirm('Remover integração Asaas?')">
+                            <i class="bi bi-trash me-1"></i>Remover
+                        </button>
+                        @endif
+                    </div>
+                </form>
+
+                @if(! $asaasConfigured)
+                <div class="mt-3 p-3 rounded" style="background:rgba(14,165,233,.05);border:1px solid rgba(14,165,233,.12);font-size:.82rem;color:rgba(148,163,184,.7);">
+                    <i class="bi bi-info-circle me-1" style="color:#38BDF8;"></i>
+                    Após configurar, toda venda <strong style="color:#e2e8f0;">pendente com cliente vinculado</strong>
+                    gera um QR Code Pix automaticamente. A confirmação é feita sem intervenção manual.
+                </div>
+                @endif
+
             </div>
             @endif
 
