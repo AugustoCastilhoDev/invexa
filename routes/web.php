@@ -118,8 +118,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/quotes/{quote}/pdf',       [QuoteController::class, 'pdf'])->name('quotes.pdf');
 
         // Customers
-        Route::resource('customers', CustomerController::class);
         Route::get('/customers/search', [CustomerController::class, 'search'])->name('customers.search');
+        Route::resource('customers', CustomerController::class);
 
         // Returns
         Route::resource('returns', SaleReturnController::class);
