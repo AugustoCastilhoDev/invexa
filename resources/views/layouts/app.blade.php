@@ -447,6 +447,12 @@
                                 <i class="bi bi-key me-2"></i>Tokens de API
                             </a>
                         </li>
+                        <li>
+                            <a class="dropdown-item" href="/api-docs" target="_blank" rel="noopener noreferrer">
+                                <i class="bi bi-book me-2"></i>Documentação da API
+                                <span class="badge ms-1" style="background:rgba(14,165,233,.15); color:#38BDF8; font-size:.6rem; border:1px solid rgba(14,165,233,.25);">v1</span>
+                            </a>
+                        </li>
                         @if(Auth::user()->company?->plan === 'business')
                         <li>
                             <a class="dropdown-item {{ request()->routeIs('webhooks.*') ? 'active' : '' }}" href="{{ route('webhooks.index') }}">
