@@ -79,7 +79,7 @@ class BillController extends Controller
             'notes'       => 'nullable|string',
         ]);
 
-        Bill::create(array_merge($data, [
+        $bill = Bill::create(array_merge($data, [
             'company_id' => $companyId,
             'status'     => 'pendente',
         ]));
