@@ -7,6 +7,7 @@ use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderItem;
 use App\Models\StockMovement;
 use App\Models\Supplier;
+use App\Services\AuditLogger;
 use App\Services\WebhookDispatcher;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -71,6 +72,8 @@ class PurchaseOrderController extends Controller
             'items.*.cost'       => 'required|numeric|min:0',
         ]);
 
+        $order = null;
+
         DB::transaction(function () use ($data, $companyId, &$order) {
             $total = collect($data['items'])->sum(fn($i) => $i['quantity'] * $i['cost']);
 
@@ -96,7 +99,7 @@ class PurchaseOrderController extends Controller
             }
         });
 
-        AuditLogger::action('purchase_order.created', $purchaseOrder);
+        AuditLogger::action('purchase_order.created', $order);
         return redirect()->route('purchase-orders.index')->with('success', 'Ordem de compra criada com sucesso.');
     }
 
@@ -118,7 +121,7 @@ class PurchaseOrderController extends Controller
         $suppliers = Supplier::where('company_id', $companyId)->orderBy('name')->get(['id', 'name']);
         $products  = Product::where('company_id', $companyId)->where('active', true)->orderBy('name')->get(['id', 'name', 'price']);
         $purchaseOrder->load('items.product');
-        return view('purchase_orders.form', compact('purchase_order', 'suppliers', 'products'));
+        return view('purchase_orders.form', compact('purchaseOrder', 'suppliers', 'products'));
     }
 
     public function update(Request $request, PurchaseOrder $purchaseOrder)
@@ -160,15 +163,13 @@ class PurchaseOrderController extends Controller
             }
         });
 
-        AuditLogger::action('purchase_order.updated', $purchase_order);
+        AuditLogger::action('purchase_order.updated', $purchaseOrder);
         return redirect()->route('purchase-orders.index')->with('success', 'Ordem de compra atualizada com sucesso.');
     }
 
     public function receive(Request $request, PurchaseOrder $purchase_order)
     {
-       
-	\Log::info('RECEIVE CHAMADO', ['id' => $purchase_order->id]);
-	 $this->authorizeOrder($purchase_order);
+        $this->authorizeOrder($purchase_order);
         if ($purchase_order->status === 'recebida') {
             return back()->with('error', 'Esta ordem já foi recebida.');
         }
@@ -187,7 +188,6 @@ class PurchaseOrderController extends Controller
                 $after  = $before + $item->quantity;
                 $product->update(['quantity' => $after]);
 
-                // Atualiza quantity_received no item da OC
                 $item->update(['quantity_received' => $item->quantity]);
 
                 StockMovement::create([
@@ -232,7 +232,7 @@ class PurchaseOrderController extends Controller
         }
         $purchaseOrder->items()->delete();
         $purchaseOrder->delete();
-        AuditLogger::action('purchase_order.deleted', $purchase_order);
+        AuditLogger::action('purchase_order.deleted', $purchaseOrder);
         return redirect()->route('purchase-orders.index')->with('success', 'Ordem de compra excluída.');
     }
 
