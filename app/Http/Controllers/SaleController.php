@@ -366,7 +366,7 @@ class SaleController extends Controller
                         ]);
                     }
                 } elseif ($isCancelada && $sale->receivable) {
-                    $sale->receivable->update(['status' => 'cancelado']);
+                    $sale->receivable->update(['status' => 'cancelada']);
                 }
             });
 
@@ -407,7 +407,7 @@ class SaleController extends Controller
                 }
                 $sale->update(['status' => 'cancelada']);
                 if ($sale->receivable) {
-                    $sale->receivable->update(['status' => 'cancelado']);
+                    $sale->receivable->update(['status' => 'cancelada']);
                 }
             });
 
@@ -541,9 +541,6 @@ class SaleController extends Controller
         $sale->load(['items.product', 'customer']);
         $company = auth()->user()->company;
 
-        // Margens em pontos tipográficos (1mm ≈ 2.8346pt).
-        // 57pt ≈ 20mm — margem generosa, fonte única de verdade para o layout.
-        // O @page no Blade NÃO define margin para evitar dupla aplicação.
         $pdf = Pdf::loadView('sales.pdf', compact('sale', 'company'))
             ->setPaper('a4', 'portrait')
             ->setOptions([
