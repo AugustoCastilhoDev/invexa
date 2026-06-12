@@ -9,6 +9,7 @@ use App\Models\QuoteItem;
 use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\StockMovement;
+use App\Services\AuditLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -65,7 +66,9 @@ class QuoteController extends Controller
             'items.*.unit_price'   => 'required|numeric|min:0',
         ]);
 
-        DB::transaction(function () use ($request) {
+        $quote = null;
+
+        DB::transaction(function () use ($request, &$quote) {
             $company = $this->company();
             $quote = Quote::create([
                 'company_id'  => $company->id,
@@ -91,6 +94,7 @@ class QuoteController extends Controller
             $quote->recalcTotals();
         });
 
+        AuditLogger::action('quote.created', $quote);
         return redirect()->route('quotes.index')
             ->with('success', 'Orçamento criado com sucesso!');
     }
@@ -109,6 +113,7 @@ class QuoteController extends Controller
         $this->authorizeQuote($quote);
         $request->validate(['status' => 'required|in:draft,sent,accepted,rejected,expired']);
         $quote->update(['status' => $request->status]);
+        AuditLogger::action('quote.status_changed', $quote);
         return back()->with('success', 'Status atualizado!');
     }
 
@@ -126,8 +131,8 @@ class QuoteController extends Controller
         DB::transaction(function () use ($quote, $companyId) {
             $quote->load('items.product', 'customer');
 
-            // Gera sale_number sequencial igual ao SaleController
-            $saleNumber   = (Sale::withoutGlobalScope('company')->where('company_id', $companyId)->max('sale_number') ?? 0) + 1;
+            // fix: usa withTrashed() para evitar sale_number duplicado com vendas soft-deleted
+            $saleNumber   = (Sale::withoutGlobalScope('company')->withTrashed()->where('company_id', $companyId)->max('sale_number') ?? 0) + 1;
             $customerName = $quote->customer?->name ?? 'Consumidor Final';
 
             $sale = Sale::create([
@@ -136,7 +141,7 @@ class QuoteController extends Controller
                 'customer_id'   => $quote->customer_id,
                 'customer_name' => $customerName,
                 'sale_date'     => now(),
-                'status'        => 'concluida', // orçamento aceito = venda efetivada
+                'status'        => 'concluida',
                 'notes'         => 'Convertido do orçamento ' . $quote->number,
                 'total'         => $quote->total,
             ]);
@@ -150,7 +155,6 @@ class QuoteController extends Controller
                     'subtotal'   => $item->total,
                 ]);
 
-                // Baixar estoque e registrar movimento
                 if ($item->product) {
                     $product = Product::lockForUpdate()->find($item->product_id);
                     $before  = $product->quantity;
@@ -180,6 +184,7 @@ class QuoteController extends Controller
             ]);
         });
 
+        AuditLogger::action('quote.converted', $quote);
         return redirect()->route('sales.index')
             ->with('success', 'Orçamento convertido em venda com sucesso!');
     }
@@ -201,6 +206,7 @@ class QuoteController extends Controller
             return back()->with('error', 'Não é possível excluir um orçamento já convertido.');
         }
         $quote->delete();
+        AuditLogger::action('quote.deleted', $quote);
         return redirect()->route('quotes.index')
             ->with('success', 'Orçamento excluído.');
     }
