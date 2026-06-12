@@ -41,6 +41,8 @@ use App\Http\Controllers\AsaasWebhookController;
 
 // Landing
 
+Route::get('/api-docs', fn() => response()->file(public_path('api-docs.html')))->name('api.docs');
+
 Route::get('/offline', fn() => view('offline'))->name('offline');
 
 // Webhook Asaas — público (sem autenticação)
