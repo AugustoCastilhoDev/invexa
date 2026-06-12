@@ -261,10 +261,7 @@
 - **Prioridade:** 🔵 Estratégica
 - **Esforço:** Médio (~1 semana)
 - **Impacto:** Médio-alto — melhora retenção e uso diário
-- **Status:** 🔲 Planejado
-
-**O que fazer:**
-- [ ] Adicionar `manifest.json` com ícones do Invexa
+- **Status:** ✅ Concluído — PWA instalável no Android e iOS com ícones do Invexa
 - [ ] Implementar Service Worker básico para cache offline de assets
 - [ ] Adicionar meta tags PWA no layout Blade principal:
   ```html
@@ -325,7 +322,7 @@
 ### Fase 5 — Diferenciação de Mercado
 - [x] 5.1 Pix multi-tenant (Asaas por empresa)
 - [ ] 5.2 NF-e / NFS-e integrada (Focus NFe — em andamento)
-- [ ] 5.3 App mobile (PWA)
+- [x] 5.3 App mobile (PWA)
 - [ ] 5.4 API pública documentada
 
 ---
