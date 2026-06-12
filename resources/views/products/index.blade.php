@@ -179,10 +179,10 @@
                                 @endif
                             </td>
                             <td class="py-3" style="color:#94a3b8;font-size:.875rem;font-family:monospace;">
-                                {{ $product->sku }}
+                                {{ $product->sku ?? '—' }}
                             </td>
                             <td class="py-3" style="color:#94a3b8;font-size:.875rem;">
-                                {{ optional($product->category)->name ?? '&mdash;' }}
+                                {{ optional($product->category)->name ?? '—' }}
                             </td>
                             <td class="py-3 fw-semibold text-white">
                                 R$ {{ number_format($product->price, 2, ',', '.') }}
