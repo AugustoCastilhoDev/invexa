@@ -39,12 +39,12 @@ class RegisteredUserController extends Controller
             'company_name.min'      => 'O nome da empresa deve ter pelo menos 2 caracteres.',
             'name.required'         => 'Informe seu nome.',
             'email.required'        => 'Informe seu e-mail.',
-            'email.email'           => 'Informe um e-mail válido.',
-            'email.unique'          => 'Este e-mail já está em uso.',
+            'email.email'           => 'Informe um e-mail v\u00e1lido.',
+            'email.unique'          => 'Este e-mail j\u00e1 est\u00e1 em uso.',
             'password.required'     => 'Informe uma senha.',
-            'password.confirmed'    => 'As senhas não conferem.',
-            'password.min'          => 'A senha deve ter pelo menos 8 caracteres com letras e números.',
-            'terms_accepted.accepted' => 'Você precisa aceitar os Termos de Uso e a Política de Privacidade para continuar.',
+            'password.confirmed'    => 'As senhas n\u00e3o conferem.',
+            'password.min'          => 'A senha deve ter pelo menos 8 caracteres com letras e n\u00fameros.',
+            'terms_accepted.accepted' => 'Voc\u00ea precisa aceitar os Termos de Uso e a Pol\u00edtica de Privacidade para continuar.',
         ]);
 
         $plan    = $request->input('plan', 'free');
@@ -62,7 +62,7 @@ class RegisteredUserController extends Controller
             'onboarding_completed' => false,
         ]);
 
-        // 2. Cria o usuário admin
+        // 2. Cria o usu\u00e1rio admin
         $user = User::create([
             'name'       => $request->name,
             'email'      => $request->email,
@@ -79,7 +79,7 @@ class RegisteredUserController extends Controller
         try {
             Mail::to($user->email)->send(new WelcomeMail($user));
         } catch (\Throwable $e) {
-            Log::warning('WelcomeMail não enviado para ' . $user->email . ': ' . $e->getMessage());
+            Log::warning('WelcomeMail n\u00e3o enviado para ' . $user->email . ': ' . $e->getMessage());
         }
 
         // 4. Se plano pago foi selecionado, redireciona direto para checkout
@@ -90,7 +90,8 @@ class RegisteredUserController extends Controller
             ]);
         }
 
-        // 5. Plano free — wizard de onboarding normal
-        return redirect()->route('onboarding.show');
+        // 5. Plano free — redireciona para a home com mensagem de boas-vindas
+        return redirect()->route('home')
+            ->with('success', 'Conta criada com sucesso! Bem-vindo ao Invexa. \ud83d\ude80');
     }
 }
