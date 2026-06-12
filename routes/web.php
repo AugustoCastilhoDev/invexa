@@ -110,8 +110,8 @@ Route::middleware('auth')->group(function () {
         // Sales
         Route::resource('sales', SaleController::class);
         Route::post('/sales/{sale}/cancel', [SaleController::class, 'cancel'])->name('sales.cancel');
-	Route::patch('/sales/{sale}/status', [SaleController::class, 'updateStatus'])->name('sales.status');
-        Route::get('/sales/{sale}/nf', [SaleController::class, 'nf'])->name('sales.nf');
+        Route::patch('/sales/{sale}/status', [SaleController::class, 'updateStatus'])->name('sales.status');
+        Route::get('/sales/{sale}/nf', [SaleController::class, 'invoice'])->name('sales.nf');
         Route::get('/sales/{sale}/pdf', [SaleController::class, 'pdf'])->name('sales.pdf');
         Route::post('/sales/{id}/restore', [SaleController::class, 'restore'])->name('sales.restore');
         Route::delete('/sales/{id}/force-destroy', [SaleController::class, 'forceDestroy'])->name('sales.force-destroy');
@@ -128,15 +128,15 @@ Route::middleware('auth')->group(function () {
 
         // Returns
         Route::resource('returns', SaleReturnController::class);
-Route::get('returns/{sale}/items', [SaleReturnController::class, 'items'])->name('returns.items');
+        Route::get('returns/{sale}/items', [SaleReturnController::class, 'items'])->name('returns.items');
 
         // Suppliers
         Route::resource('suppliers', SupplierController::class);
 
         // Purchase Orders
-       	Route::resource('purchase-orders', PurchaseOrderController::class);
-	Route::post('/purchase-orders/{purchase_order}/receive', [PurchaseOrderController::class, 'receive'])
-   	 ->name('purchase-orders.receive');
+        Route::resource('purchase-orders', PurchaseOrderController::class);
+        Route::post('/purchase-orders/{purchase_order}/receive', [PurchaseOrderController::class, 'receive'])
+            ->name('purchase-orders.receive');
 
         // Products & Categories
         Route::get('/products/import',          [ProductController::class, 'importIndex'])->name('products.import');
