@@ -196,7 +196,7 @@
                                             @if($sale->status !== 'cancelada')
                                                 <form action="{{ route('sales.cancel', $sale) }}" method="POST"
                                                       onsubmit="return confirm('Cancelar esta venda e estornar estoque?')">
-                                                    @csrf @method('PATCH')
+                                                    @csrf
                                                     <button type="submit" class="btn btn-sm btn-outline-warning" title="Cancelar venda">
                                                         <i class="bi bi-x-circle"></i>
                                                     </button>
