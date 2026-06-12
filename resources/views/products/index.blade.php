@@ -20,8 +20,11 @@
 </div>
 
 @php
-    $company = auth()->user()->company;
-    $limits  = $company ? $company->planLimits() : ['products' => 50];
+    $company       = auth()->user()->company;
+    $limits        = $company ? $company->planLimits() : ['products' => 50];
+    $productLimit  = $limits['products'];
+    $limitLabel    = ($productLimit === PHP_INT_MAX) ? 'Ilimitado' : $productLimit;
+    $isUnlimited   = ($productLimit === PHP_INT_MAX);
     $isLowStockFilter = request('low_stock') === '1';
 @endphp
 <div class="alert d-flex align-items-center gap-3 mb-4"
@@ -29,8 +32,8 @@
     <i class="bi bi-box-seam fs-5"></i>
     <div>
         Plano <strong>{{ $company?->plan_label ?? 'Gratuito' }}</strong> &mdash;
-        {{ $totalProducts }} de {{ $limits['products'] }} produto(s) utilizados.
-        @if($totalProducts >= $limits['products'])
+        {{ $totalProducts }} de {{ $limitLabel }} produto(s) utilizados.
+        @if(!$isUnlimited && $totalProducts >= $productLimit)
             <span class="text-warning ms-2">
                 <i class="bi bi-exclamation-triangle"></i> Limite atingido.
             </span>
