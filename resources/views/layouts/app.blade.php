@@ -117,6 +117,11 @@
             background: linear-gradient(90deg, rgba(239,68,68,.15), rgba(239,68,68,.07));
             border-bottom-color: rgba(239,68,68,.3);
         }
+        .free-plan-banner {
+            background: linear-gradient(90deg, rgba(14,165,233,.08), rgba(14,165,233,.03));
+            border-bottom: 1px solid rgba(14,165,233,.15);
+            font-size: .82rem; padding: .4rem 1rem;
+        }
         .impersonate-banner {
             background: linear-gradient(90deg, rgba(168,85,247,.18), rgba(139,92,246,.08));
             border-bottom: 2px solid rgba(168,85,247,.4);
@@ -205,13 +210,21 @@
 <body>
 
 @php
-    $authCompany  = Auth::check() ? Auth::user()->company : null;
-    $companyLogo  = $authCompany?->logo ? Storage::url($authCompany->logo) : null;
-    $companyName  = $authCompany?->name ?? 'Invexa';
-    $currentPlan  = $authCompany?->plan ?? 'free';
-    $isOnTrialApp = $authCompany?->isOnTrial() ?? false;
-    $trialDaysApp = $authCompany?->trialDaysLeft() ?? 0;
-    $isUrgentApp  = $isOnTrialApp && $trialDaysApp <= 3;
+    $authCompany      = Auth::check() ? Auth::user()->company : null;
+    $companyLogo      = $authCompany?->logo ? Storage::url($authCompany->logo) : null;
+    $companyName      = $authCompany?->name ?? 'Invexa';
+    $currentPlan      = $authCompany?->plan ?? 'free';
+    $isOnTrialApp     = $authCompany?->isOnTrial() ?? false;
+    $trialDaysApp     = $authCompany?->trialDaysLeft() ?? 0;
+    $isUrgentApp      = $isOnTrialApp && $trialDaysApp <= 3;
+    // Banner pós-trial: plano free, trial já expirado (trial_ends_at no passado), sem assinatura ativa
+    $trialExpiredFree = Auth::check()
+        && Auth::user()->isAdmin()
+        && $currentPlan === 'free'
+        && ! $isOnTrialApp
+        && $authCompany?->trial_ends_at !== null
+        && $authCompany->trial_ends_at->isPast()
+        && ! ($authCompany?->hasActiveSubscription() ?? false);
 @endphp
 
 <nav class="navbar navbar-expand-lg navbar-main sticky-top">
@@ -496,11 +509,7 @@
 </div>
 @endif
 
-{{--
-    TRIAL BANNER
-    Corrigido: usa isAdmin() (método legado do campo `role`) em vez de hasRole('admin') do Spatie.
-    Também usa as variáveis já calculadas no @​php do topo para evitar queries duplicadas.
---}}
+{{-- TRIAL BANNER: exibido durante o período de trial ativo --}}
 @auth
     @if($isOnTrialApp && Auth::user()->isAdmin())
         <div class="trial-banner {{ $isUrgentApp ? 'urgent' : '' }}">
@@ -520,6 +529,46 @@
                 </a>
             </div>
         </div>
+    @endif
+
+    {{-- BANNER PÓS-TRIAL: exibido quando trial expirou e usuário está no plano free sem assinatura --}}
+    @if($trialExpiredFree)
+        <div class="free-plan-banner" id="free-plan-banner">
+            <div class="container d-flex align-items-center justify-content-between flex-wrap gap-2">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-info-circle" style="color:#38BDF8;"></i>
+                    <span style="color:rgba(226,232,240,.75);">
+                        Você está no <strong style="color:#e2e8f0;">Plano Gratuito</strong> —
+                        limites reduzidos aplicados.
+                        <span class="d-none d-md-inline" style="color:rgba(148,163,184,.6);">Faça upgrade para desbloquear todos os recursos.</span>
+                    </span>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <a href="{{ route('upgrade') }}" class="btn btn-sm fw-semibold py-0 px-3"
+                       style="font-size:.78rem; height:1.75rem; line-height:1.75rem; background:rgba(14,165,233,.15); color:#38BDF8; border:1px solid rgba(14,165,233,.3);">
+                        <i class="bi bi-rocket-takeoff me-1"></i>Ver planos
+                    </a>
+                    <button type="button" onclick="dismissFreeBanner()"
+                            style="background:none; border:none; color:rgba(148,163,184,.5); font-size:.9rem; padding:.1rem .3rem; cursor:pointer; line-height:1;"
+                            title="Fechar">
+                        <i class="bi bi-x"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <script>
+        function dismissFreeBanner() {
+            document.getElementById('free-plan-banner').style.display = 'none';
+            // Guarda no sessionStorage para não reaparecer na navegação da sessão
+            sessionStorage.setItem('free_banner_dismissed', '1');
+        }
+        document.addEventListener('DOMContentLoaded', function() {
+            if (sessionStorage.getItem('free_banner_dismissed') === '1') {
+                var el = document.getElementById('free-plan-banner');
+                if (el) el.style.display = 'none';
+            }
+        });
+        </script>
     @endif
 @endauth
 
@@ -663,12 +712,10 @@
         window.addEventListener('load', () => {
             navigator.serviceWorker.register('/sw.js', { scope: '/' })
                 .then(reg => {
-                    // Verifica atualização do SW silenciosamente
                     reg.addEventListener('updatefound', () => {
                         const newWorker = reg.installing;
                         newWorker?.addEventListener('statechange', () => {
                             if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                                // Nova versão disponível — recarregar silenciosamente
                                 window.location.reload();
                             }
                         });
