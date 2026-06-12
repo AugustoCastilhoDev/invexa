@@ -48,17 +48,18 @@
             </div>
         @endif
 
-        <div class="row g-3 mb-4">
-            <div class="col-12 col-md-3">
+        {{-- KPI Cards: linha 1 — contadores --}}
+        <div class="row g-3 mb-3">
+            <div class="col-6 col-md-3">
                 <div class="card dashboard-card text-white border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #1d4ed8, #2563eb);">
                     <div class="card-body">
-                        <div class="text-soft small text-uppercase fw-semibold mb-2">Vendas</div>
+                        <div class="text-soft small text-uppercase fw-semibold mb-2">Total de Vendas</div>
                         <h3 class="mb-1">{{ $salesCount ?? $sales->total() }}</h3>
-                        <div class="text-white-75 small">Total de pedidos</div>
+                        <div class="text-white-75 small">Todos os pedidos</div>
                     </div>
                 </div>
             </div>
-            <div class="col-12 col-md-3">
+            <div class="col-6 col-md-3">
                 <div class="card dashboard-card text-white border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #16a34a, #22c55e);">
                     <div class="card-body">
                         <div class="text-soft small text-uppercase fw-semibold mb-2">Concluídas</div>
@@ -67,7 +68,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-12 col-md-3">
+            <div class="col-6 col-md-3">
                 <div class="card dashboard-card text-white border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #f59e0b, #eab308);">
                     <div class="card-body">
                         <div class="text-soft small text-uppercase fw-semibold mb-2">Pendentes</div>
@@ -76,12 +77,52 @@
                     </div>
                 </div>
             </div>
-            <div class="col-12 col-md-3">
-                <div class="card dashboard-card text-white border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #d97706, #f59e0b);">
+            <div class="col-6 col-md-3">
+                <div class="card dashboard-card text-white border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #6b7280, #9ca3af);">
                     <div class="card-body">
-                        <div class="text-soft small text-uppercase fw-semibold mb-2">Receita</div>
-                        <h3 class="mb-1">R$ {{ number_format($salesRevenue ?? 0, 2, ',', '.') }}</h3>
-                        <div class="text-white-75 small">Receita total</div>
+                        <div class="text-soft small text-uppercase fw-semibold mb-2">Canceladas</div>
+                        <h3 class="mb-1">{{ $cancelledSales ?? 0 }}</h3>
+                        <div class="text-white-75 small">Pedidos cancelados</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- KPI Cards: linha 2 — receitas separadas por status --}}
+        <div class="row g-3 mb-4">
+            <div class="col-12 col-md-4">
+                <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #065f46, #059669);">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <span class="badge bg-success">Concluída</span>
+                            <span class="text-soft small text-uppercase fw-semibold">Receita Realizada</span>
+                        </div>
+                        <h3 class="mb-1 text-white">R$ {{ number_format($revenueCompleted ?? 0, 2, ',', '.') }}</h3>
+                        <div class="small" style="color: rgba(255,255,255,.65);">Soma das vendas concluídas</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-md-4">
+                <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #78350f, #d97706);">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <span class="badge bg-warning text-dark">Pendente</span>
+                            <span class="text-soft small text-uppercase fw-semibold">Receita a Confirmar</span>
+                        </div>
+                        <h3 class="mb-1 text-white">R$ {{ number_format($revenuePending ?? 0, 2, ',', '.') }}</h3>
+                        <div class="small" style="color: rgba(255,255,255,.65);">Aguardando confirmação</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-md-4">
+                <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #1f2937, #374151);">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <span class="badge bg-danger">Cancelada</span>
+                            <span class="text-soft small text-uppercase fw-semibold">Receita Cancelada</span>
+                        </div>
+                        <h3 class="mb-1 text-white">R$ {{ number_format($revenueCancelled ?? 0, 2, ',', '.') }}</h3>
+                        <div class="small" style="color: rgba(255,255,255,.65);">Não contabilizado</div>
                     </div>
                 </div>
             </div>

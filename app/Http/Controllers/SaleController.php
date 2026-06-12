@@ -43,14 +43,33 @@ class SaleController extends Controller
         $showTrashed = $request->boolean('trashed') && auth()->user()->hasRole(['admin', 'gerente']);
         if ($showTrashed) { $query->onlyTrashed(); }
 
-        $salesCount     = (clone $query)->count();
-        $salesRevenue   = (clone $query)->sum('total');
-        $completedSales = (clone $query)->where('status', 'concluida')->count();
-        $pendingSales   = (clone $query)->where('status', 'pendente')->count();
+        $salesCount        = (clone $query)->count();
+        $completedSales    = (clone $query)->where('status', 'concluida')->count();
+        $pendingSales      = (clone $query)->where('status', 'pendente')->count();
+        $cancelledSales    = (clone $query)->where('status', 'cancelada')->count();
+
+        // Receitas separadas por status
+        $revenueCompleted  = (float)(clone $query)->where('status', 'concluida')->sum('total');
+        $revenuePending    = (float)(clone $query)->where('status', 'pendente')->sum('total');
+        $revenueCancelled  = (float)(clone $query)->where('status', 'cancelada')->sum('total');
+
+        // Mantido por retrocompatibilidade (total bruto de todas as vendas)
+        $salesRevenue = $revenueCompleted + $revenuePending;
 
         $sales = $query->orderByDesc('sale_date')->orderByDesc('id')->paginate(10);
 
-        return view('sales.index', compact('sales', 'salesCount', 'salesRevenue', 'completedSales', 'pendingSales', 'showTrashed'));
+        return view('sales.index', compact(
+            'sales',
+            'salesCount',
+            'salesRevenue',
+            'completedSales',
+            'pendingSales',
+            'cancelledSales',
+            'revenueCompleted',
+            'revenuePending',
+            'revenueCancelled',
+            'showTrashed'
+        ));
     }
 
     public function create()
@@ -425,6 +444,7 @@ class SaleController extends Controller
             return back()->with('error', $e->getMessage());
         }
     }
+
 	public function updateStatus(Request $request, Sale $sale)
 {
     $request->validate([
