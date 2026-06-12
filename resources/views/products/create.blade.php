@@ -32,7 +32,7 @@
                             @error('name')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
                         <div class="col-12 col-md-3">
-                            <label for="sku" class="form-label text-soft">SKU <span class="text-danger">*</span></label>
+                            <label for="sku" class="form-label text-soft">SKU</label>
                             <input type="text" name="sku" id="sku"
                                    class="form-control @error('sku') is-invalid @enderror"
                                    value="{{ old('sku') }}" placeholder="Ex: PROD-001">
@@ -101,14 +101,14 @@
                             @error('price')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
                         <div class="col-12 col-md-4">
-                            <label for="cost" class="form-label text-soft">Custo</label>
+                            <label for="cost_price" class="form-label text-soft">Custo</label>
                             <div class="input-group">
                                 <span class="input-group-text bg-dark text-soft border-secondary">R$</span>
-                                <input type="number" name="cost" id="cost" step="0.01" min="0"
-                                       class="form-control @error('cost') is-invalid @enderror"
-                                       value="{{ old('cost') }}" placeholder="0,00">
+                                <input type="number" name="cost_price" id="cost_price" step="0.01" min="0"
+                                       class="form-control @error('cost_price') is-invalid @enderror"
+                                       value="{{ old('cost_price') }}" placeholder="0,00">
                             </div>
-                            @error('cost')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            @error('cost_price')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
                     </div>
                 </div>
