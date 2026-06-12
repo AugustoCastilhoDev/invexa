@@ -72,7 +72,7 @@ class ReceivableController extends Controller
             'notes'       => 'nullable|string',
         ]);
 
-        Receivable::create(array_merge($data, [
+        $receivable = Receivable::create(array_merge($data, [
             'company_id' => $companyId,
             'status'     => 'pendente',
         ]));
