@@ -44,7 +44,7 @@
                         </a>
                         <form action="{{ route('sales.cancel', $sale) }}" method="POST"
                               onsubmit="return confirm('Cancelar esta venda e estornar o estoque?')">
-                            @csrf @method('PATCH')
+                            @csrf
                             <button type="submit" class="btn btn-warning btn-sm">
                                 <i class="bi bi-x-circle me-1"></i>Cancelar Venda
                             </button>
@@ -320,7 +320,7 @@
                 </a>
                 <form action="{{ route('sales.cancel', $sale) }}" method="POST"
                       onsubmit="return confirm('Cancelar esta venda e estornar o estoque?')">
-                    @csrf @method('PATCH')
+                    @csrf
                     <button type="submit" class="btn btn-outline-warning">
                         <i class="bi bi-x-circle me-1"></i>Cancelar Venda
                     </button>
