@@ -41,6 +41,8 @@ use App\Http\Controllers\AsaasWebhookController;
 
 // Landing
 
+Route::get('/offline', fn() => view('offline'))->name('offline');
+
 // Webhook Asaas — público (sem autenticação)
 Route::post('/webhook/asaas/{companySlug}', [AsaasWebhookController::class, 'handle'])->name('webhook.asaas');
 
