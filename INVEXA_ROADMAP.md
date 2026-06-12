@@ -214,16 +214,16 @@
 
 **Decisão tomada:** Pix multi-tenant — cada cliente conecta sua própria conta Asaas.
 
-**O que fazer:**
-- [ ] Adicionar campos `asaas_api_key` e `asaas_wallet_id` na tabela `companies`
-- [ ] Criar tela de configuração Asaas no painel da empresa
-- [ ] Implementar `PixPaymentService` usando a chave da empresa autenticada
-- [ ] Gerar cobrança Pix na finalização de venda
-- [ ] Retornar QR Code e copia-e-cola
-- [ ] Webhook Asaas para confirmação de pagamento por empresa
-- [ ] Baixar automaticamente Conta a Receber ao confirmar Pix
-- [ ] Exibir QR Code no PDV e na nota/invoice PDF
-- [ ] Testar fluxo completo: venda → Pix → confirmação automática → baixa AR
+**O que foi feito:**
+- [x] Campos `asaas_api_key` e `asaas_wallet_id` na tabela `companies`
+- [x] Tela de configuração Asaas no painel da empresa
+- [x] `PixPaymentService` usando a chave da empresa autenticada
+- [x] Geração de cobrança Pix na finalização de venda
+- [x] QR Code e copia-e-cola retornados
+- [x] Webhook Asaas para confirmação de pagamento por empresa
+- [x] Baixa automática de Conta a Receber ao confirmar Pix
+- [x] QR Code exibido no PDV e na nota/invoice PDF
+- [x] Fluxo completo testado: venda → Pix → confirmação automática → baixa AR
 
 ---
 
@@ -262,15 +262,12 @@
 - **Esforço:** Médio (~1 semana)
 - **Impacto:** Médio-alto — melhora retenção e uso diário
 - **Status:** ✅ Concluído — PWA instalável no Android e iOS com ícones do Invexa
-- [ ] Implementar Service Worker básico para cache offline de assets
-- [ ] Adicionar meta tags PWA no layout Blade principal:
-  ```html
-  <meta name="theme-color" content="#1D9E75">
-  <link rel="manifest" href="/manifest.json">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  ```
-- [ ] Testar "Adicionar à tela inicial" em Android e iOS
-- [ ] Otimizar as telas mais usadas no mobile: Dashboard, Nova Venda, Estoque
+
+**O que foi feito:**
+- [x] Service Worker implementado com cache offline de assets
+- [x] Meta tags PWA no layout Blade principal
+- [x] "Adicionar à tela inicial" testado em Android e iOS
+- [x] Telas mobile otimizadas: Dashboard, Nova Venda, Estoque
 
 ---
 
@@ -279,18 +276,25 @@
 - **Prioridade:** 🔵 Estratégica
 - **Esforço:** Alto (~2–3 semanas)
 - **Impacto:** Abre ecossistema de integrações e aumenta ticket médio
-- **Status:** 🔲 Planejado (tokens Sanctum já implementados)
+- **Status:** ✅ Concluído — API v1 no ar com documentação pública em `invexa-app.com.br/api-docs`
 
-**O que fazer:**
-- [ ] Criar `routes/api.php` com endpoints RESTful para módulos principais
-- [ ] Documentar com Swagger/OpenAPI via `darkaonline/l5-swagger`
-- [ ] Endpoints mínimos para v1 da API:
-  - `GET /api/v1/products`
-  - `POST /api/v1/sales`
-  - `GET /api/v1/reports/summary`
-  - `GET /api/v1/customers`
-- [ ] Rate limiting específico para API (diferente do web)
-- [ ] Publicar documentação em `docs.invexa.com.br`
+**O que foi feito:**
+- [x] `routes/api.php` com endpoints RESTful para módulos principais
+- [x] Documentação HTML publicada em `public/api-docs.html`
+- [x] Rota pública `/api-docs` configurada em `routes/web.php`
+- [x] Endpoints implementados:
+  - `POST /api/v1/auth/token` — geração de token
+  - `DELETE /api/v1/auth/token` — revogar token
+  - `GET /api/v1/me` — dados do usuário autenticado
+  - `GET|POST|PUT|DELETE /api/v1/products` — CRUD completo
+  - `GET|POST|PUT|DELETE /api/v1/customers` — CRUD completo
+  - `GET|POST /api/v1/sales` — listar e criar vendas
+  - `GET /api/v1/stock` — estoque geral
+  - `GET /api/v1/stock/low` — produtos com estoque baixo
+  - `POST /api/v1/stock/movement` — registrar movimentação
+- [x] Autenticação via Sanctum (Bearer Token)
+- [x] Rate limiting: 60 req/min por token
+- [x] Tokens gerenciáveis em Settings → API Tokens
 
 ---
 
@@ -323,7 +327,7 @@
 - [x] 5.1 Pix multi-tenant (Asaas por empresa)
 - [ ] 5.2 NF-e / NFS-e integrada (Focus NFe — em andamento)
 - [x] 5.3 App mobile (PWA)
-- [ ] 5.4 API pública documentada
+- [x] 5.4 API pública documentada (`invexa-app.com.br/api-docs`)
 
 ---
 
@@ -335,6 +339,7 @@
 | D2 | Gateway Pix | Asaas multi-tenant (cada empresa usa sua conta) | Jun/2026 |
 | D3 | API de NF-e | Focus NFe | Jun/2026 |
 | D4 | Monitoramento de erros | Flare | Jun/2026 |
+| D5 | Documentação da API | HTML estático em `public/api-docs.html` | Jun/2026 |
 
 ---
 
@@ -362,6 +367,7 @@
 | Laravel Telescope | https://laravel.com/docs/telescope |
 | Laravel Cashier (Stripe) | https://laravel.com/docs/billing |
 | shots.so (screenshots) | https://shots.so |
+| Invexa API Docs | https://invexa-app.com.br/api-docs |
 
 ---
 
