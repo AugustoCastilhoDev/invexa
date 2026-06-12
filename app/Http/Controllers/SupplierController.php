@@ -78,7 +78,7 @@ class SupplierController extends Controller
             'email.email'      => 'Informe um e-mail válido.',
         ]);
 
-        Supplier::create(array_merge($validated, [
+        $supplier = Supplier::create(array_merge($validated, [
             'company_id' => $companyId,
             'active'     => $request->boolean('active', true),
         ]));
