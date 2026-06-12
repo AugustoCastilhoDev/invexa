@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Invexa API — Documentação v1</title>
+<style>
+  :root {
+    --abyss: #080D1A; --navy: #0D1929; --sky: #0EA5E9; --electric: #38BDF8;
+    --ice: #F0F9FF; --green: #4ade80; --red: #f87171; --amber: #fbbf24;
+    --purple: #c084fc; --border: rgba(14,165,233,.15);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--abyss); color: #e2e8f0; font-family: system-ui, -apple-system, sans-serif; line-height: 1.6; }
+  a { color: var(--electric); text-decoration: none; }
+  a:hover { color: var(--ice); }
+
+  /* Layout */
+  .wrapper { display: flex; min-height: 100vh; }
+  .sidebar { width: 260px; flex-shrink: 0; background: var(--navy); border-right: 1px solid var(--border); padding: 1.5rem 0; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+  .main { flex: 1; padding: 2rem 3rem; max-width: 900px; }
+
+  /* Sidebar */
+  .sidebar-brand { padding: 0 1.25rem 1.5rem; border-bottom: 1px solid var(--border); margin-bottom: 1rem; }
+  .sidebar-brand h2 { font-size: 1rem; font-weight: 700; color: var(--ice); }
+  .sidebar-brand span { font-size: .75rem; color: rgba(148,163,184,.6); }
+  .nav-section { padding: .25rem 1.25rem; font-size: .7rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: rgba(148,163,184,.45); margin-top: .75rem; margin-bottom: .25rem; }
+  .nav-link { display: flex; align-items: center; gap: .5rem; padding: .4rem 1.25rem; font-size: .83rem; color: rgba(226,232,240,.65); transition: all .15s; border-left: 2px solid transparent; }
+  .nav-link:hover { color: var(--ice); background: rgba(14,165,233,.06); border-left-color: rgba(14,165,233,.4); }
+  .nav-link .method { font-size: .65rem; font-weight: 700; padding: .1rem .4rem; border-radius: 3px; min-width: 36px; text-align: center; }
+  .get    { background: rgba(74,222,128,.15); color: var(--green); }
+  .post   { background: rgba(251,191,36,.15); color: var(--amber); }
+  .put    { background: rgba(192,132,252,.15); color: var(--purple); }
+  .delete { background: rgba(248,113,113,.15); color: var(--red); }
+
+  /* Content */
+  h1 { font-size: 1.8rem; font-weight: 800; color: var(--ice); margin-bottom: .5rem; }
+  h2 { font-size: 1.25rem; font-weight: 700; color: var(--ice); margin: 2.5rem 0 1rem; padding-bottom: .5rem; border-bottom: 1px solid var(--border); }
+  h3 { font-size: 1rem; font-weight: 700; color: var(--electric); margin: 1.5rem 0 .75rem; }
+  p { color: rgba(226,232,240,.75); margin-bottom: .75rem; font-size: .9rem; }
+
+  /* Endpoint card */
+  .endpoint { background: var(--navy); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 1.25rem; overflow: hidden; }
+  .endpoint-header { display: flex; align-items: center; gap: .75rem; padding: .9rem 1.25rem; cursor: pointer; transition: background .15s; }
+  .endpoint-header:hover { background: rgba(14,165,233,.04); }
+  .endpoint-path { font-family: monospace; font-size: .9rem; color: var(--ice); font-weight: 600; }
+  .endpoint-desc { font-size: .8rem; color: rgba(148,163,184,.7); margin-left: auto; }
+  .endpoint-body { padding: 1.25rem; border-top: 1px solid var(--border); display: none; }
+  .endpoint-body.open { display: block; }
+
+  /* Code blocks */
+  pre { background: rgba(0,0,0,.4); border: 1px solid rgba(14,165,233,.1); border-radius: 8px; padding: 1rem; overflow-x: auto; margin: .75rem 0; }
+  code { font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: .82rem; color: #93c5fd; }
+  .code-label { font-size: .72rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: rgba(148,163,184,.5); margin-bottom: .35rem; }
+
+  /* Table */
+  table { width: 100%; border-collapse: collapse; font-size: .84rem; margin: .75rem 0; }
+  th { text-align: left; padding: .5rem .75rem; font-size: .72rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: rgba(148,163,184,.6); border-bottom: 1px solid var(--border); }
+  td { padding: .55rem .75rem; border-bottom: 1px solid rgba(14,165,233,.06); color: rgba(226,232,240,.8); }
+  td:first-child { font-family: monospace; color: var(--electric); font-size: .82rem; }
+  .req  { color: var(--red); font-size: .7rem; font-weight: 700; }
+  .opt  { color: rgba(148,163,184,.5); font-size: .7rem; }
+
+  /* Badge */
+  .badge { display: inline-block; padding: .15rem .6rem; border-radius: 4px; font-size: .7rem; font-weight: 700; }
+  .badge-auth { background: rgba(251,191,36,.15); color: var(--amber); border: 1px solid rgba(251,191,36,.3); }
+  .badge-free { background: rgba(148,163,184,.1); color: #94a3b8; border: 1px solid rgba(148,163,184,.2); }
+  .badge-pro  { background: rgba(14,165,233,.15); color: var(--electric); border: 1px solid rgba(14,165,233,.3); }
+
+  /* Alert */
+  .alert { border-radius: 8px; padding: .85rem 1.1rem; margin: 1rem 0; font-size: .85rem; display: flex; gap: .65rem; align-items: flex-start; }
+  .alert-info    { background: rgba(14,165,233,.08); border: 1px solid rgba(14,165,233,.2); color: #bae6fd; }
+  .alert-warning { background: rgba(251,191,36,.08); border: 1px solid rgba(251,191,36,.2); color: #fde68a; }
+
+  /* Hero */
+  .hero { background: linear-gradient(135deg, rgba(14,165,233,.1), rgba(56,189,248,.05)); border: 1px solid var(--border); border-radius: 14px; padding: 2rem; margin-bottom: 2rem; }
+  .hero p { margin: 0; }
+  .base-url { font-family: monospace; font-size: 1rem; color: var(--green); background: rgba(74,222,128,.08); border: 1px solid rgba(74,222,128,.2); border-radius: 6px; padding: .4rem .9rem; display: inline-block; margin-top: .75rem; }
+
+  @media (max-width: 768px) {
+    .sidebar { display: none; }
+    .main { padding: 1.5rem; }
+  }
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <h2>⬡ INVEXA API</h2>
+    <span>Documentação v1.0</span>
+  </div>
+
+  <div class="nav-section">Início</div>
+  <a class="nav-link" href="#intro">Introdução</a>
+  <a class="nav-link" href="#auth-header">Autenticação</a>
+  <a class="nav-link" href="#errors">Erros</a>
+  <a class="nav-link" href="#rate-limit">Rate Limiting</a>
+
+  <div class="nav-section">Autenticação</div>
+  <a class="nav-link" href="#auth-token"><span class="method post">POST</span>/auth/token</a>
+  <a class="nav-link" href="#auth-me"><span class="method get">GET</span>/me</a>
+  <a class="nav-link" href="#auth-revoke"><span class="method delete">DEL</span>/auth/token</a>
+
+  <div class="nav-section">Produtos</div>
+  <a class="nav-link" href="#products-list"><span class="method get">GET</span>/products</a>
+  <a class="nav-link" href="#products-show"><span class="method get">GET</span>/products/:id</a>
+  <a class="nav-link" href="#products-create"><span class="method post">POST</span>/products</a>
+  <a class="nav-link" href="#products-update"><span class="method put">PUT</span>/products/:id</a>
+  <a class="nav-link" href="#products-delete"><span class="method delete">DEL</span>/products/:id</a>
+
+  <div class="nav-section">Clientes</div>
+  <a class="nav-link" href="#customers-list"><span class="method get">GET</span>/customers</a>
+  <a class="nav-link" href="#customers-show"><span class="method get">GET</span>/customers/:id</a>
+  <a class="nav-link" href="#customers-create"><span class="method post">POST</span>/customers</a>
+  <a class="nav-link" href="#customers-update"><span class="method put">PUT</span>/customers/:id</a>
+  <a class="nav-link" href="#customers-delete"><span class="method delete">DEL</span>/customers/:id</a>
+
+  <div class="nav-section">Vendas</div>
+  <a class="nav-link" href="#sales-list"><span class="method get">GET</span>/sales</a>
+  <a class="nav-link" href="#sales-show"><span class="method get">GET</span>/sales/:id</a>
+  <a class="nav-link" href="#sales-create"><span class="method post">POST</span>/sales</a>
+
+  <div class="nav-section">Estoque</div>
+  <a class="nav-link" href="#stock-list"><span class="method get">GET</span>/stock</a>
+  <a class="nav-link" href="#stock-low"><span class="method get">GET</span>/stock/low</a>
+  <a class="nav-link" href="#stock-movement"><span class="method post">POST</span>/stock/movement</a>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+
+  <h1>Invexa API</h1>
+  <p>API RESTful para integração com o sistema de gestão Invexa. Todos os dados são isolados por empresa (multi-tenant).</p>
+
+  <div class="hero" id="intro">
+    <strong style="color:var(--ice)">Base URL</strong>
+    <div class="base-url">https://invexa-app.com.br/api/v1</div>
+    <p style="margin-top:.75rem;font-size:.85rem;">Todas as requisições devem incluir o header <code>Accept: application/json</code>. Respostas sempre em JSON.</p>
+  </div>
+
+  <!-- AUTENTICAÇÃO -->
+  <h2 id="auth-header">🔐 Autenticação</h2>
+  <p>A API usa <strong>Bearer Tokens</strong> gerados via Sanctum. Inclua em todas as requisições protegidas:</p>
+  <pre><code>Authorization: Bearer {seu_token}</code></pre>
+
+  <div class="alert alert-info">
+    💡 Gere seu token em <strong>Invexa → Settings → API Tokens</strong> ou via endpoint <code>POST /auth/token</code>.
+  </div>
+
+  <h2 id="errors">⚠️ Erros</h2>
+  <table>
+    <tr><th>Código</th><th>Significado</th></tr>
+    <tr><td>200</td><td>Sucesso</td></tr>
+    <tr><td>201</td><td>Criado com sucesso</td></tr>
+    <tr><td>401</td><td>Não autenticado — token inválido ou ausente</td></tr>
+    <tr><td>403</td><td>Sem permissão — recurso de outra empresa ou limite de plano</td></tr>
+    <tr><td>404</td><td>Recurso não encontrado</td></tr>
+    <tr><td>422</td><td>Erro de validação — ver campo <code>errors</code></td></tr>
+    <tr><td>429</td><td>Rate limit excedido</td></tr>
+  </table>
+
+  <h2 id="rate-limit">⏱ Rate Limiting</h2>
+  <p>60 requisições por minuto por token. Headers de resposta indicam o status:</p>
+  <pre><code>X-RateLimit-Limit: 60
+X-RateLimit-Remaining: 58</code></pre>
+
+  <!-- AUTH ENDPOINTS -->
+  <h2>Autenticação</h2>
+
+  <div class="endpoint" id="auth-token">
+    <div class="endpoint-header" onclick="toggle(this)">
+      <span class="method post">POST</span>
+      <span class="endpoint-path">/auth/token</span>
+      <span class="endpoint-desc">Gerar token de acesso</span>
+    </div>
+    <div class="endpoint-body">
+      <p>Gera um token Bearer para autenticação. Não requer token existente.</p>
+      <h3>Body (JSON)</h3>
+      <table>
+        <tr><th>Campo</th><th>Tipo</th><th>Obrigat.</th><th>Descrição</th></tr>
+        <tr><td>email</td><td>string</td><td><span class="req">sim</span></td><td>E-mail do usuário</td></tr>
+        <tr><td>password</td><td>string</td><td><span class="req">sim</span></td><td>Senha do usuário</td></tr>
+        <tr><td>device_name</td><td>string</td><td><span class="req">sim</span></td><td>Nome do dispositivo/integração</td></tr>
+      </table>
+      <div class="code-label">Exemplo de requisição</div>
+      <pre><code>curl -s -X POST https://invexa-app.com.br/api/v1/auth/token \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '{
+    "email": "admin@suaempresa.com",
+    "password": "sua_senha",
+    "device_name": "minha-integracao"
+  }'</code></pre>
+      <div class="code-label">Resposta 201</div>
+      <pre><code>{
+  "token": "1|abc123...",
+  "token_type": "Bearer"
+}</code></pre>
+    </div>
+  </div>
+
+  <div class="endpoint" id="auth-me">
+    <div class="endpoint-header" onclick="toggle(this)">
+      <span class="method get">GET</span>
+      <span class="endpoint-path">/me</span>
+      <span class="endpoint-desc badge badge-auth">🔒 Auth</span>
+    </div>
+    <div class="endpoint-body">
+      <p>Retorna dados do usuário autenticado e sua empresa.</p>
+      <div class="code-label">Resposta 200</div>
+      <pre><code>{
+  "user":    { "id": 1, "name": "Administrador", "email": "admin@empresa.com", "role": "admin" },
+  "company": { "id": 1, "name": "Empresa Demo", "plan": "pro" }
+}</code></pre>
+    </div>
+  </div>
+
+  <div class="endpoint" id="auth-revoke">
+    <div class="endpoint-header" onclick="toggle(this)">
+      <span class="method delete">DEL</span>
+      <span class="endpoint-path">/auth/token</span>
+      <span class="endpoint-desc">Revogar token atual</span>
+    </div>
+    <div class="endpoint-body">
+      <div class="code-label">Resposta 200</div>
+      <pre><code>{ "message": "Token revogado com sucesso." }</code></pre>
+    </div>
+  </div>
+
+  <!-- PRODUTOS -->
+  <h2>Produtos</h2>
+
+  <div class="endpoint" id="products-list">
+    <div class="endpoint-header" onclick="toggle(this)">
+      <span class="method get">GET</span>
+      <span class="endpoint-path">/products</span>
+      <span class="endpoint-desc">Listar produtos</span>
+    </div>
+    <div class="endpoint-body">
+      <h3>Query params</h3>
+      <table>
+        <tr><th>Param</th><th>Tipo</th><th>Descrição</th></tr>
+        <tr><td>search</td><td>string</td><td>Busca por nome</td></tr>
+        <tr><td>active</td><td>boolean</td><td>Filtrar por status (true/false)</td></tr>
+        <tr><td>per_page</td><td>integer</td><td>Itens por página (padrão: 20)</td></tr>
+        <tr><td>page</td><td>integer</td><td>Página atual</td></tr>
+      </table>
+      <div class="code-label">Exemplo</div>
+      <pre><code>GET /api/v1/products?search=camiseta&active=true&per_page=10</code></pre>
+      <div class="code-label">Resposta 200 (paginada)</div>
+      <pre><code>{
+  "current_page": 1,
+  "data": [
+    {
+      "id": 5,
+      "name": "Camiseta Básica Branca",
+      "sku": "SKU001",
+      "price": "39.90",
+      "cost": "18.00",
+      "quantity": 45,
+      "min_stock": 5,
+      "active": true
+    }
+  ],
+  "per_page": 20,
+  "total": 1
+}</code></pre>
+    </div>
+  </div>
+
+  <div class="endpoint" id="products-create">
+    <div class="endpoint-header" onclick="toggle(this)">
+      <span class="method post">POST</span>
+      <span class="endpoint-path">/products</span>
+      <span class="endpoint-desc">Criar produto</span>
+    </div>
+    <div class="endpoint-body">
+      <table>
+        <tr><th>Campo</th><th>Tipo</th><th>Obrigat.</th><th>Descrição</th></tr>
+        <tr><td>name</td><td>string</td><td><span class="req">sim</span></td><td>Nome do produto</td></tr>
+        <tr><td>price</td><td>number</td><td><span class="req">sim</span></td><td>Preço de venda</td></tr>
+        <tr><td>sku</td><td>string</td><td><span class="opt">não</span></td><td>Código SKU</td></tr>
+        <tr><td>cost_price</td><td>number</td><td><span class="opt">não</span></td><td>Preço de custo</td></tr>
+        <tr><td>quantity</td><td>integer</td><td><span class="opt">não</span></td><td>Estoque inicial</td></tr>
+        <tr><td>min_quantity</td><td>integer</td><td><span class="opt">não</span></td><td>Estoque mínimo</td></tr>
+        <tr><td>category_id</td><td>integer</td><td><span class="opt">não</span></td><td>ID da categoria</td></tr>
+        <tr><td>active</td><td>boolean</td><td><span class="opt">não</span></td><td>Padrão: true</td></tr>
+      </table>
+      <div class="alert alert-warning">⚠️ Limitado pelo plano: Free (50 produtos), Pro (500), Business (ilimitado).</div>
+    </div>
+  </div>
+
+  <!-- CLIENTES -->
+  <h2>Clientes</h2>
+
+  <div class="endpoint" id="customers-list">
+    <div class="endpoint-header" onclick="toggle(this)">
+      <span class="method get">GET</span>
+      <span class="endpoint-path">/customers</span>
+      <span class="endpoint-desc">Listar clientes</span>
+    </div>
+    <div class="endpoint-body">
+      <h3>Query params</h3>
+      <table>
+        <tr><th>Param</th><th>Tipo</th><th>Descrição</th></tr>
+        <tr><td>search</td><td>string</td><td>Busca por nome</td></tr>
+        <tr><td>per_page</td><td>integer</td><td>Itens por página (padrão: 20)</td></tr>
+      </table>
+      <div class="code-label">Resposta 200</div>
+      <pre><code>{
+  "data": [
+    {
+      "id": 3,
+      "name": "João da Silva",
+      "document": "123.456.789-00",
+      "email": "joao@email.com",
+      "phone": "11999990000"
+    }
+  ],
+  "total": 1
+}</code></pre>
+    </div>
+  </div>
+
+  <div class="endpoint" id="customers-create">
+    <div class="endpoint-header" onclick="toggle(this)">
+      <span class="method post">POST</span>
+      <span class="endpoint-path">/customers</span>
+      <span class="endpoint-desc">Criar cliente</span>
+    </div>
+    <div class="endpoint-body">
+      <table>
+        <tr><th>Campo</th><th>Tipo</th><th>Obrigat.</th><th>Descrição</th></tr>
+        <tr><td>name</td><td>string</td><td><span class="req">sim</span></td><td>Nome completo</td></tr>
+        <tr><td>email</td><td>string</td><td><span class="opt">não</span></td><td>E-mail</td></tr>
+        <tr><td>phone</td><td>string</td><td><span class="opt">não</span></td><td>Telefone</td></tr>
+        <tr><td>document</td><td>string</td><td><span class="opt">não</span></td><td>CPF ou CNPJ</td></tr>
+        <tr><td>address</td><td>string</td><td><span class="opt">não</span></td><td>Endereço</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- VENDAS -->
+  <h2>Vendas</h2>
+
+  <div class="endpoint" id="sales-list">
+    <div class="endpoint-header" onclick="toggle(this)">
+      <span class="method get">GET</span>
+      <span class="endpoint-path">/sales</span>
+      <span class="endpoint-desc">Listar vendas</span>
+    </div>
+    <div class="endpoint-body">
+      <table>
+        <tr><th>Param</th><th>Tipo</th><th>Descrição</th></tr>
+        <tr><td>from</td><td>date</td><td>Data inicial (YYYY-MM-DD)</td></tr>
+        <tr><td>to</td><td>date</td><td>Data final (YYYY-MM-DD)</td></tr>
+        <tr><td>per_page</td><td>integer</td><td>Itens por página</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="endpoint" id="sales-create">
+    <div class="endpoint-header" onclick="toggle(this)">
+      <span class="method post">POST</span>
+      <span class="endpoint-path">/sales</span>
+      <span class="endpoint-desc">Registrar venda</span>
+    </div>
+    <div class="endpoint-body">
+      <table>
+        <tr><th>Campo</th><th>Tipo</th><th>Obrigat.</th><th>Descrição</th></tr>
+        <tr><td>items</td><td>array</td><td><span class="req">sim</span></td><td>Itens da venda</td></tr>
+        <tr><td>items[].product_id</td><td>integer</td><td><span class="req">sim</span></td><td>ID do produto</td></tr>
+        <tr><td>items[].quantity</td><td>integer</td><td><span class="req">sim</span></td><td>Quantidade</td></tr>
+        <tr><td>items[].unit_price</td><td>number</td><td><span class="req">sim</span></td><td>Preço unitário</td></tr>
+        <tr><td>payment_method</td><td>string</td><td><span class="req">sim</span></td><td>Forma de pagamento</td></tr>
+        <tr><td>customer_id</td><td>integer</td><td><span class="opt">não</span></td><td>ID do cliente</td></tr>
+        <tr><td>notes</td><td>string</td><td><span class="opt">não</span></td><td>Observações</td></tr>
+      </table>
+      <div class="code-label">Exemplo de requisição</div>
+      <pre><code>curl -X POST https://invexa-app.com.br/api/v1/sales \
+  -H "Authorization: Bearer {token}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "customer_id": 3,
+    "payment_method": "pix",
+    "items": [
+      { "product_id": 5, "quantity": 2, "unit_price": 39.90 }
+    ]
+  }'</code></pre>
+    </div>
+  </div>
+
+  <!-- ESTOQUE -->
+  <h2>Estoque</h2>
+
+  <div class="endpoint" id="stock-list">
+    <div class="endpoint-header" onclick="toggle(this)">
+      <span class="method get">GET</span>
+      <span class="endpoint-path">/stock</span>
+      <span class="endpoint-desc">Listar estoque</span>
+    </div>
+    <div class="endpoint-body">
+      <p>Retorna todos os produtos com suas quantidades em estoque.</p>
+      <div class="code-label">Resposta 200</div>
+      <pre><code>{
+  "data": [
+    { "id": 5, "name": "Camiseta Básica", "sku": "SKU001", "quantity": 45, "min_quantity": 5 }
+  ]
+}</code></pre>
+    </div>
+  </div>
+
+  <div class="endpoint" id="stock-low">
+    <div class="endpoint-header" onclick="toggle(this)">
+      <span class="method get">GET</span>
+      <span class="endpoint-path">/stock/low</span>
+      <span class="endpoint-desc">Produtos com estoque baixo</span>
+    </div>
+    <div class="endpoint-body">
+      <p>Retorna produtos onde <code>quantity ≤ min_quantity</code>.</p>
+    </div>
+  </div>
+
+  <div class="endpoint" id="stock-movement">
+    <div class="endpoint-header" onclick="toggle(this)">
+      <span class="method post">POST</span>
+      <span class="endpoint-path">/stock/movement</span>
+      <span class="endpoint-desc">Registrar movimentação</span>
+    </div>
+    <div class="endpoint-body">
+      <table>
+        <tr><th>Campo</th><th>Tipo</th><th>Obrigat.</th><th>Descrição</th></tr>
+        <tr><td>product_id</td><td>integer</td><td><span class="req">sim</span></td><td>ID do produto</td></tr>
+        <tr><td>type</td><td>string</td><td><span class="req">sim</span></td><td><code>in</code>, <code>out</code> ou <code>adjustment</code></td></tr>
+        <tr><td>quantity</td><td>integer</td><td><span class="req">sim</span></td><td>Quantidade (sempre positivo)</td></tr>
+        <tr><td>reason</td><td>string</td><td><span class="opt">não</span></td><td>Motivo da movimentação</td></tr>
+      </table>
+    </div>
+  </div>
+
+</main>
+</div>
+
+<script>
+function toggle(header) {
+  const body = header.nextElementSibling;
+  body.classList.toggle('open');
+}
+// Abrir primeiro endpoint de cada seção por padrão
+document.querySelectorAll('.endpoint:first-of-type .endpoint-body').forEach(b => b.classList.add('open'));
+</script>
+</body>
+</html>
