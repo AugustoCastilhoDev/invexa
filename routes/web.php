@@ -199,10 +199,11 @@ Route::middleware('auth')->group(function () {
         });
 
         // Notifications
-        Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
-        Route::get('/notifications/unread', [NotificationController::class, 'unread'])->name('notifications.unread');
-        Route::post('/notifications/{notification}/read', [NotificationController::class, 'markRead'])->name('notifications.mark-read');
-        Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllRead'])->name('notifications.mark-all-read');
+        Route::get('/notifications',                              [NotificationController::class, 'index'])->name('notifications.index');
+        Route::get('/notifications/unread',                       [NotificationController::class, 'unread'])->name('notifications.unread');
+        Route::post('/notifications/mark-all-read',               [NotificationController::class, 'markAllRead'])->name('notifications.mark-all-read');
+        Route::post('/notifications/{notification}/read',         [NotificationController::class, 'markRead'])->name('notifications.mark-read');
+        Route::delete('/notifications/{notification}',            [NotificationController::class, 'destroy'])->name('notifications.destroy');
 
         // Company Profile
         Route::get('/company-profile', [CompanyProfileController::class, 'edit'])->name('company-profile.edit');
