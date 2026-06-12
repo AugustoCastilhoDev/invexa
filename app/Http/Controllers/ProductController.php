@@ -111,13 +111,14 @@ class ProductController extends Controller
             'price.required' => 'O preço de venda é obrigatório.',
         ]);
 
-        DB::transaction(function () use ($validated, $companyId, $request) {
+        $product = null;
+
+        DB::transaction(function () use ($validated, $companyId, $request, &$product) {
             $product = Product::create(array_merge($validated, [
                 'company_id' => $companyId,
                 'active'     => $request->boolean('active', true),
             ]));
 
-            // Registra movimentação de estoque inicial quando quantidade > 0
             if ($product->quantity > 0) {
                 StockMovement::create([
                     'product_id'      => $product->id,
@@ -187,7 +188,6 @@ class ProductController extends Controller
                 'active' => $request->boolean('active'),
             ]));
 
-            // Registra ajuste de estoque se a quantidade foi alterada manualmente
             if ($quantityNew !== $quantityBefore) {
                 $diff = $quantityNew - $quantityBefore;
                 StockMovement::create([
@@ -216,7 +216,7 @@ class ProductController extends Controller
         return redirect()->route('products.index')->with('success', 'Produto excluído com sucesso.');
     }
 
-    // ── Importação CSV ─────────────────────────────────────────────
+    // ── Importação CSV ──────────────────────────────────────────────
 
     public function importTemplate()
     {
