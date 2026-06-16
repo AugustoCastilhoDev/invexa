@@ -17,6 +17,30 @@
                     <i class="bi bi-file-earmark-pdf me-1"></i>Baixar NF (PDF)
                 </a>
 
+                {{-- ── Botão Emitir NF-e ──────────────────────────────────────── --}}
+                @if($sale->status !== 'cancelada')
+                    @php $nfeAtiva = $sale->nfes()->whereIn('status', ['autorizada','pendente','processando'])->latest()->first(); @endphp
+
+                    @if($nfeAtiva)
+                        {{-- Já existe NF-e: link para detalhes --}}
+                        <a href="{{ route('nfes.show', $nfeAtiva) }}" class="btn btn-outline-info btn-sm">
+                            <i class="bi bi-file-earmark-text me-1"></i>
+                            NF-e {{ $nfeAtiva->numero_formatado }}
+                            <span class="badge bg-{{ $nfeAtiva->status_badge }} ms-1">{{ $nfeAtiva->status_label }}</span>
+                        </a>
+                    @else
+                        {{-- Sem NF-e: botão emitir --}}
+                        <form action="{{ route('nfes.emitir', $sale) }}" method="POST" class="d-inline"
+                              onsubmit="return confirm('Emitir NF-e para a Venda #{{ $sale->sale_number }}?\n\nEsta ação enviará os dados à SEFAZ via Focus NFe.')">
+                            @csrf
+                            <button type="submit" class="btn btn-primary btn-sm">
+                                <i class="bi bi-file-earmark-plus me-1"></i>Emitir NF-e
+                            </button>
+                        </form>
+                    @endif
+                @endif
+                {{-- ── fim NF-e ────────────────────────────────────────────────── --}}
+
                 @if($sale->status === 'concluida')
                     <a href="{{ route('returns.create', ['sale_id' => $sale->id]) }}"
                        class="btn btn-warning btn-sm">
@@ -134,6 +158,77 @@
                 </div>
             </div>
         </div>
+
+        {{-- ── Card NF-e vinculada ─────────────────────────────────────────── --}}
+        @php $nfes = $sale->nfes()->latest()->get(); @endphp
+        @if($nfes->isNotEmpty())
+        <div class="card card-dark-bg mb-4" style="border:1px solid rgba(99,179,237,.25);">
+            <div class="card-header card-header-dark" style="border-bottom:1px solid rgba(99,179,237,.2);">
+                <span class="fw-semibold" style="color:#63b3ed;">
+                    <i class="bi bi-file-earmark-text me-2"></i>NF-e emitidas nesta venda
+                </span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-dark mb-0 align-middle">
+                    <thead>
+                        <tr style="font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+                                   color:rgba(148,163,184,.85);border-bottom:1px solid rgba(148,163,184,.15);">
+                            <th class="ps-4 py-3">Número</th>
+                            <th class="py-3">Emissão</th>
+                            <th class="py-3">Status</th>
+                            <th class="py-3">Protocolo</th>
+                            <th class="py-3 text-end pe-3">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($nfes as $nfe)
+                        <tr style="border-color:rgba(148,163,184,.07);">
+                            <td class="ps-4 py-3">
+                                <span class="text-white fw-semibold">{{ $nfe->numero_formatado }}</span>
+                                <div class="text-soft small">Série {{ $nfe->serie }}</div>
+                            </td>
+                            <td class="py-3" style="color:#94a3b8;font-size:.875rem;">
+                                {{ $nfe->data_emissao?->format('d/m/Y H:i') ?? '—' }}
+                            </td>
+                            <td class="py-3">
+                                <span class="badge bg-{{ $nfe->status_badge }}">{{ $nfe->status_label }}</span>
+                            </td>
+                            <td class="py-3">
+                                <span class="text-soft font-monospace" style="font-size:.78rem;">
+                                    {{ $nfe->protocolo ?? '—' }}
+                                </span>
+                            </td>
+                            <td class="py-3 text-end pe-3">
+                                <div class="d-flex justify-content-end gap-1">
+                                    <a href="{{ route('nfes.show', $nfe) }}" class="btn btn-sm btn-outline-light" title="Detalhes">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    @if($nfe->status === 'autorizada')
+                                        <a href="{{ route('nfes.xml', $nfe) }}" class="btn btn-sm btn-outline-secondary" title="XML">
+                                            <i class="bi bi-file-code"></i>
+                                        </a>
+                                        <a href="{{ route('nfes.danfe', $nfe) }}" class="btn btn-sm btn-outline-secondary" title="DANFE">
+                                            <i class="bi bi-file-pdf"></i>
+                                        </a>
+                                    @endif
+                                    @if($nfe->status === 'pendente')
+                                        <form action="{{ route('nfes.consultar', $nfe) }}" method="POST">
+                                            @csrf
+                                            <button type="submit" class="btn btn-sm btn-outline-info" title="Consultar SEFAZ">
+                                                <i class="bi bi-arrow-clockwise"></i>
+                                            </button>
+                                        </form>
+                                    @endif
+                                </div>
+                            </td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        @endif
+        {{-- ── fim NF-e ────────────────────────────────────────────────────── --}}
 
 
         {{-- ── Seção Pix ─────────────────────────────────────────────────── --}}
