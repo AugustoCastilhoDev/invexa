@@ -4,16 +4,6 @@
 
 @push('styles')
 <style>
-.nav-tabs .nav-link.active {
-    background: rgba(14,165,233,.12) !important;
-    border-color: rgba(14,165,233,.3) rgba(14,165,233,.3) transparent !important;
-    color: #38BDF8 !important;
-}
-.nav-tabs .nav-link:hover:not(.active) {
-    background: rgba(14,165,233,.05);
-    color: #e2e8f0 !important;
-    border-color: transparent;
-}
 .role-badge {
     display: inline-flex;
     align-items: center;
@@ -66,14 +56,14 @@
             <div style="font-size:.84rem;color:rgba(148,163,184,.85);">
                 Para editar os dados da empresa, logo, informações fiscais e integração Pix,
                 acesse
-                <a href="{{ route('settings.index') }}" style="color:#38BDF8;font-weight:600;">
+                <a href="{{ route('settings.company') }}" style="color:#38BDF8;font-weight:600;">
                     Configurações da Empresa <i class="bi bi-arrow-right ms-1" style="font-size:.75rem;"></i>
                 </a>
             </div>
         </div>
         @endif
 
-        {{-- ── ABA DADOS PESSOAIS ── --}}
+        {{-- ── DADOS PESSOAIS ── --}}
         <form method="POST" action="{{ route('profile.update') }}">
             @csrf
             @method('PATCH')
