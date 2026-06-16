@@ -44,4 +44,16 @@ class Sale extends Model
     public function items(): HasMany       { return $this->hasMany(SaleItem::class); }
     public function saleReturns(): HasMany { return $this->hasMany(SaleReturn::class); }
     public function receivable(): HasOne   { return $this->hasOne(Receivable::class); }
+    public function nfes(): HasMany        { return $this->hasMany(Nfe::class); }
+
+    // Helpers financeiros
+    public function getTotalReturnedAttribute(): float
+    {
+        return $this->saleReturns->sum('total');
+    }
+
+    public function getNetTotalAttribute(): float
+    {
+        return $this->total - $this->total_returned;
+    }
 }
