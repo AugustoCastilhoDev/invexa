@@ -15,9 +15,11 @@ class FocusNfeService
     private string $token;
     private string $ambiente;
 
+    // CNPJ do certificado de testes usado em homologação
+    private const CNPJ_HOMOLOGACAO = '34785515000166';
+
     public function __construct(Company $company)
     {
-        // Nomes corretos conforme tabela companies e FiscalSettingsController
         $this->ambiente = $company->focusnfe_ambiente ?? 'homologacao';
         $this->token    = $company->focusnfe_token    ?? '';
         $this->baseUrl  = $this->ambiente === 'producao'
@@ -109,8 +111,7 @@ class FocusNfeService
 
         $isHomologacao = $this->ambiente !== 'producao';
 
-        // Destinatário
-        // Em homologação a SEFAZ exige nome fixo
+        // Destinatário — em homologação a SEFAZ exige nome fixo
         $nomeDestinatario = $isHomologacao
             ? 'NF-E EMITIDA EM AMBIENTE DE HOMOLOGACAO - SEM VALOR FISCAL'
             : ($customer?->name ?? $sale->customer_name ?? 'CONSUMIDOR');
@@ -145,9 +146,9 @@ class FocusNfeService
             $dest['telefone'] = preg_replace('/\D/', '', $customer->phone);
         }
 
-        // Emitente — em homologação usa CNPJ de testes da Focus
+        // Emitente — em homologação usa CNPJ do certificado de testes
         $cnpjEmitente = $isHomologacao
-            ? '07504505000132'
+            ? self::CNPJ_HOMOLOGACAO
             : preg_replace('/\D/', '', $company->cnpj ?? '');
 
         // Itens
