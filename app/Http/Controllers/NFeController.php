@@ -37,6 +37,9 @@ class NFeController extends Controller
     // ─────────────────────────────────────────────────────────────────────────
     public function emitir(Sale $sale): RedirectResponse
     {
+        // Garante que todas as relações necessárias estão carregadas do banco
+        $sale->load(['customer', 'items.product', 'company']);
+
         $company = auth()->user()->company;
 
         if (empty($company->focusnfe_token)) {
@@ -72,7 +75,6 @@ class NFeController extends Controller
         ];
         $status = $statusMap[$statusFocus] ?? Nfe::STATUS_PROCESSANDO;
 
-        // numero só é atribuído pela SEFAZ após autorização; fica null até lá
         $nfe = Nfe::create([
             'company_id'       => $company->id,
             'sale_id'          => $sale->id,
