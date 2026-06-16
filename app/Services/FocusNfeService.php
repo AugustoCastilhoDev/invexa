@@ -107,7 +107,13 @@ class FocusNfeService
             ? self::CNPJ_HOMOLOGACAO
             : preg_replace('/\D/', '', $company->cnpj ?? '');
 
-        // ── Destinatário: campos no nível raiz com sufixo _destinatario ──
+        // Série: homologação usa 2 por convenção, produção usa 1
+        $serie = $isHomologacao ? '2' : ($company->nfe_serie ?? '1');
+
+        // Número: usa o ID da venda como base ou um contador guardado na company
+        $numero = $sale->nfe_numero ?? $sale->id;
+
+        // ── Destinatário ──
         $nomeDestinatario = $isHomologacao
             ? 'NF-E EMITIDA EM AMBIENTE DE HOMOLOGACAO - SEM VALOR FISCAL'
             : ($customer?->name ?? 'CONSUMIDOR');
@@ -130,7 +136,7 @@ class FocusNfeService
         }
 
         $logradouro = trim($customer->logradouro      ?? '');
-        $numero     = trim($customer->numero_endereco ?? '');
+        $numero_end = trim($customer->numero_endereco ?? '');
         $bairro     = trim($customer->bairro          ?? '');
         $municipio  = trim($customer->municipio       ?? '');
         $uf         = trim($customer->uf              ?? '');
@@ -141,7 +147,7 @@ class FocusNfeService
 
         if ($hasAddr) {
             $payload['logradouro_destinatario']  = $logradouro;
-            $payload['numero_destinatario']      = $numero ?: 'S/N';
+            $payload['numero_destinatario']      = $numero_end ?: 'S/N';
             $payload['bairro_destinatario']      = $bairro ?: 'Centro';
             $payload['municipio_destinatario']   = $municipio;
             $payload['uf_destinatario']          = strtoupper($uf);
@@ -186,7 +192,6 @@ class FocusNfeService
             $unit = strtoupper($product->unit ?? 'UN');
 
             $itens[] = [
-                // ─ Dados do produto ─
                 'numero_item'               => $i + 1,
                 'codigo_produto'            => (string) ($product->sku ?? $product->id),
                 'descricao'                 => $product->name,
@@ -201,15 +206,9 @@ class FocusNfeService
                 'valor_unitario_tributavel' => $unitPrice,
                 'codigo_barras_comercial'   => $product->barcode ?? 'SEM GTIN',
                 'inclui_no_total'           => 1,
-
-                // ─ ICMS (Simples Nacional — CSOSN 102: não tributa, sem crédito) ─
-                'icms_origem'               => 0,   // nacional
+                'icms_origem'               => 0,
                 'icms_csosn'                => '102',
-
-                // ─ PIS (NT = Não Tributável) ─
                 'pis_situacao_tributaria'   => '07',
-
-                // ─ COFINS (NT = Não Tributável) ─
                 'cofins_situacao_tributaria' => '07',
             ];
         }
@@ -224,6 +223,8 @@ class FocusNfeService
             'consumidor_final'   => 1,
             'presenca_comprador' => 1,
             'modalidade_frete'   => 9,
+            'serie'              => $serie,
+            'numero'             => $numero,
             'cnpj_emitente'      => $cnpjEmitente,
             'items'              => $itens,
         ], $payload);
