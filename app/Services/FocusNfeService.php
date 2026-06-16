@@ -116,7 +116,6 @@ class FocusNfeService
             'nome_destinatario' => $nomeDestinatario,
         ];
 
-        // CPF / CNPJ
         if (!empty($customer?->document)) {
             $doc = preg_replace('/\D/', '', $customer->document);
             if (strlen($doc) === 14) {
@@ -130,7 +129,6 @@ class FocusNfeService
             $payload['email_destinatario'] = $customer->email;
         }
 
-        // Endereço
         $logradouro = trim($customer->logradouro      ?? '');
         $numero     = trim($customer->numero_endereco ?? '');
         $bairro     = trim($customer->bairro          ?? '');
@@ -142,27 +140,26 @@ class FocusNfeService
         $temDoc  = isset($payload['cpf_destinatario']) || isset($payload['cnpj_destinatario']);
 
         if ($hasAddr) {
-            $payload['logradouro_destinatario'] = $logradouro;
-            $payload['numero_destinatario']     = $numero ?: 'S/N';
-            $payload['bairro_destinatario']     = $bairro ?: 'Centro';
-            $payload['municipio_destinatario']  = $municipio;
-            $payload['uf_destinatario']         = strtoupper($uf);
-            $payload['cep_destinatario']        = $cep;
-            $payload['pais_destinatario']       = 'Brasil';
-            $payload['codigo_pais_destinatario']= '1058';
+            $payload['logradouro_destinatario']  = $logradouro;
+            $payload['numero_destinatario']      = $numero ?: 'S/N';
+            $payload['bairro_destinatario']      = $bairro ?: 'Centro';
+            $payload['municipio_destinatario']   = $municipio;
+            $payload['uf_destinatario']          = strtoupper($uf);
+            $payload['cep_destinatario']         = $cep;
+            $payload['pais_destinatario']        = 'Brasil';
+            $payload['codigo_pais_destinatario'] = '1058';
             if (!empty($customer->complemento)) {
                 $payload['complemento_destinatario'] = $customer->complemento;
             }
         } elseif ($temDoc) {
-            // Tem documento mas sem endereço: usa endereço padrão Brasília
-            $payload['logradouro_destinatario'] = 'Praca dos Tres Poderes';
-            $payload['numero_destinatario']     = 'S/N';
-            $payload['bairro_destinatario']     = 'Zona Civico-Administrativa';
-            $payload['municipio_destinatario']  = 'Brasilia';
-            $payload['uf_destinatario']         = 'DF';
-            $payload['cep_destinatario']        = '70150900';
-            $payload['pais_destinatario']       = 'Brasil';
-            $payload['codigo_pais_destinatario']= '1058';
+            $payload['logradouro_destinatario']  = 'Praca dos Tres Poderes';
+            $payload['numero_destinatario']      = 'S/N';
+            $payload['bairro_destinatario']      = 'Zona Civico-Administrativa';
+            $payload['municipio_destinatario']   = 'Brasilia';
+            $payload['uf_destinatario']          = 'DF';
+            $payload['cep_destinatario']         = '70150900';
+            $payload['pais_destinatario']        = 'Brasil';
+            $payload['codigo_pais_destinatario'] = '1058';
         }
 
         if (!empty($customer?->phone)) {
@@ -185,13 +182,17 @@ class FocusNfeService
                 $ncm = '84716049';
             }
 
+            $cfop = $product->cfop ?? '5102';
+            $unit = strtoupper($product->unit ?? 'UN');
+
             $itens[] = [
+                // ─ Dados do produto ─
                 'numero_item'               => $i + 1,
                 'codigo_produto'            => (string) ($product->sku ?? $product->id),
                 'descricao'                 => $product->name,
                 'codigo_ncm'                => $ncm,
-                'cfop'                      => $product->cfop ?? '5102',
-                'unidade_comercial'         => strtoupper($product->unit ?? 'UN'),
+                'cfop'                      => $cfop,
+                'unidade_comercial'         => $unit,
                 'quantidade_comercial'      => $qty,
                 'valor_unitario_comercial'  => $unitPrice,
                 'valor_bruto'               => $valorBruto,
@@ -200,10 +201,16 @@ class FocusNfeService
                 'valor_unitario_tributavel' => $unitPrice,
                 'codigo_barras_comercial'   => $product->barcode ?? 'SEM GTIN',
                 'inclui_no_total'           => 1,
-                'icms_modalidade'           => 102,
+
+                // ─ ICMS (Simples Nacional — CSOSN 102: não tributa, sem crédito) ─
+                'icms_origem'               => 0,   // nacional
                 'icms_csosn'                => '102',
-                'pis_modalidade'            => 'NT',
-                'cofins_modalidade'         => 'NT',
+
+                // ─ PIS (NT = Não Tributável) ─
+                'pis_situacao_tributaria'   => '07',
+
+                // ─ COFINS (NT = Não Tributável) ─
+                'cofins_situacao_tributaria' => '07',
             ];
         }
 
