@@ -12,6 +12,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -47,6 +48,7 @@ class ImportProductsCsvJob implements ShouldQueue
         $headers  = array_map('trim', fgetcsv($handle, 0, ';'));
         $errors   = [];
         $imported = 0;
+        $updated  = 0;
         $failed   = 0;
         $total    = 0;
 
@@ -85,11 +87,6 @@ class ImportProductsCsvJob implements ShouldQueue
             if ($name === '') $rowErrors[] = 'Nome obrigatório.';
             if ($price === null || $price < 0) $rowErrors[] = 'Preço de venda inválido.';
 
-            if ($sku !== '') {
-                $exists = Product::where('company_id', $companyId)->where('sku', $sku)->exists();
-                if ($exists) $rowErrors[] = "SKU '{$sku}' já cadastrado.";
-            }
-
             if (count($rowErrors)) {
                 $errors[] = ['linha' => $line, 'erro' => implode(' | ', $rowErrors)];
                 $failed++;
@@ -116,6 +113,58 @@ class ImportProductsCsvJob implements ShouldQueue
                 }
             }
 
+            // Verifica se o SKU já existe — se sim, ATUALIZA somando quantidade
+            $existingProduct = $sku !== ''
+                ? Product::where('company_id', $companyId)->where('sku', $sku)->first()
+                : null;
+
+            if ($existingProduct) {
+                // Atualiza dados do produto e SOMA a quantidade
+                DB::transaction(function () use (
+                    $existingProduct, $name, $price, $cost, $quantity, $minQty,
+                    $unit, $description, $categoryId, $supplierId, $active,
+                    $costColumn, $companyId, $userId
+                ) {
+                    $quantityBefore = $existingProduct->quantity;
+                    $quantityAfter  = $quantityBefore + $quantity;
+
+                    $existingProduct->update([
+                        'name'         => $name,
+                        'price'        => $price,
+                        $costColumn    => $cost ?? $existingProduct->$costColumn,
+                        'quantity'     => $quantityAfter,
+                        'min_quantity' => $minQty ?: $existingProduct->min_quantity,
+                        'unit'         => $unit ?: $existingProduct->unit,
+                        'description'  => $description ?: $existingProduct->description,
+                        'category_id'  => $categoryId ?? $existingProduct->category_id,
+                        'supplier_id'  => $supplierId ?? $existingProduct->supplier_id,
+                        'active'       => in_array($active, ['sim', 's', '1', 'true', 'yes']),
+                    ]);
+
+                    // Registra movimentação de entrada apenas se houver quantidade a somar
+                    if ($quantity > 0) {
+                        StockMovement::create([
+                            'company_id'      => $companyId,
+                            'product_id'      => $existingProduct->id,
+                            'user_id'         => $userId,
+                            'type'            => 'entrada',
+                            'quantity'        => $quantity,
+                            'quantity_before' => $quantityBefore,
+                            'quantity_after'  => $quantityAfter,
+                            'reason'          => 'ajuste',
+                            'notes'           => 'Atualização de estoque via reimportação CSV (SKU duplicado)',
+                            'source_type'     => ProductImport::class,
+                            'source_id'       => $this->import->id,
+                        ]);
+                    }
+                });
+
+                $updated++;
+                $imported++;
+                continue;
+            }
+
+            // Produto novo — cria normalmente
             $product = Product::create([
                 'company_id'   => $companyId,
                 'name'         => $name,
