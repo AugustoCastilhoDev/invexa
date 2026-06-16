@@ -21,8 +21,8 @@ class FocusNfeService
         $this->ambiente = $company->focusnfe_ambiente ?? 'homologacao';
         $this->token    = $company->focusnfe_token    ?? '';
         $this->baseUrl  = $this->ambiente === 'producao'
-    ? 'https://api.focusnfe.com.br'
-    : 'https://homologacao.focusnfe.com.br';
+            ? 'https://api.focusnfe.com.br'
+            : 'https://homologacao.focusnfe.com.br';
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -107,9 +107,16 @@ class FocusNfeService
         $customer = $sale->customer;
         $items    = $sale->items()->with('product')->get();
 
+        $isHomologacao = $this->ambiente !== 'producao';
+
         // Destinatário
+        // Em homologação a SEFAZ exige nome fixo
+        $nomeDestinatario = $isHomologacao
+            ? 'NF-E EMITIDA EM AMBIENTE DE HOMOLOGACAO - SEM VALOR FISCAL'
+            : ($customer?->name ?? $sale->customer_name ?? 'CONSUMIDOR');
+
         $dest = [
-            'nome' => $customer?->name ?? $sale->customer_name ?? 'CONSUMIDOR',
+            'nome' => $nomeDestinatario,
         ];
         if ($customer?->cpf_cnpj) {
             $doc = preg_replace('/\D/', '', $customer->cpf_cnpj);
@@ -137,6 +144,11 @@ class FocusNfeService
         if (!empty($customer?->phone)) {
             $dest['telefone'] = preg_replace('/\D/', '', $customer->phone);
         }
+
+        // Emitente — em homologação usa CNPJ de testes da Focus
+        $cnpjEmitente = $isHomologacao
+            ? '07504505000132'
+            : preg_replace('/\D/', '', $company->cnpj ?? '');
 
         // Itens
         $itens = [];
@@ -173,6 +185,7 @@ class FocusNfeService
             'consumidor_final'   => 1,
             'presenca_comprador' => 1,
             'modalidade_frete'   => 9,
+            'cnpj_emitente'      => $cnpjEmitente,
             'items'              => $itens,
             'destinatario'       => $dest,
         ];
