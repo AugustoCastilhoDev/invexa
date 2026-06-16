@@ -6,50 +6,38 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Adiciona campos fiscais à tabela customers.
-     * Usa Schema::hasColumn() em cada campo para ser idempotente.
-     * A coluna de referência é 'document' (CPF/CNPJ) — não 'cpf_cnpj'.
-     */
     public function up(): void
     {
-        $columns = [
-            'ie_destinatario'  => fn(Blueprint $t) => $t->string('ie_destinatario', 20)->nullable()->after('document'),
-            'tipo_pessoa'      => fn(Blueprint $t) => $t->string('tipo_pessoa', 2)->nullable()->after('ie_destinatario'),
-            'indicador_ie'     => fn(Blueprint $t) => $t->string('indicador_ie', 1)->nullable()->after('tipo_pessoa'),
-            'logradouro'       => fn(Blueprint $t) => $t->string('logradouro', 150)->nullable()->after('indicador_ie'),
-            'numero_endereco'  => fn(Blueprint $t) => $t->string('numero_endereco', 10)->nullable()->after('logradouro'),
-            'complemento'      => fn(Blueprint $t) => $t->string('complemento', 60)->nullable()->after('numero_endereco'),
-            'bairro'           => fn(Blueprint $t) => $t->string('bairro', 60)->nullable()->after('complemento'),
-            'municipio'        => fn(Blueprint $t) => $t->string('municipio', 60)->nullable()->after('bairro'),
-            'uf'               => fn(Blueprint $t) => $t->string('uf', 2)->nullable()->after('municipio'),
-            'cep'              => fn(Blueprint $t) => $t->string('cep', 9)->nullable()->after('uf'),
-            'codigo_municipio' => fn(Blueprint $t) => $t->string('codigo_municipio', 7)->nullable()->after('cep'),
-        ];
+        Schema::table('customers', function (Blueprint $table) {
+            // CPF (11 digits) or CNPJ (14 digits)
+            $table->string('cpf_cnpj', 18)->nullable()->after('email');
 
-        foreach ($columns as $column => $definition) {
-            if (! Schema::hasColumn('customers', $column)) {
-                Schema::table('customers', function (Blueprint $table) use ($definition) {
-                    $definition($table);
-                });
-            }
-        }
+            // Inscricao Estadual (IE)
+            $table->string('inscricao_estadual', 20)->nullable()->after('cpf_cnpj');
+
+            // Whether the customer is an ICMS taxpayer
+            $table->enum('contribuinte_icms', ['1', '2', '9'])
+                  ->default('9')
+                  ->comment('1=Contribuinte, 2=Isento, 9=Não contribuinte')
+                  ->after('inscricao_estadual');
+
+            // Indicador de tipo de pessoa
+            $table->enum('tipo_pessoa', ['F', 'J'])
+                  ->default('F')
+                  ->comment('F=Física, J=Jurídica')
+                  ->after('contribuinte_icms');
+        });
     }
 
     public function down(): void
     {
-        $cols = [
-            'ie_destinatario', 'tipo_pessoa', 'indicador_ie',
-            'logradouro', 'numero_endereco', 'complemento', 'bairro',
-            'municipio', 'uf', 'cep', 'codigo_municipio',
-        ];
-
-        Schema::table('customers', function (Blueprint $table) use ($cols) {
-            foreach ($cols as $col) {
-                if (Schema::hasColumn('customers', $col)) {
-                    $table->dropColumn($col);
-                }
-            }
+        Schema::table('customers', function (Blueprint $table) {
+            $table->dropColumn([
+                'cpf_cnpj',
+                'inscricao_estadual',
+                'contribuinte_icms',
+                'tipo_pessoa',
+            ]);
         });
     }
 };
