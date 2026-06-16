@@ -8,8 +8,10 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CompanyProfileController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\FiscalSettingsController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LandingController;
+use App\Http\Controllers\NFeController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\ProductController;
@@ -100,8 +102,22 @@ Route::middleware('auth')->group(function () {
         // Company Settings
         Route::get('/settings/company',         [CompanyProfileController::class, 'edit'])->name('settings.company');
         Route::patch('/settings/company',       [CompanyProfileController::class, 'update'])->name('settings.company.update');
-        Route::post('/settings/asaas', [CompanyProfileController::class, 'updateAsaas'])->name('settings.asaas.update');
+        Route::post('/settings/asaas',          [CompanyProfileController::class, 'updateAsaas'])->name('settings.asaas.update');
         Route::delete('/settings/company/logo', [CompanyProfileController::class, 'destroyLogo'])->name('settings.company.logo.destroy');
+
+        // Fiscal Settings
+        Route::get('/settings/fiscal',   [FiscalSettingsController::class, 'edit'])->name('settings.fiscal');
+        Route::patch('/settings/fiscal', [FiscalSettingsController::class, 'update'])->name('settings.fiscal.update');
+
+        // NF-e
+        Route::get('/nfes',                        [NFeController::class, 'index'])->name('nfes.index');
+        Route::get('/nfes/{nfe}',                  [NFeController::class, 'show'])->name('nfes.show');
+        Route::post('/nfes/{sale}/emitir',         [NFeController::class, 'emitir'])->name('nfes.emitir');
+        Route::post('/nfes/{nfe}/consultar',       [NFeController::class, 'consultar'])->name('nfes.consultar');
+        Route::post('/nfes/{nfe}/cancelar',        [NFeController::class, 'cancelar'])->name('nfes.cancelar');
+        Route::post('/nfes/{nfe}/carta-correcao',  [NFeController::class, 'cartaCorrecao'])->name('nfes.carta-correcao');
+        Route::get('/nfes/{nfe}/xml',              [NFeController::class, 'downloadXml'])->name('nfes.xml');
+        Route::get('/nfes/{nfe}/danfe',            [NFeController::class, 'downloadDanfe'])->name('nfes.danfe');
 
         // Sales
         Route::resource('sales', SaleController::class);

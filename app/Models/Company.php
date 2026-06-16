@@ -24,20 +24,45 @@ class Company extends Model
         'plan', 'active', 'trial_ends_at', 'logo',
         'asaas_api_key', 'asaas_environment', 'asaas_wallet_id',
         'onboarding_completed',
+        // Fiscal
+        'focusnfe_token', 'ambiente_nfe', 'inscricao_estadual',
+        'inscricao_municipal', 'regime_tributario',
+        'serie_nfe', 'proximo_numero_nfe', 'csc_token', 'csc_id',
     ];
 
     protected $casts = [
         'active'               => 'boolean',
         'trial_ends_at'        => 'datetime',
         'onboarding_completed' => 'boolean',
+        'proximo_numero_nfe'   => 'integer',
     ];
+
+    // ── Fiscal helpers ────────────────────────────────────────────────────────
+
+    public function hasFiscalConfigured(): bool
+    {
+        return ! empty($this->focusnfe_token);
+    }
+
+    public function isProducaoNFe(): bool
+    {
+        return $this->ambiente_nfe === 'producao';
+    }
+
+    public const REGIMES_TRIBUTARIOS = [
+        '1' => 'Simples Nacional',
+        '2' => 'Simples Nacional — Excesso de Sublimite',
+        '3' => 'Regime Normal (Lucro Presumido / Lucro Real)',
+    ];
+
+    // ── Asaas ─────────────────────────────────────────────────────────────────
 
     public function hasAsaasConfigured(): bool
     {
         return ! empty($this->asaas_api_key);
     }
 
-    // ── Slug único
+    // ── Slug único ────────────────────────────────────────────────────────────
     public static function generateSlug(string $name): string
     {
         $base = Str::slug($name);
@@ -49,17 +74,16 @@ class Company extends Model
         return $slug;
     }
 
-    // ── Relacionamentos
+    // ── Relacionamentos ───────────────────────────────────────────────────────
     public function users()      { return $this->hasMany(User::class); }
     public function products()   { return $this->hasMany(Product::class); }
     public function customers()  { return $this->hasMany(Customer::class); }
     public function suppliers()  { return $this->hasMany(Supplier::class); }
     public function sales()      { return $this->hasMany(Sale::class); }
 
-    // ── Trial / Acesso
+    // ── Trial / Acesso ────────────────────────────────────────────────────────
     public function isOnTrial(): bool
     {
-        // Plano pago (manual ou via Stripe) nunca exibe banner de trial
         if (in_array($this->plan, ['pro', 'business'])) return false;
         if ($this->hasActiveSubscription()) return false;
         return $this->trial_ends_at !== null && $this->trial_ends_at->isFuture();
@@ -82,22 +106,11 @@ class Company extends Model
         }
     }
 
-    /**
-     * Empresa tem acesso pleno ao app?
-     * - Trial ativo: sim
-     * - Plano pago (pro/business) manualmente definido: sim
-     * - Assinatura paga ativa (Stripe): sim
-     * - Trial expirado sem assinatura: NÃO (exige upgrade)
-     */
     public function isAccessible(): bool
     {
-        // Plano pago manual
         if (in_array($this->plan, ['pro', 'business'])) return true;
-        // Trial ativo — acesso completo
         if ($this->isOnTrial()) return true;
-        // Assinatura Stripe ativa
         if ($this->hasActiveSubscription()) return true;
-        // Plano Free — sempre acessível (com limites aplicados pelo planLimits())
         return true;
     }
 
@@ -119,8 +132,7 @@ class Company extends Model
         } catch (\Exception $e) {}
     }
 
-    // ── Limites por plano
-    // Durante o trial, a empresa tem acesso completo independente do campo `plan`.
+    // ── Limites por plano ─────────────────────────────────────────────────────
     public function planLimits(): array
     {
         if ($this->isOnTrial()) {

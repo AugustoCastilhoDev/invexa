@@ -9,22 +9,15 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('companies', function (Blueprint $table) {
-            // Focus NFe credentials
             $table->string('focusnfe_token')->nullable()->after('asaas_wallet_id');
-            $table->string('focusnfe_cnpj', 18)->nullable()->after('focusnfe_token');
-
-            // Fiscal data
-            $table->string('inscricao_estadual', 20)->nullable()->after('focusnfe_cnpj');
-            $table->enum('regime_tributario', [
-                'simples_nacional',
-                'simples_nacional_excesso',
-                'regime_normal',
-            ])->default('simples_nacional')->after('inscricao_estadual');
-            $table->unsignedSmallInteger('serie_nfe')->default(1)->after('regime_tributario');
-
-            // Certificate A1 (.pfx) stored as base64 or path
-            $table->text('certificado_a1')->nullable()->after('serie_nfe');
-            $table->string('certificado_a1_senha')->nullable()->after('certificado_a1');
+            $table->enum('ambiente_nfe', ['homologacao', 'producao'])->default('homologacao')->after('focusnfe_token');
+            $table->string('inscricao_estadual')->nullable()->after('ambiente_nfe');
+            $table->string('inscricao_municipal')->nullable()->after('inscricao_estadual');
+            $table->string('regime_tributario')->nullable()->after('inscricao_municipal'); // 1=Simples, 2=Lucro Presumido, 3=Lucro Real
+            $table->string('serie_nfe')->default('1')->after('regime_tributario');
+            $table->unsignedInteger('proximo_numero_nfe')->default(1)->after('serie_nfe');
+            $table->string('csc_token')->nullable()->after('proximo_numero_nfe');   // para NFC-e
+            $table->string('csc_id')->nullable()->after('csc_token');
         });
     }
 
@@ -32,13 +25,9 @@ return new class extends Migration
     {
         Schema::table('companies', function (Blueprint $table) {
             $table->dropColumn([
-                'focusnfe_token',
-                'focusnfe_cnpj',
-                'inscricao_estadual',
-                'regime_tributario',
-                'serie_nfe',
-                'certificado_a1',
-                'certificado_a1_senha',
+                'focusnfe_token', 'ambiente_nfe', 'inscricao_estadual',
+                'inscricao_municipal', 'regime_tributario',
+                'serie_nfe', 'proximo_numero_nfe', 'csc_token', 'csc_id',
             ]);
         });
     }
