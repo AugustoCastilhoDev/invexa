@@ -47,6 +47,8 @@
         .btn-delete:hover { background:rgba(239,68,68,.25); }
         .btn-plan { background:rgba(14,165,233,.1); border-color:rgba(14,165,233,.25); color:#38BDF8; }
         .btn-plan:hover { background:rgba(14,165,233,.2); }
+        .btn-reset-stock { background:rgba(251,146,60,.1); border-color:rgba(251,146,60,.3); color:#fb923c; }
+        .btn-reset-stock:hover { background:rgba(251,146,60,.22); }
         .table-wrapper { background:rgba(13,25,41,.7); border:1px solid rgba(14,165,233,.1); border-radius:14px; overflow:hidden; }
         /* Plan select inline */
         .plan-select { background:rgba(13,25,41,.9); border:1px solid rgba(14,165,233,.2); color:#e2e8f0; border-radius:.4rem; font-size:.75rem; padding:.2rem .5rem; cursor:pointer; }
@@ -241,7 +243,7 @@
                     </td>
                     <td style="font-size:.78rem; color:rgba(148,163,184,.6);">{{ $company->created_at->format('d/m/Y') }}</td>
                     <td>
-                        <div class="d-flex gap-2 justify-content-center">
+                        <div class="d-flex gap-2 justify-content-center flex-wrap">
                             {{-- Entrar como --}}
                             <form action="{{ route('admin.companies.impersonate', $company) }}" method="POST" class="m-0">
                                 @csrf
@@ -254,6 +256,14 @@
                                 @csrf @method('PATCH')
                                 <button type="submit" class="btn-action {{ $company->active ? 'btn-toggle-on' : 'btn-toggle-off' }}">
                                     {{ $company->active ? 'Desativar' : 'Ativar' }}
+                                </button>
+                            </form>
+                            {{-- Zerar Estoque --}}
+                            <form action="{{ route('admin.companies.reset-stock', $company) }}" method="POST" class="m-0"
+                                  onsubmit="return confirm('⚠️ Zerar TODAS as movimentações de estoque de &quot;{{ addslashes($company->name) }}&quot;?\n\nEsta ação é irreversível.')">
+                                @csrf @method('DELETE')
+                                <button type="submit" class="btn-action btn-reset-stock" title="Limpar movimentações de estoque">
+                                    <i class="bi bi-arrow-counterclockwise me-1"></i>Zerar Estoque
                                 </button>
                             </form>
                             {{-- Excluir --}}
