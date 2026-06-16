@@ -214,7 +214,7 @@ class ProductController extends Controller
         return redirect()->route('products.index')->with('success', 'Produto excluído com sucesso.');
     }
 
-    // ── Importação CSV ────────────────────────────────────────────────
+    // ── Importação CSV ───────────────────────────────────────────────
 
     public function importTemplate()
     {
@@ -339,7 +339,7 @@ class ProductController extends Controller
                 }
             }
 
-            // SKU duplicado → ATUALIZA somando quantidade
+            // SKU duplicado → ATUALIZA (sem somar quantidade na reimportação)
             if ($sku !== '') {
                 $existing = Product::where('company_id', $companyId)->where('sku', $sku)->first();
 
@@ -347,16 +347,14 @@ class ProductController extends Controller
                     DB::transaction(function () use (
                         $existing, $name, $price, $cost, $quantity, $minQty,
                         $unit, $description, $categoryId, $supplierId, $isActive,
-                        $costColumn, $companyId, $userId, $import
+                        $costColumn, $companyId, $userId
                     ) {
                         $qBefore = $existing->quantity;
-                        $qAfter  = $qBefore + $quantity;
 
                         $existing->update([
                             'name'         => $name,
                             'price'        => $price,
                             $costColumn    => $cost ?? $existing->$costColumn,
-                            'quantity'     => $qAfter,
                             'min_quantity' => $minQty ?: $existing->min_quantity,
                             'unit'         => $unit ?: $existing->unit,
                             'description'  => $description ?: $existing->description,
@@ -365,19 +363,19 @@ class ProductController extends Controller
                             'active'       => $isActive,
                         ]);
 
-                        if ($quantity > 0) {
+                        // Registra movimentação somente se a quantidade mudar
+                        if ($quantity > 0 && $quantity !== $qBefore) {
+                            $existing->update(['quantity' => $quantity]);
                             StockMovement::create([
                                 'company_id'      => $companyId,
                                 'product_id'      => $existing->id,
                                 'user_id'         => $userId,
-                                'type'            => 'entrada',
-                                'quantity'        => $quantity,
+                                'type'            => $quantity > $qBefore ? 'entrada' : 'saida',
+                                'quantity'        => abs($quantity - $qBefore),
                                 'quantity_before' => $qBefore,
-                                'quantity_after'  => $qAfter,
+                                'quantity_after'  => $quantity,
                                 'reason'          => 'ajuste',
-                                'notes'           => 'Atualização via reimportação CSV (SKU duplicado)',
-                                'source_type'     => ProductImport::class,
-                                'source_id'       => $import->id,
+                                'notes'           => 'Ajuste via reimportação CSV (SKU existente)',
                             ]);
                         }
                     });
@@ -391,7 +389,7 @@ class ProductController extends Controller
             DB::transaction(function () use (
                 $name, $price, $cost, $quantity, $minQty, $sku, $unit,
                 $description, $categoryId, $supplierId, $isActive,
-                $costColumn, $companyId, $userId, $import
+                $costColumn, $companyId, $userId
             ) {
                 $product = Product::create([
                     'company_id'   => $companyId,
@@ -419,8 +417,6 @@ class ProductController extends Controller
                         'quantity_after'  => $quantity,
                         'reason'          => 'ajuste',
                         'notes'           => 'Estoque inicial via importação CSV',
-                        'source_type'     => ProductImport::class,
-                        'source_id'       => $import->id,
                     ]);
                 }
             });
