@@ -17,8 +17,9 @@ class FocusNfeService
 
     public function __construct(Company $company)
     {
-        $this->ambiente = $company->nfe_ambiente ?? 'homologacao';
-        $this->token    = $company->focusnfe_token ?? '';
+        // Nomes corretos conforme tabela companies e FiscalSettingsController
+        $this->ambiente = $company->focusnfe_ambiente ?? 'homologacao';
+        $this->token    = $company->focusnfe_token    ?? '';
         $this->baseUrl  = 'https://api.focusnfe.com.br';
     }
 
@@ -119,16 +120,17 @@ class FocusNfeService
         if ($customer?->email) {
             $dest['email'] = $customer->email;
         }
-        if ($customer?->address) {
-            $dest['logradouro']   = $customer->address['street']        ?? '';
-            $dest['numero']       = $customer->address['number']        ?? 'S/N';
-            $dest['complemento']  = $customer->address['complement']    ?? '';
-            $dest['bairro']       = $customer->address['neighborhood']  ?? '';
-            $dest['municipio']    = $customer->address['city']          ?? '';
-            $dest['uf']           = $customer->address['state']         ?? '';
-            $dest['cep']          = preg_replace('/\D/', '', $customer->address['zip'] ?? '');
-            $dest['pais']         = 'Brasil';
-            $dest['codigo_pais']  = '1058';
+        if (!empty($customer->address)) {
+            $addr = is_array($customer->address) ? $customer->address : [];
+            $dest['logradouro']  = $addr['street']       ?? '';
+            $dest['numero']      = $addr['number']       ?? 'S/N';
+            $dest['complemento'] = $addr['complement']   ?? '';
+            $dest['bairro']      = $addr['neighborhood'] ?? '';
+            $dest['municipio']   = $addr['city']         ?? '';
+            $dest['uf']          = $addr['state']        ?? '';
+            $dest['cep']         = preg_replace('/\D/', '', $addr['zip'] ?? '');
+            $dest['pais']        = 'Brasil';
+            $dest['codigo_pais'] = '1058';
         }
         if (!empty($customer?->phone)) {
             $dest['telefone'] = preg_replace('/\D/', '', $customer->phone);
@@ -139,38 +141,38 @@ class FocusNfeService
         foreach ($items as $i => $item) {
             $product = $item->product;
             $itens[] = [
-                'numero_item'                => $i + 1,
-                'codigo_produto'             => (string) ($product->sku ?? $product->id),
-                'descricao'                  => $product->name,
-                'codigo_ncm'                 => preg_replace('/\D/', '', $product->ncm ?? '00000000'),
-                'cfop'                       => $product->cfop ?? '5102',
-                'unidade_comercial'          => $product->unit ?? 'UN',
-                'quantidade_comercial'       => (float) $item->quantity,
-                'valor_unitario_comercial'   => (float) $item->unit_price,
-                'valor_bruto'                => (float) ($item->quantity * $item->unit_price),
-                'unidade_tributavel'         => $product->unit ?? 'UN',
-                'quantidade_tributavel'      => (float) $item->quantity,
-                'valor_unitario_tributavel'  => (float) $item->unit_price,
-                'codigo_barras_comercial'    => $product->barcode ?? 'SEM GTIN',
-                'inclui_no_total'            => 1,
-                'icms_modalidade'            => 102,  // CSOSN 102 - Simples Nacional, sem ST
-                'icms_csosn'                 => '102',
-                'pis_modalidade'             => 'NT', // Não tributado
-                'cofins_modalidade'          => 'NT',
+                'numero_item'               => $i + 1,
+                'codigo_produto'            => (string) ($product->sku ?? $product->id),
+                'descricao'                 => $product->name,
+                'codigo_ncm'                => preg_replace('/\D/', '', $product->ncm ?? '00000000'),
+                'cfop'                      => $product->cfop ?? '5102',
+                'unidade_comercial'         => $product->unit ?? 'UN',
+                'quantidade_comercial'      => (float) $item->quantity,
+                'valor_unitario_comercial'  => (float) $item->unit_price,
+                'valor_bruto'               => (float) ($item->quantity * $item->unit_price),
+                'unidade_tributavel'        => $product->unit ?? 'UN',
+                'quantidade_tributavel'     => (float) $item->quantity,
+                'valor_unitario_tributavel' => (float) $item->unit_price,
+                'codigo_barras_comercial'   => $product->barcode ?? 'SEM GTIN',
+                'inclui_no_total'           => 1,
+                'icms_modalidade'           => 102,
+                'icms_csosn'                => '102',
+                'pis_modalidade'            => 'NT',
+                'cofins_modalidade'         => 'NT',
             ];
         }
 
         return [
-            'natureza_operacao'         => 'Venda de mercadoria',
-            'forma_pagamento'           => 0,
-            'tipo_documento'            => 1,  // Saída
-            'local_destino'             => 1,
-            'finalidade_emissao'        => 1,  // Normal
-            'consumidor_final'          => 1,
-            'presenca_comprador'        => 1,
-            'modalidade_frete'          => 9,  // Sem frete
-            'items'                     => $itens,
-            'destinatario'              => $dest,
+            'natureza_operacao'  => 'Venda de mercadoria',
+            'forma_pagamento'    => 0,
+            'tipo_documento'     => 1,
+            'local_destino'      => 1,
+            'finalidade_emissao' => 1,
+            'consumidor_final'   => 1,
+            'presenca_comprador' => 1,
+            'modalidade_frete'   => 9,
+            'items'              => $itens,
+            'destinatario'       => $dest,
         ];
     }
 
@@ -179,28 +181,30 @@ class FocusNfeService
     // ─────────────────────────────────────────────────────────────────────────
     public function syncStatus(Nfe $nfe): Nfe
     {
-        $result   = $this->consultar($nfe->ref_focusnfe);
-        $retorno  = $result['response'] ?? [];
-        $statFocus = $retorno['status'] ?? null;
+        $result    = $this->consultar($nfe->ref_focusnfe);
+        $retorno   = $result['response'] ?? [];
+        $statFocus = $retorno['status']  ?? null;
 
         $statusMap = [
-            'autorizado'   => Nfe::STATUS_AUTORIZADA,
-            'processando'  => Nfe::STATUS_PROCESSANDO,
-            'denegado'     => Nfe::STATUS_DENEGADA,
-            'cancelado'    => Nfe::STATUS_CANCELADA,
-            'erro'         => Nfe::STATUS_REJEITADA,
+            'autorizado'  => Nfe::STATUS_AUTORIZADA,
+            'processando' => Nfe::STATUS_PROCESSANDO,
+            'denegado'    => Nfe::STATUS_DENEGADA,
+            'cancelado'   => Nfe::STATUS_CANCELADA,
+            'erro'        => Nfe::STATUS_REJEITADA,
         ];
 
-        $nfe->status            = $statusMap[$statFocus] ?? Nfe::STATUS_REJEITADA;
-        $nfe->retorno_focusnfe  = $retorno;
-        $nfe->chave_acesso      = $retorno['chave_nfe'] ?? $nfe->chave_acesso;
-        $nfe->protocolo         = $retorno['protocolo'] ?? $nfe->protocolo;
+        $nfe->status           = $statusMap[$statFocus] ?? Nfe::STATUS_REJEITADA;
+        $nfe->retorno_focusnfe = $retorno;
+        $nfe->chave_acesso     = $retorno['chave_nfe'] ?? $nfe->chave_acesso;
+        $nfe->protocolo        = $retorno['protocolo'] ?? $nfe->protocolo;
 
         if ($nfe->status === Nfe::STATUS_AUTORIZADA && !$nfe->data_autorizacao) {
             $nfe->data_autorizacao = now();
         }
         if ($nfe->status === Nfe::STATUS_REJEITADA) {
-            $nfe->motivo_rejeicao = $retorno['mensagem_sefaz'] ?? $retorno['erros'][0]['mensagem'] ?? null;
+            $nfe->motivo_rejeicao = $retorno['mensagem_sefaz']
+                ?? $retorno['erros'][0]['mensagem']
+                ?? null;
         }
 
         $nfe->save();
