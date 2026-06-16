@@ -15,7 +15,6 @@ class FocusNfeService
     private string $token;
     private string $ambiente;
 
-    // CNPJ do certificado de testes usado em homologação
     private const CNPJ_HOMOLOGACAO = '34785515000166';
 
     public function __construct(Company $company)
@@ -27,22 +26,31 @@ class FocusNfeService
             : 'https://homologacao.focusnfe.com.br';
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Emitir NF-e
-    // ─────────────────────────────────────────────────────────────────────────
     public function emitir(Sale $sale): array
     {
+        // Recarrega o customer direto do banco para garantir dados frescos
+        $customer = \App\Models\Customer::find($sale->customer_id);
+
         $ref     = 'INVEXA-' . $sale->id . '-' . Str::random(6);
-        $payload = $this->buildPayload($sale, $ref);
+        $payload = $this->buildPayload($sale, $ref, $customer);
+
+        Log::info('[FocusNFe] destinatario', [
+            'customer_id' => $customer?->id,
+            'logradouro'  => $customer?->logradouro,
+            'municipio'   => $customer?->municipio,
+            'uf'          => $customer?->uf,
+            'cep'         => $customer?->cep,
+            'dest_payload'=> $payload['destinatario'],
+        ]);
 
         $response = Http::withBasicAuth($this->token, '')
             ->post("{$this->baseUrl}/v2/nfe?ref={$ref}", $payload);
 
         Log::info('[FocusNFe] emitir', [
-            'sale_id'  => $sale->id,
-            'ref'      => $ref,
-            'status'   => $response->status(),
-            'body'     => $response->json(),
+            'sale_id' => $sale->id,
+            'ref'     => $ref,
+            'status'  => $response->status(),
+            'body'    => $response->json(),
         ]);
 
         return [
@@ -54,9 +62,6 @@ class FocusNfeService
         ];
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Consultar status na Focus
-    // ─────────────────────────────────────────────────────────────────────────
     public function consultar(string $ref): array
     {
         $response = Http::withBasicAuth($this->token, '')
@@ -68,9 +73,6 @@ class FocusNfeService
         ];
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Cancelar NF-e
-    // ─────────────────────────────────────────────────────────────────────────
     public function cancelar(string $ref, string $justificativa): array
     {
         $response = Http::withBasicAuth($this->token, '')
@@ -84,9 +86,6 @@ class FocusNfeService
         ];
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Carta de Correção Eletrônica
-    // ─────────────────────────────────────────────────────────────────────────
     public function cartaCorrecao(string $ref, string $correcao): array
     {
         $response = Http::withBasicAuth($this->token, '')
@@ -100,34 +99,32 @@ class FocusNfeService
         ];
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Monta o payload JSON para a Focus NF-e
-    // ─────────────────────────────────────────────────────────────────────────
-    private function buildPayload(Sale $sale, string $ref): array
+    private function buildPayload(Sale $sale, string $ref, ?\App\Models\Customer $customer = null): array
     {
-        $company  = $sale->company;
-        $customer = $sale->customer;
-        $items    = $sale->items()->with('product')->get();
+        $company  = $sale->company ?? \App\Models\Company::find($sale->company_id);
+        // Usa o customer injetado (fresco do banco) ou cai no relacionamento
+        if ($customer === null) {
+            $customer = $sale->customer;
+        }
+        $items = $sale->items()->with('product')->get();
 
         $isHomologacao = $this->ambiente !== 'producao';
 
-        // ── Destinatário ──────────────────────────────────────────────────
         $nomeDestinatario = $isHomologacao
             ? 'NF-E EMITIDA EM AMBIENTE DE HOMOLOGACAO - SEM VALOR FISCAL'
             : ($customer?->name ?? $sale->customer_name ?? 'CONSUMIDOR');
 
         $dest = ['nome' => $nomeDestinatario];
 
-        // Campo correto: `document` (não `cpf_cnpj`)
         $temDocumento = false;
         if (!empty($customer?->document)) {
             $doc = preg_replace('/\D/', '', $customer->document);
             if (strlen($doc) === 14) {
-                $dest['cnpj']  = $doc;
-                $temDocumento  = true;
+                $dest['cnpj'] = $doc;
+                $temDocumento = true;
             } elseif (strlen($doc) === 11) {
-                $dest['cpf']   = $doc;
-                $temDocumento  = true;
+                $dest['cpf'] = $doc;
+                $temDocumento = true;
             }
         }
 
@@ -135,9 +132,6 @@ class FocusNfeService
             $dest['email'] = $customer->email;
         }
 
-        // ── Endereço ──────────────────────────────────────────────────────
-        // Customer usa colunas diretas: logradouro, numero_endereco, bairro,
-        // municipio, uf, cep  (NÃO um array 'address')
         $logradouro = trim($customer->logradouro      ?? '');
         $numero     = trim($customer->numero_endereco ?? '');
         $bairro     = trim($customer->bairro          ?? '');
@@ -147,8 +141,6 @@ class FocusNfeService
 
         $hasAddr = $logradouro && $municipio && $uf && strlen($cep) === 8;
 
-        // Quando há CPF/CNPJ, a SEFAZ exige endereço completo.
-        // Usa dados reais se disponíveis; caso contrário fallback genérico.
         if ($temDocumento || $hasAddr) {
             if ($hasAddr) {
                 $dest['logradouro'] = $logradouro;
@@ -161,7 +153,6 @@ class FocusNfeService
                     $dest['complemento'] = $customer->complemento;
                 }
             } else {
-                // Fallback para homologação — endereço genérico válido
                 $dest['logradouro'] = 'Praca dos Tres Poderes';
                 $dest['numero']     = 'S/N';
                 $dest['bairro']     = 'Zona Civico-Administrativa';
@@ -180,12 +171,10 @@ class FocusNfeService
             }
         }
 
-        // ── Emitente ──────────────────────────────────────────────────────
         $cnpjEmitente = $isHomologacao
             ? self::CNPJ_HOMOLOGACAO
             : preg_replace('/\D/', '', $company->cnpj ?? '');
 
-        // ── Itens ─────────────────────────────────────────────────────────
         $itens = [];
         foreach ($items as $i => $item) {
             $product    = $item->product;
@@ -236,9 +225,6 @@ class FocusNfeService
         ];
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Atualiza o model Nfe a partir do retorno da Focus
-    // ─────────────────────────────────────────────────────────────────────────
     public function syncStatus(Nfe $nfe): Nfe
     {
         $result    = $this->consultar($nfe->ref_focusnfe);
