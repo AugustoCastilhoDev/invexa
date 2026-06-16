@@ -111,23 +111,23 @@ class FocusNfeService
 
         $isHomologacao = $this->ambiente !== 'producao';
 
-        // Destinatário — em homologação a SEFAZ exige nome fixo
+        // ── Destinatário ──────────────────────────────────────────────────
         $nomeDestinatario = $isHomologacao
             ? 'NF-E EMITIDA EM AMBIENTE DE HOMOLOGACAO - SEM VALOR FISCAL'
             : ($customer?->name ?? $sale->customer_name ?? 'CONSUMIDOR');
 
         $dest = ['nome' => $nomeDestinatario];
 
-        // CPF/CNPJ do destinatário
+        // Campo correto: `document` (não `cpf_cnpj`)
         $temDocumento = false;
-        if ($customer?->cpf_cnpj) {
-            $doc = preg_replace('/\D/', '', $customer->cpf_cnpj);
+        if (!empty($customer?->document)) {
+            $doc = preg_replace('/\D/', '', $customer->document);
             if (strlen($doc) === 14) {
-                $dest['cnpj']   = $doc;
-                $temDocumento   = true;
+                $dest['cnpj']  = $doc;
+                $temDocumento  = true;
             } elseif (strlen($doc) === 11) {
-                $dest['cpf']    = $doc;
-                $temDocumento   = true;
+                $dest['cpf']   = $doc;
+                $temDocumento  = true;
             }
         }
 
@@ -135,32 +135,36 @@ class FocusNfeService
             $dest['email'] = $customer->email;
         }
 
-        // Quando há CPF/CNPJ, a SEFAZ exige endereço completo.
-        // Usa dados reais do cliente se disponíveis; caso contrário usa
-        // endereço genérico válido (aceito em homologação).
-        $addr   = is_array($customer->address ?? null) ? $customer->address : [];
-        $street = trim($addr['street']       ?? '');
-        $city   = trim($addr['city']         ?? '');
-        $state  = trim($addr['state']        ?? '');
-        $zip    = preg_replace('/\D/', '', $addr['zip'] ?? '');
-        $hasAddr = $street && $city && $state && strlen($zip) === 8;
+        // ── Endereço ──────────────────────────────────────────────────────
+        // Customer usa colunas diretas: logradouro, numero_endereco, bairro,
+        // municipio, uf, cep  (NÃO um array 'address')
+        $logradouro = trim($customer->logradouro      ?? '');
+        $numero     = trim($customer->numero_endereco ?? '');
+        $bairro     = trim($customer->bairro          ?? '');
+        $municipio  = trim($customer->municipio       ?? '');
+        $uf         = trim($customer->uf              ?? '');
+        $cep        = preg_replace('/\D/', '', $customer->cep ?? '');
 
+        $hasAddr = $logradouro && $municipio && $uf && strlen($cep) === 8;
+
+        // Quando há CPF/CNPJ, a SEFAZ exige endereço completo.
+        // Usa dados reais se disponíveis; caso contrário fallback genérico.
         if ($temDocumento || $hasAddr) {
             if ($hasAddr) {
-                $dest['logradouro'] = $street;
-                $dest['numero']     = trim($addr['number'] ?? '') ?: 'S/N';
-                $dest['bairro']     = trim($addr['neighborhood'] ?? '') ?: 'Centro';
-                $dest['municipio']  = $city;
-                $dest['uf']         = strtoupper($state);
-                $dest['cep']        = $zip;
-                if (!empty($addr['complement'])) {
-                    $dest['complemento'] = $addr['complement'];
+                $dest['logradouro'] = $logradouro;
+                $dest['numero']     = $numero ?: 'S/N';
+                $dest['bairro']     = $bairro ?: 'Centro';
+                $dest['municipio']  = $municipio;
+                $dest['uf']         = strtoupper($uf);
+                $dest['cep']        = $cep;
+                if (!empty($customer->complemento)) {
+                    $dest['complemento'] = $customer->complemento;
                 }
             } else {
-                // Endereço genérico para testes — Brasília/DF
+                // Fallback para homologação — endereço genérico válido
                 $dest['logradouro'] = 'Praca dos Tres Poderes';
                 $dest['numero']     = 'S/N';
-                $dest['bairro']     = 'Zona Cívico-Administrativa';
+                $dest['bairro']     = 'Zona Civico-Administrativa';
                 $dest['municipio']  = 'Brasilia';
                 $dest['uf']         = 'DF';
                 $dest['cep']        = '70150900';
@@ -176,12 +180,12 @@ class FocusNfeService
             }
         }
 
-        // Emitente — em homologação usa CNPJ do certificado de testes
+        // ── Emitente ──────────────────────────────────────────────────────
         $cnpjEmitente = $isHomologacao
             ? self::CNPJ_HOMOLOGACAO
             : preg_replace('/\D/', '', $company->cnpj ?? '');
 
-        // Itens — usa $item->price (coluna real do SaleItem)
+        // ── Itens ─────────────────────────────────────────────────────────
         $itens = [];
         foreach ($items as $i => $item) {
             $product    = $item->product;
