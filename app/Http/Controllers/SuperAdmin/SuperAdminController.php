@@ -4,9 +4,11 @@ namespace App\Http\Controllers\SuperAdmin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Company;
+use App\Models\StockMovement;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class SuperAdminController extends Controller
 {
@@ -68,6 +70,23 @@ class SuperAdminController extends Controller
         User::where('company_id', $company->id)->delete();
         $company->delete();
         return back()->with('success', "Empresa \"{$name}\" e todos os seus dados foram removidos.");
+    }
+
+    /**
+     * Limpa todas as movimentações de estoque de uma empresa e
+     * zera o campo `stock` de todos os produtos dela.
+     */
+    public function resetStock(Company $company)
+    {
+        DB::transaction(function () use ($company) {
+            // Remove todos os registros de movimentação
+            StockMovement::where('company_id', $company->id)->delete();
+
+            // Zera o estoque atual de cada produto
+            $company->products()->update(['stock' => 0]);
+        });
+
+        return back()->with('success', "Movimentações de estoque da empresa \"{$company->name}\" removidas e estoque zerado.");
     }
 
     public function impersonate(Company $company)

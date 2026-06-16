@@ -232,10 +232,11 @@ Route::middleware('auth')->group(function () {
             Route::get('/users',     [SuperAdminController::class, 'users'])->name('users');
             Route::get('/plans',     [SuperAdminController::class, 'plans'])->name('plans');
 
-            Route::post('/companies/{company}/impersonate', [SuperAdminController::class, 'impersonate'])->name('companies.impersonate');
-            Route::patch('/companies/{company}/toggle',     [SuperAdminController::class, 'toggleCompany'])->name('companies.toggle');
-            Route::patch('/companies/{company}/plan',       [SuperAdminController::class, 'changePlan'])->name('companies.plan');
-            Route::delete('/companies/{company}',           [SuperAdminController::class, 'destroyCompany'])->name('companies.destroy');
+            Route::post('/companies/{company}/impersonate',  [SuperAdminController::class, 'impersonate'])->name('companies.impersonate');
+            Route::patch('/companies/{company}/toggle',      [SuperAdminController::class, 'toggleCompany'])->name('companies.toggle');
+            Route::patch('/companies/{company}/plan',        [SuperAdminController::class, 'changePlan'])->name('companies.plan');
+            Route::delete('/companies/{company}/reset-stock',[SuperAdminController::class, 'resetStock'])->name('companies.reset-stock');
+            Route::delete('/companies/{company}',            [SuperAdminController::class, 'destroyCompany'])->name('companies.destroy');
         });
 
     }); // end middleware(['two-factor', 'trial'])
