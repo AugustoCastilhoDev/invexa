@@ -116,9 +116,8 @@ class FocusNfeService
             ? 'NF-E EMITIDA EM AMBIENTE DE HOMOLOGACAO - SEM VALOR FISCAL'
             : ($customer?->name ?? $sale->customer_name ?? 'CONSUMIDOR');
 
-        $dest = [
-            'nome' => $nomeDestinatario,
-        ];
+        $dest = ['nome' => $nomeDestinatario];
+
         if ($customer?->cpf_cnpj) {
             $doc = preg_replace('/\D/', '', $customer->cpf_cnpj);
             if (strlen($doc) === 14) {
@@ -127,23 +126,40 @@ class FocusNfeService
                 $dest['cpf'] = $doc;
             }
         }
-        if ($customer?->email) {
+
+        if (!empty($customer?->email)) {
             $dest['email'] = $customer->email;
         }
+
+        // Endereço: só inclui se houver dados concretos, nunca envia campos vazios
         if (!empty($customer->address)) {
-            $addr = is_array($customer->address) ? $customer->address : [];
-            $dest['logradouro']  = $addr['street']       ?? '';
-            $dest['numero']      = $addr['number']       ?? 'S/N';
-            $dest['complemento'] = $addr['complement']   ?? '';
-            $dest['bairro']      = $addr['neighborhood'] ?? '';
-            $dest['municipio']   = $addr['city']         ?? '';
-            $dest['uf']          = $addr['state']        ?? '';
-            $dest['cep']         = preg_replace('/\D/', '', $addr['zip'] ?? '');
-            $dest['pais']        = 'Brasil';
-            $dest['codigo_pais'] = '1058';
+            $addr   = is_array($customer->address) ? $customer->address : [];
+            $street = trim($addr['street'] ?? '');
+            $city   = trim($addr['city']   ?? '');
+            $state  = trim($addr['state']  ?? '');
+            $zip    = preg_replace('/\D/', '', $addr['zip'] ?? '');
+
+            if ($street && $city && $state && strlen($zip) === 8) {
+                $dest['logradouro'] = $street;
+                $dest['numero']     = trim($addr['number'] ?? '') ?: 'S/N';
+                $dest['bairro']     = trim($addr['neighborhood'] ?? '') ?: 'N/A';
+                $dest['municipio']  = $city;
+                $dest['uf']         = strtoupper($state);
+                $dest['cep']        = $zip;
+                $dest['pais']       = 'Brasil';
+                $dest['codigo_pais']= '1058';
+
+                if (!empty($addr['complement'])) {
+                    $dest['complemento'] = $addr['complement'];
+                }
+            }
         }
+
         if (!empty($customer?->phone)) {
-            $dest['telefone'] = preg_replace('/\D/', '', $customer->phone);
+            $phone = preg_replace('/\D/', '', $customer->phone);
+            if (strlen($phone) >= 10) {
+                $dest['telefone'] = $phone;
+            }
         }
 
         // Emitente — em homologação usa CNPJ do certificado de testes
@@ -151,23 +167,34 @@ class FocusNfeService
             ? self::CNPJ_HOMOLOGACAO
             : preg_replace('/\D/', '', $company->cnpj ?? '');
 
-        // Itens
+        // Itens — usa $item->price (coluna real do SaleItem)
         $itens = [];
         foreach ($items as $i => $item) {
-            $product = $item->product;
+            $product    = $item->product;
+            // SaleItem armazena preço em `price`, não em `unit_price`
+            $unitPrice  = (float) ($item->price ?? $item->unit_price ?? 0);
+            $qty        = (float) $item->quantity;
+            $valorBruto = round($qty * $unitPrice, 2);
+
+            // NCM: usa o cadastrado no produto ou 84716049 (mouse — genérico de testes)
+            $ncm = preg_replace('/\D/', '', $product->ncm ?? '');
+            if (strlen($ncm) !== 8) {
+                $ncm = '84716049'; // código genérico válido para testes
+            }
+
             $itens[] = [
                 'numero_item'               => $i + 1,
                 'codigo_produto'            => (string) ($product->sku ?? $product->id),
                 'descricao'                 => $product->name,
-                'codigo_ncm'                => preg_replace('/\D/', '', $product->ncm ?? '00000000'),
+                'codigo_ncm'                => $ncm,
                 'cfop'                      => $product->cfop ?? '5102',
-                'unidade_comercial'         => $product->unit ?? 'UN',
-                'quantidade_comercial'      => (float) $item->quantity,
-                'valor_unitario_comercial'  => (float) $item->unit_price,
-                'valor_bruto'               => (float) ($item->quantity * $item->unit_price),
-                'unidade_tributavel'        => $product->unit ?? 'UN',
-                'quantidade_tributavel'     => (float) $item->quantity,
-                'valor_unitario_tributavel' => (float) $item->unit_price,
+                'unidade_comercial'         => strtoupper($product->unit ?? 'UN'),
+                'quantidade_comercial'      => $qty,
+                'valor_unitario_comercial'  => $unitPrice,
+                'valor_bruto'               => $valorBruto,
+                'unidade_tributavel'        => strtoupper($product->unidade_tributavel ?? $product->unit ?? 'UN'),
+                'quantidade_tributavel'     => $qty,
+                'valor_unitario_tributavel' => $unitPrice,
                 'codigo_barras_comercial'   => $product->barcode ?? 'SEM GTIN',
                 'inclui_no_total'           => 1,
                 'icms_modalidade'           => 102,
