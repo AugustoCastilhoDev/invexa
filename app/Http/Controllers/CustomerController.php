@@ -50,16 +50,27 @@ class CustomerController extends Controller
             return back()->with('error', 'Limite de clientes do plano ' . strtoupper($company->plan) . ' atingido. Faça upgrade para adicionar mais.');
         }
         $companyId = auth()->user()->company_id;
-        $company   = auth()->user()->company;
 
         $data = $request->validate([
-            'name'     => 'required|string|max:255',
-            'email'    => 'nullable|email|max:255',
-            'phone'    => 'nullable|string|max:30',
-            'document' => 'nullable|string|max:30',
-            'address'  => 'nullable|string|max:500',
-            'notes'    => 'nullable|string',
+            'name'            => 'required|string|max:255',
+            'email'           => 'nullable|email|max:255',
+            'phone'           => 'nullable|string|max:30',
+            'document'        => 'nullable|string|max:30',
+            'address'         => 'nullable|string|max:500',
+            'cep'             => 'nullable|string|max:9',
+            'logradouro'      => 'nullable|string|max:255',
+            'numero_endereco' => 'nullable|string|max:20',
+            'complemento'     => 'nullable|string|max:100',
+            'bairro'          => 'nullable|string|max:100',
+            'municipio'       => 'nullable|string|max:100',
+            'uf'              => 'nullable|string|max:2',
+            'notes'           => 'nullable|string',
         ]);
+
+        // Normaliza CEP (só dígitos)
+        if (!empty($data['cep'])) {
+            $data['cep'] = preg_replace('/\D/', '', $data['cep']);
+        }
 
         $customer = Customer::create(array_merge($data, ['company_id' => $companyId]));
 
@@ -129,13 +140,24 @@ class CustomerController extends Controller
         $this->authorizeCustomer($customer);
 
         $data = $request->validate([
-            'name'     => 'required|string|max:255',
-            'email'    => 'nullable|email|max:255',
-            'phone'    => 'nullable|string|max:30',
-            'document' => 'nullable|string|max:30',
-            'address'  => 'nullable|string|max:500',
-            'notes'    => 'nullable|string',
+            'name'            => 'required|string|max:255',
+            'email'           => 'nullable|email|max:255',
+            'phone'           => 'nullable|string|max:30',
+            'document'        => 'nullable|string|max:30',
+            'address'         => 'nullable|string|max:500',
+            'cep'             => 'nullable|string|max:9',
+            'logradouro'      => 'nullable|string|max:255',
+            'numero_endereco' => 'nullable|string|max:20',
+            'complemento'     => 'nullable|string|max:100',
+            'bairro'          => 'nullable|string|max:100',
+            'municipio'       => 'nullable|string|max:100',
+            'uf'              => 'nullable|string|max:2',
+            'notes'           => 'nullable|string',
         ]);
+
+        if (!empty($data['cep'])) {
+            $data['cep'] = preg_replace('/\D/', '', $data['cep']);
+        }
 
         $customer->update($data);
 
