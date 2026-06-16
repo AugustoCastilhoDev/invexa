@@ -454,6 +454,18 @@
                         </li>
                         @endif
                         <li><hr class="dropdown-divider"></li>
+                        <li><span class="dropdown-item-text">CONFIGURAÇÕES</span></li>
+                        <li>
+                            <a class="dropdown-item {{ request()->routeIs('settings.company*') ? 'active' : '' }}" href="{{ route('settings.company') }}">
+                                <i class="bi bi-building-gear me-2"></i>Dados da Empresa
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item {{ request()->routeIs('settings.fiscal*') ? 'active' : '' }}" href="{{ route('settings.fiscal') }}">
+                                <i class="bi bi-receipt me-2"></i>Configuração Fiscal
+                            </a>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
                         <li><span class="dropdown-item-text">INTEGRAÇÕES</span></li>
                         <li>
                             <a class="dropdown-item {{ request()->routeIs('settings.api*') ? 'active' : '' }}" href="{{ route('settings.api') }}">
@@ -559,7 +571,6 @@
         <script>
         function dismissFreeBanner() {
             document.getElementById('free-plan-banner').style.display = 'none';
-            // Guarda no sessionStorage para não reaparecer na navegação da sessão
             sessionStorage.setItem('free_banner_dismissed', '1');
         }
         document.addEventListener('DOMContentLoaded', function() {
