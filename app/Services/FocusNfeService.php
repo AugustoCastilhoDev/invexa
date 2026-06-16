@@ -50,7 +50,7 @@ class FocusNfeService
             'payload'  => $payload,
             'status'   => $response->status(),
             'response' => $response->json(),
-            'ok'       => $response->successful() || $response->status() === 422,
+            'ok'       => $response->successful() || $response->status() === 202,
         ];
     }
 
@@ -176,10 +176,10 @@ class FocusNfeService
             $qty        = (float) $item->quantity;
             $valorBruto = round($qty * $unitPrice, 2);
 
-            // NCM: usa o cadastrado no produto ou 84716049 (mouse — genérico de testes)
+            // NCM: usa o cadastrado no produto ou 84716049 (genérico válido)
             $ncm = preg_replace('/\D/', '', $product->ncm ?? '');
             if (strlen($ncm) !== 8) {
-                $ncm = '84716049'; // código genérico válido para testes
+                $ncm = '84716049';
             }
 
             $itens[] = [
@@ -205,6 +205,7 @@ class FocusNfeService
         }
 
         return [
+            'data_emissao'       => now()->format('Y-m-d'),
             'natureza_operacao'  => 'Venda de mercadoria',
             'forma_pagamento'    => 0,
             'tipo_documento'     => 1,
