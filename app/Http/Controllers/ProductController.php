@@ -339,7 +339,7 @@ class ProductController extends Controller
                 }
             }
 
-            // SKU duplicado → ATUALIZA (sem somar quantidade na reimportação)
+            // SKU duplicado → ATUALIZA dados e SOMA quantidade como entrada
             if ($sku !== '') {
                 $existing = Product::where('company_id', $companyId)->where('sku', $sku)->first();
 
@@ -350,11 +350,14 @@ class ProductController extends Controller
                         $costColumn, $companyId, $userId
                     ) {
                         $qBefore = $existing->quantity;
+                        // A quantidade da planilha é sempre uma ENTRADA adicional
+                        $qAfter  = $qBefore + $quantity;
 
                         $existing->update([
                             'name'         => $name,
                             'price'        => $price,
                             $costColumn    => $cost ?? $existing->$costColumn,
+                            'quantity'     => $qAfter,
                             'min_quantity' => $minQty ?: $existing->min_quantity,
                             'unit'         => $unit ?: $existing->unit,
                             'description'  => $description ?: $existing->description,
@@ -363,19 +366,18 @@ class ProductController extends Controller
                             'active'       => $isActive,
                         ]);
 
-                        // Registra movimentação somente se a quantidade mudar
-                        if ($quantity > 0 && $quantity !== $qBefore) {
-                            $existing->update(['quantity' => $quantity]);
+                        // Registra movimentação somente se houver quantidade a adicionar
+                        if ($quantity > 0) {
                             StockMovement::create([
                                 'company_id'      => $companyId,
                                 'product_id'      => $existing->id,
                                 'user_id'         => $userId,
-                                'type'            => $quantity > $qBefore ? 'entrada' : 'saida',
-                                'quantity'        => abs($quantity - $qBefore),
+                                'type'            => 'entrada',
+                                'quantity'        => $quantity,
                                 'quantity_before' => $qBefore,
-                                'quantity_after'  => $quantity,
+                                'quantity_after'  => $qAfter,
                                 'reason'          => 'ajuste',
-                                'notes'           => 'Ajuste via reimportação CSV (SKU existente)',
+                                'notes'           => 'Entrada via reimportação CSV (SKU existente)',
                             ]);
                         }
                     });
