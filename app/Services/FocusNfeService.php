@@ -28,20 +28,12 @@ class FocusNfeService
 
     public function emitir(Sale $sale): array
     {
-        // Recarrega o customer direto do banco para garantir dados frescos
         $customer = \App\Models\Customer::find($sale->customer_id);
 
         $ref     = 'INVEXA-' . $sale->id . '-' . Str::random(6);
         $payload = $this->buildPayload($sale, $ref, $customer);
 
-        Log::info('[FocusNFe] destinatario', [
-            'customer_id' => $customer?->id,
-            'logradouro'  => $customer?->logradouro,
-            'municipio'   => $customer?->municipio,
-            'uf'          => $customer?->uf,
-            'cep'         => $customer?->cep,
-            'dest_payload'=> $payload['destinatario'],
-        ]);
+        Log::info('[FocusNFe] payload completo', ['sale_id' => $sale->id, 'payload' => $payload]);
 
         $response = Http::withBasicAuth($this->token, '')
             ->post("{$this->baseUrl}/v2/nfe?ref={$ref}", $payload);
@@ -101,37 +93,44 @@ class FocusNfeService
 
     private function buildPayload(Sale $sale, string $ref, ?\App\Models\Customer $customer = null): array
     {
-        $company  = $sale->company ?? \App\Models\Company::find($sale->company_id);
-        // Usa o customer injetado (fresco do banco) ou cai no relacionamento
+        $company = $sale->company ?? \App\Models\Company::find($sale->company_id);
+
         if ($customer === null) {
             $customer = $sale->customer;
         }
+
         $items = $sale->items()->with('product')->get();
 
         $isHomologacao = $this->ambiente !== 'producao';
 
+        $cnpjEmitente = $isHomologacao
+            ? self::CNPJ_HOMOLOGACAO
+            : preg_replace('/\D/', '', $company->cnpj ?? '');
+
+        // ── Destinatário: campos no nível raiz com sufixo _destinatario ──
         $nomeDestinatario = $isHomologacao
             ? 'NF-E EMITIDA EM AMBIENTE DE HOMOLOGACAO - SEM VALOR FISCAL'
-            : ($customer?->name ?? $sale->customer_name ?? 'CONSUMIDOR');
+            : ($customer?->name ?? 'CONSUMIDOR');
 
-        $dest = ['nome' => $nomeDestinatario];
+        $payload = [
+            'nome_destinatario' => $nomeDestinatario,
+        ];
 
-        $temDocumento = false;
+        // CPF / CNPJ
         if (!empty($customer?->document)) {
             $doc = preg_replace('/\D/', '', $customer->document);
             if (strlen($doc) === 14) {
-                $dest['cnpj'] = $doc;
-                $temDocumento = true;
+                $payload['cnpj_destinatario'] = $doc;
             } elseif (strlen($doc) === 11) {
-                $dest['cpf'] = $doc;
-                $temDocumento = true;
+                $payload['cpf_destinatario'] = $doc;
             }
         }
 
         if (!empty($customer?->email)) {
-            $dest['email'] = $customer->email;
+            $payload['email_destinatario'] = $customer->email;
         }
 
+        // Endereço
         $logradouro = trim($customer->logradouro      ?? '');
         $numero     = trim($customer->numero_endereco ?? '');
         $bairro     = trim($customer->bairro          ?? '');
@@ -140,41 +139,40 @@ class FocusNfeService
         $cep        = preg_replace('/\D/', '', $customer->cep ?? '');
 
         $hasAddr = $logradouro && $municipio && $uf && strlen($cep) === 8;
+        $temDoc  = isset($payload['cpf_destinatario']) || isset($payload['cnpj_destinatario']);
 
-        if ($temDocumento || $hasAddr) {
-            if ($hasAddr) {
-                $dest['logradouro'] = $logradouro;
-                $dest['numero']     = $numero ?: 'S/N';
-                $dest['bairro']     = $bairro ?: 'Centro';
-                $dest['municipio']  = $municipio;
-                $dest['uf']         = strtoupper($uf);
-                $dest['cep']        = $cep;
-                if (!empty($customer->complemento)) {
-                    $dest['complemento'] = $customer->complemento;
-                }
-            } else {
-                $dest['logradouro'] = 'Praca dos Tres Poderes';
-                $dest['numero']     = 'S/N';
-                $dest['bairro']     = 'Zona Civico-Administrativa';
-                $dest['municipio']  = 'Brasilia';
-                $dest['uf']         = 'DF';
-                $dest['cep']        = '70150900';
+        if ($hasAddr) {
+            $payload['logradouro_destinatario'] = $logradouro;
+            $payload['numero_destinatario']     = $numero ?: 'S/N';
+            $payload['bairro_destinatario']     = $bairro ?: 'Centro';
+            $payload['municipio_destinatario']  = $municipio;
+            $payload['uf_destinatario']         = strtoupper($uf);
+            $payload['cep_destinatario']        = $cep;
+            $payload['pais_destinatario']       = 'Brasil';
+            $payload['codigo_pais_destinatario']= '1058';
+            if (!empty($customer->complemento)) {
+                $payload['complemento_destinatario'] = $customer->complemento;
             }
-            $dest['pais']        = 'Brasil';
-            $dest['codigo_pais'] = '1058';
+        } elseif ($temDoc) {
+            // Tem documento mas sem endereço: usa endereço padrão Brasília
+            $payload['logradouro_destinatario'] = 'Praca dos Tres Poderes';
+            $payload['numero_destinatario']     = 'S/N';
+            $payload['bairro_destinatario']     = 'Zona Civico-Administrativa';
+            $payload['municipio_destinatario']  = 'Brasilia';
+            $payload['uf_destinatario']         = 'DF';
+            $payload['cep_destinatario']        = '70150900';
+            $payload['pais_destinatario']       = 'Brasil';
+            $payload['codigo_pais_destinatario']= '1058';
         }
 
         if (!empty($customer?->phone)) {
             $phone = preg_replace('/\D/', '', $customer->phone);
             if (strlen($phone) >= 10) {
-                $dest['telefone'] = $phone;
+                $payload['telefone_destinatario'] = $phone;
             }
         }
 
-        $cnpjEmitente = $isHomologacao
-            ? self::CNPJ_HOMOLOGACAO
-            : preg_replace('/\D/', '', $company->cnpj ?? '');
-
+        // ── Itens ──
         $itens = [];
         foreach ($items as $i => $item) {
             $product    = $item->product;
@@ -209,7 +207,7 @@ class FocusNfeService
             ];
         }
 
-        return [
+        return array_merge([
             'data_emissao'       => now()->format('Y-m-d'),
             'natureza_operacao'  => 'Venda de mercadoria',
             'forma_pagamento'    => 0,
@@ -221,8 +219,7 @@ class FocusNfeService
             'modalidade_frete'   => 9,
             'cnpj_emitente'      => $cnpjEmitente,
             'items'              => $itens,
-            'destinatario'       => $dest,
-        ];
+        ], $payload);
     }
 
     public function syncStatus(Nfe $nfe): Nfe
