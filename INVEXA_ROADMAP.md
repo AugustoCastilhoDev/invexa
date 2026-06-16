@@ -1,7 +1,7 @@
 # 🗺️ Invexa — Roadmap de Evolução do Produto
 
 > **Documento vivo** — atualizar status e datas conforme cada item for concluído.
-> Última revisão: Junho 2026 | Analista: Claude (Anthropic) + Augusto Castilho
+> Última revisão: 16 Jun 2026 | Analista: Claude (Anthropic) + Augusto Castilho
 
 ---
 
@@ -227,32 +227,62 @@
 
 ---
 
-### 5.2 — NF-e / NFS-e integrada
+### 5.2 — NF-e integrada (Focus NFe)
 
 - **Prioridade:** 🔵 Estratégica
 - **Esforço:** Muito alto (~4–6 semanas)
 - **Impacto:** Altíssimo — principal driver de upgrade e retenção
-- **Status:** 🔲 Em andamento — Focus NFe escolhido, modelo multi-tenant (cada empresa usa sua própria conta)
+- **Status:** 🔄 Em andamento — backend concluído, UI e validação pendentes
 
 **Decisão tomada:** Focus NFe, NF-e manual (usuário clica "Emitir"), cada empresa com suas próprias credenciais.
 
-**O que fazer:**
-- [ ] Criar conta Focus NFe e obter credenciais de homologação
-- [ ] Adicionar campos fiscais na tabela `companies`:
-  - CNPJ, IE, regime tributário, série NF, certificado A1 (.pfx)
-  - Campos `focusnfe_token` e `focusnfe_cnpj`
-- [ ] Adicionar campos fiscais na tabela `products`:
-  - NCM, CFOP, CST, alíquotas ICMS/PIS/COFINS
-- [ ] Adicionar campos fiscais na tabela `customers`:
-  - CPF/CNPJ, inscrição estadual
-- [ ] Implementar `NFeService`:
-  - Emitir NF-e ao concluir venda (botão manual)
-  - Download do XML e DANFE em PDF
-  - Cancelamento de NF-e
-  - Carta de correção
-- [ ] Adicionar módulo "Fiscal" no menu (gerente+)
-- [ ] Testes extensivos em homologação antes de produção
-- [ ] Documentar configuração fiscal por estado
+#### ✅ Concluído (16 Jun 2026)
+
+- [x] Campos fiscais adicionados à tabela `companies`: `focusnfe_token`, `focusnfe_ambiente`, `nfe_serie`
+- [x] Campos fiscais adicionados à tabela `products`: `ncm`, `cfop`, `unidade_tributavel`, `barcode`
+- [x] Campos de endereço fiscal adicionados à tabela `customers`: `logradouro`, `numero_endereco`, `bairro`, `municipio`, `uf`, `cep`, `complemento`
+- [x] Model `Nfe` criado com todos os status e constantes (`STATUS_PENDENTE`, `STATUS_AUTORIZADA`, etc.)
+- [x] Migration `create_nfes_table` — tabela completa com `ref_focusnfe`, `chave_acesso`, `protocolo`, `xml_path`, `pdf_path`, etc.
+- [x] `FocusNfeService` implementado:
+  - `emitir(Sale $sale)` — monta payload e envia para Focus NFe
+  - `consultar(string $ref)` — consulta status na Focus
+  - `cancelar(string $ref, string $justificativa)` — cancelamento
+  - `cartaCorrecao(string $ref, string $correcao)` — CC-e
+  - `syncStatus(Nfe $nfe)` — sincroniza status com a SEFAZ
+  - `buildPayload()` — monta o payload completo: emitente, destinatário, itens, tributos
+- [x] Campos ICMS/PIS/COFINS corrigidos para Simples Nacional: `icms_csosn: '102'`, `pis_situacao_tributaria: '07'`, `cofins_situacao_tributaria: '07'`
+- [x] Payload usa CNPJ de homologação (`34.785.515/0001-66`) em ambiente `homologacao`
+- [x] Série automática: `2` em homologação, `1` (configurável) em produção
+- [x] Model `NfeNumeration` criado com controle de sequência atômico (SELECT FOR UPDATE):
+  - `proximoNumero($companyId, $serie, $ambiente)` — incrementa e retorna próximo número
+  - `atualNumero(...)` — consulta sem incrementar
+  - `definirNumero(...)` — sincronização manual com numeração SEFAZ
+- [x] Migration `create_nfe_numerations_table` — unique em `(company_id, ambiente, serie)`
+- [x] `FocusNfeService` atualizado para usar `NfeNumeration::proximoNumero()` no payload
+
+#### 🔲 Pendente — próximas sessões
+
+**Backend restante:**
+- [ ] `NfeController` — rotas e actions: `emitir`, `consultar`, `cancelar`, `cartaCorrecao`, `download` (XML/DANFE)
+- [ ] Job/Command para sincronização automática de status (`SyncNfeStatus`) — consulta NFs `processando` a cada 5 min
+- [ ] Storage de XML e DANFE retornados pela Focus (S3 ou disco local)
+- [ ] Evento `NfeAutorizada` + notificação in-app para o usuário
+
+**UI — Módulo Fiscal:**
+- [ ] Tela de listagem de NFs: número, série, destinatário, valor, status, data de emissão
+- [ ] Botão "Emitir NF-e" no detalhe da venda (apenas para vendas concluídas)
+- [ ] Modal de confirmação antes de emitir (mostra resumo: itens, valor, destinatário)
+- [ ] Badge de status na listagem (Pendente / Processando / Autorizada / Rejeitada / Cancelada)
+- [ ] Botões de ação por NF: Download XML, Download DANFE, Cancelar, Carta de Correção
+- [ ] Tela de configuração fiscal da empresa: `focusnfe_token`, `focusnfe_ambiente`, `nfe_serie`
+- [ ] Campos fiscais no cadastro de produto: NCM, CFOP, unidade tributável, código de barras
+- [ ] Campos de endereço fiscal no cadastro de cliente
+
+**Configuração & Infraestrutura:**
+- [ ] Certificado A1 real (e-CNPJ ou e-CPF) cadastrado na Focus NFe — necessário para validar fluxo completo
+- [ ] Testes extensivos em homologação com certificado real antes de produção
+- [ ] Documentação interna: configuração fiscal por estado (CFOP interestad. vs. intraestadual)
+- [ ] Atualizar `INVEXA_ROADMAP.md` ao concluir cada pendência acima
 
 ---
 
@@ -300,7 +330,7 @@
 
 ## 📋 Checklist de Status Geral
 
-> Atualizado em Junho 2026.
+> Atualizado em 16 Jun 2026.
 
 ### Fase 1 — Credibilidade & Estabilidade
 - [x] 1.1 Domínio próprio em produção (`invexa-app.com.br`)
@@ -325,7 +355,9 @@
 
 ### Fase 5 — Diferenciação de Mercado
 - [x] 5.1 Pix multi-tenant (Asaas por empresa)
-- [ ] 5.2 NF-e / NFS-e integrada (Focus NFe — em andamento)
+- [x] 5.2a NF-e — backend: FocusNfeService, Nfe model, NfeNumeration, campos fiscais
+- [ ] 5.2b NF-e — UI: módulo Fiscal, listagem, emissão, download, configuração
+- [ ] 5.2c NF-e — infraestrutura: certificado A1, job de sync, storage XML/DANFE
 - [x] 5.3 App mobile (PWA)
 - [x] 5.4 API pública documentada (`invexa-app.com.br/api-docs`)
 
@@ -340,6 +372,8 @@
 | D3 | API de NF-e | Focus NFe | Jun/2026 |
 | D4 | Monitoramento de erros | Flare | Jun/2026 |
 | D5 | Documentação da API | HTML estático em `public/api-docs.html` | Jun/2026 |
+| D6 | Regime tributário NF-e | Simples Nacional — CSOSN 102, PIS/COFINS 07 | Jun/2026 |
+| D7 | Controle de numeração | `nfe_numerations` por empresa/série/ambiente com lock atômico | Jun/2026 |
 
 ---
 
@@ -361,6 +395,7 @@
 |---------|-----|
 | Flare (monitoramento Laravel) | https://flareapp.io |
 | Focus NFe API | https://focusnfe.com.br |
+| Focus NFe — Docs NF-e | https://developer.focusnfe.com.br/reference/nfe |
 | eNotas API | https://enotas.com.br |
 | Asaas (Pix/boleto BR) | https://asaas.com/developers |
 | iubenda (LGPD) | https://iubenda.com |
@@ -368,8 +403,9 @@
 | Laravel Cashier (Stripe) | https://laravel.com/docs/billing |
 | shots.so (screenshots) | https://shots.so |
 | Invexa API Docs | https://invexa-app.com.br/api-docs |
+| Tabela NCM — Receita Federal | https://www.receita.fazenda.gov.br/orientacao/tributaria/classificacoes/tipi.htm |
 
 ---
 
-*Documento atualizado em Junho 2026 — Invexa v1.0 em produção*
+*Documento atualizado em 16 Jun 2026 — Invexa v1.0 em produção*
 *Repositório: https://github.com/AugustoCastilhoDev/invexa*
