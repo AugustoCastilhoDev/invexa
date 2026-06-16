@@ -16,7 +16,7 @@ class FiscalSettingsController extends Controller
     {
         $company = auth()->user()->company;
 
-        $validated = $request->validate([
+        $request->validate([
             'focusnfe_token'     => 'nullable|string|max:255',
             'ambiente_nfe'       => 'required|in:homologacao,producao',
             'inscricao_estadual' => 'nullable|string|max:20',
@@ -28,15 +28,30 @@ class FiscalSettingsController extends Controller
             'csc_id'             => 'nullable|string|max:10',
         ]);
 
-        // Se o token vier vazio, mantém o atual (segurança)
-        if (empty($validated['focusnfe_token'])) {
-            unset($validated['focusnfe_token']);
-        }
-        if (empty($validated['csc_token'])) {
-            unset($validated['csc_token']);
+        // Mapeamento: nome do campo no form => coluna real no banco
+        $data = [
+            'focusnfe_ambiente'  => $request->ambiente_nfe,
+            'ie'                 => $request->inscricao_estadual,
+            'im'                 => $request->inscricao_municipal,
+            'crt'                => $request->regime_tributario,
+            'nfe_serie'          => $request->serie_nfe,
+            'nfe_numero_atual'   => $request->proximo_numero_nfe,
+        ];
+
+        // Token Focus NFe: só atualiza se vier preenchido
+        if (filled($request->focusnfe_token)) {
+            $data['focusnfe_token'] = $request->focusnfe_token;
         }
 
-        $company->update($validated);
+        // CSC (NFCe): só atualiza se vier preenchido
+        if (filled($request->csc_token)) {
+            $data['csc_token'] = $request->csc_token;
+        }
+        if (filled($request->csc_id)) {
+            $data['csc_id'] = $request->csc_id;
+        }
+
+        $company->update($data);
 
         return back()->with('success', 'Configurações fiscais salvas com sucesso.');
     }
