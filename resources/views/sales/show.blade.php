@@ -17,19 +17,17 @@
                     <i class="bi bi-file-earmark-pdf me-1"></i>Baixar NF (PDF)
                 </a>
 
-                {{-- ── Botão Emitir NF-e ──────────────────────────────────────── --}}
-                @if($sale->status !== 'cancelada')
+                {{-- ── Botão Emitir NF-e (só exibe se as rotas já existirem) ── --}}
+                @if($sale->status !== 'cancelada' && Route::has('nfes.emitir'))
                     @php $nfeAtiva = $sale->nfes()->whereIn('status', ['autorizada','pendente','processando'])->latest()->first(); @endphp
 
-                    @if($nfeAtiva)
-                        {{-- Já existe NF-e: link para detalhes --}}
+                    @if($nfeAtiva && Route::has('nfes.show'))
                         <a href="{{ route('nfes.show', $nfeAtiva) }}" class="btn btn-outline-info btn-sm">
                             <i class="bi bi-file-earmark-text me-1"></i>
-                            NF-e {{ $nfeAtiva->numero_formatado }}
-                            <span class="badge bg-{{ $nfeAtiva->status_badge }} ms-1">{{ $nfeAtiva->status_label }}</span>
+                            NF-e {{ str_pad($nfeAtiva->numero ?? 0, 9, '0', STR_PAD_LEFT) }}
+                            <span class="badge bg-secondary ms-1">{{ $nfeAtiva->status }}</span>
                         </a>
-                    @else
-                        {{-- Sem NF-e: botão emitir --}}
+                    @elseif(!$nfeAtiva)
                         <form action="{{ route('nfes.emitir', $sale) }}" method="POST" class="d-inline"
                               onsubmit="return confirm('Emitir NF-e para a Venda #{{ $sale->sale_number }}?\n\nEsta ação enviará os dados à SEFAZ via Focus NFe.')">
                             @csrf
@@ -39,7 +37,7 @@
                         </form>
                     @endif
                 @endif
-                {{-- ── fim NF-e ────────────────────────────────────────────────── --}}
+                {{-- ── fim NF-e ─────────────────────────────────────────────── --}}
 
                 @if($sale->status === 'concluida')
                     <a href="{{ route('returns.create', ['sale_id' => $sale->id]) }}"
@@ -159,7 +157,8 @@
             </div>
         </div>
 
-        {{-- ── Card NF-e vinculada ─────────────────────────────────────────── --}}
+        {{-- ── Card NF-e vinculada (só exibe se a relação e rotas existirem) ── --}}
+        @if(Route::has('nfes.show'))
         @php $nfes = $sale->nfes()->latest()->get(); @endphp
         @if($nfes->isNotEmpty())
         <div class="card card-dark-bg mb-4" style="border:1px solid rgba(99,179,237,.25);">
@@ -184,14 +183,14 @@
                         @foreach($nfes as $nfe)
                         <tr style="border-color:rgba(148,163,184,.07);">
                             <td class="ps-4 py-3">
-                                <span class="text-white fw-semibold">{{ $nfe->numero_formatado }}</span>
+                                <span class="text-white fw-semibold">{{ str_pad($nfe->numero ?? 0, 9, '0', STR_PAD_LEFT) }}</span>
                                 <div class="text-soft small">Série {{ $nfe->serie }}</div>
                             </td>
                             <td class="py-3" style="color:#94a3b8;font-size:.875rem;">
                                 {{ $nfe->data_emissao?->format('d/m/Y H:i') ?? '—' }}
                             </td>
                             <td class="py-3">
-                                <span class="badge bg-{{ $nfe->status_badge }}">{{ $nfe->status_label }}</span>
+                                <span class="badge bg-secondary">{{ $nfe->status }}</span>
                             </td>
                             <td class="py-3">
                                 <span class="text-soft font-monospace" style="font-size:.78rem;">
@@ -203,7 +202,7 @@
                                     <a href="{{ route('nfes.show', $nfe) }}" class="btn btn-sm btn-outline-light" title="Detalhes">
                                         <i class="bi bi-eye"></i>
                                     </a>
-                                    @if($nfe->status === 'autorizada')
+                                    @if($nfe->status === 'autorizada' && Route::has('nfes.xml'))
                                         <a href="{{ route('nfes.xml', $nfe) }}" class="btn btn-sm btn-outline-secondary" title="XML">
                                             <i class="bi bi-file-code"></i>
                                         </a>
@@ -211,7 +210,7 @@
                                             <i class="bi bi-file-pdf"></i>
                                         </a>
                                     @endif
-                                    @if($nfe->status === 'pendente')
+                                    @if($nfe->status === 'pendente' && Route::has('nfes.consultar'))
                                         <form action="{{ route('nfes.consultar', $nfe) }}" method="POST">
                                             @csrf
                                             <button type="submit" class="btn btn-sm btn-outline-info" title="Consultar SEFAZ">
@@ -227,6 +226,7 @@
                 </table>
             </div>
         </div>
+        @endif
         @endif
         {{-- ── fim NF-e ────────────────────────────────────────────────────── --}}
 
