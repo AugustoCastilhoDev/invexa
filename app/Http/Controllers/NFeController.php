@@ -4,133 +4,208 @@ namespace App\Http\Controllers;
 
 use App\Models\Nfe;
 use App\Models\Sale;
-use App\Services\NFeService;
+use App\Services\FocusNfeService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\View\View;
 
 class NFeController extends Controller
 {
-    // ── Listagem ──────────────────────────────────────────────────────────────
-
-    public function index(Request $request)
+    // ─────────────────────────────────────────────────────────────────────────
+    // Listagem
+    // ─────────────────────────────────────────────────────────────────────────
+    public function index(Request $request): View
     {
-        $nfes = Nfe::with(['sale', 'customer', 'user'])
-            ->when($request->status, fn($q) => $q->where('status', $request->status))
-            ->when($request->search, fn($q) => $q->where('numero', 'like', "%{$request->search}%")
-                ->orWhere('chave_acesso', 'like', "%{$request->search}%"))
-            ->orderByDesc('created_at')
-            ->paginate(20)
-            ->withQueryString();
+        $nfes = Nfe::with(['sale', 'customer'])
+            ->latest()
+            ->paginate(20);
 
         return view('nfes.index', compact('nfes'));
     }
 
-    public function show(Nfe $nfe)
+    // ─────────────────────────────────────────────────────────────────────────
+    // Detalhe
+    // ─────────────────────────────────────────────────────────────────────────
+    public function show(Nfe $nfe): View
     {
-        $nfe->load(['sale.items.product', 'customer', 'user', 'company']);
+        $nfe->load(['sale.items.product', 'customer', 'user']);
         return view('nfes.show', compact('nfe'));
     }
 
-    // ── Emissão ──────────────────────────────────────────────────────────────
-
-    public function emitir(Request $request, Sale $sale)
+    // ─────────────────────────────────────────────────────────────────────────
+    // Emitir NF-e a partir de uma venda
+    // ─────────────────────────────────────────────────────────────────────────
+    public function emitir(Sale $sale): RedirectResponse
     {
         $company = auth()->user()->company;
 
-        if (! $company->focusnfe_token) {
-            return back()->with('error', 'Configure o token do Focus NFe nas configurações fiscais da empresa.');
+        if (empty($company->focusnfe_token)) {
+            return back()->with('error', 'Configure o token da Focus NF-e em Configurações → Fiscal antes de emitir.');
         }
 
-        // Verifica se já existe NF-e autorizada para essa venda
-        $existing = Nfe::where('sale_id', $sale->id)
-            ->where('status', Nfe::STATUS_AUTORIZADA)
-            ->first();
+        // Impede dupla emissão
+        $jaEmitida = $sale->nfes()->whereIn('status', [
+            Nfe::STATUS_AUTORIZADA,
+            Nfe::STATUS_PROCESSANDO,
+        ])->exists();
 
-        if ($existing) {
-            return back()->with('error', 'Já existe uma NF-e autorizada para esta venda (Nº ' . $existing->numero_formatado . ').');
+        if ($jaEmitida) {
+            return back()->with('error', 'Já existe uma NF-e autorizada ou em processamento para esta venda.');
         }
 
-        $service = new NFeService($company);
-        $nfe     = $service->emitir($sale, auth()->user());
+        $service = new FocusNfeService($company);
+        $result  = $service->emitir($sale);
 
-        $msg = match ($nfe->status) {
-            Nfe::STATUS_AUTORIZADA  => 'NF-e emitida e autorizada com sucesso!',
-            Nfe::STATUS_PROCESSANDO => 'NF-e enviada ao SEFAZ, aguardando autorização.',
-            default                 => 'NF-e rejeitada: ' . $nfe->motivo_rejeicao,
-        };
+        if (!$result['ok']) {
+            return back()->with('error', 'Erro ao enviar para a Focus NF-e: ' . json_encode($result['response']));
+        }
 
-        $tipo = $nfe->isAutorizada() ? 'success' : ($nfe->isPendente() ? 'warning' : 'error');
+        $retorno = $result['response'];
 
-        return redirect()->route('nfes.show', $nfe)->with($tipo, $msg);
+        // Determina status inicial
+        $statusFocus = $retorno['status'] ?? null;
+        $statusMap   = [
+            'autorizado'  => Nfe::STATUS_AUTORIZADA,
+            'processando' => Nfe::STATUS_PROCESSANDO,
+            'denegado'    => Nfe::STATUS_DENEGADA,
+            'erro'        => Nfe::STATUS_REJEITADA,
+        ];
+        $status = $statusMap[$statusFocus] ?? Nfe::STATUS_PROCESSANDO;
+
+        $nfe = Nfe::create([
+            'company_id'       => $company->id,
+            'sale_id'          => $sale->id,
+            'customer_id'      => $sale->customer_id,
+            'user_id'          => auth()->id(),
+            'serie'            => $company->nfe_serie ?? '1',
+            'status'           => $status,
+            'ambiente'         => $company->nfe_ambiente ?? 'homologacao',
+            'ref_focusnfe'     => $result['ref'],
+            'data_emissao'     => now(),
+            'valor_total'      => $sale->total,
+            'valor_produtos'   => $sale->items->sum(fn($i) => $i->quantity * $i->unit_price),
+            'payload_enviado'  => $result['payload'],
+            'retorno_focusnfe' => $retorno,
+            'chave_acesso'     => $retorno['chave_nfe'] ?? null,
+            'protocolo'        => $retorno['protocolo'] ?? null,
+            'motivo_rejeicao'  => $status === Nfe::STATUS_REJEITADA
+                ? ($retorno['mensagem_sefaz'] ?? $retorno['erros'][0]['mensagem'] ?? null)
+                : null,
+        ]);
+
+        if ($status === Nfe::STATUS_AUTORIZADA) {
+            $nfe->update(['data_autorizacao' => now()]);
+            return redirect()->route('nfes.show', $nfe)->with('success', 'NF-e autorizada com sucesso!');
+        }
+
+        return redirect()->route('nfes.show', $nfe)
+            ->with('info', 'NF-e enviada para processamento. Consulte o status em instantes.');
     }
 
-    // ── Consulta de status ────────────────────────────────────────────────────
-
-    public function consultar(Nfe $nfe)
+    // ─────────────────────────────────────────────────────────────────────────
+    // Consultar status na SEFAZ via Focus
+    // ─────────────────────────────────────────────────────────────────────────
+    public function consultar(Nfe $nfe): RedirectResponse
     {
-        $service = new NFeService(auth()->user()->company);
-        $nfe     = $service->consultar($nfe);
+        $company = auth()->user()->company;
+        $service = new FocusNfeService($company);
+
+        $nfe = $service->syncStatus($nfe);
 
         return back()->with('success', 'Status atualizado: ' . $nfe->status_label);
     }
 
-    // ── Cancelamento ──────────────────────────────────────────────────────────
-
-    public function cancelar(Request $request, Nfe $nfe)
+    // ─────────────────────────────────────────────────────────────────────────
+    // Cancelar NF-e
+    // ─────────────────────────────────────────────────────────────────────────
+    public function cancelar(Request $request, Nfe $nfe): RedirectResponse
     {
         $request->validate([
             'justificativa' => 'required|string|min:15|max:255',
         ]);
 
-        try {
-            $service = new NFeService(auth()->user()->company);
-            $service->cancelar($nfe, $request->justificativa);
-            return back()->with('success', 'NF-e cancelada com sucesso.');
-        } catch (\Exception $e) {
-            return back()->with('error', $e->getMessage());
+        if (!$nfe->isAutorizada()) {
+            return back()->with('error', 'Apenas NF-es autorizadas podem ser canceladas.');
         }
+
+        $company = auth()->user()->company;
+        $service = new FocusNfeService($company);
+        $result  = $service->cancelar($nfe->ref_focusnfe, $request->justificativa);
+
+        if (($result['status'] ?? 0) >= 400) {
+            return back()->with('error', 'Erro ao cancelar: ' . json_encode($result['response']));
+        }
+
+        $nfe->update([
+            'status'             => Nfe::STATUS_CANCELADA,
+            'data_cancelamento'  => now(),
+            'retorno_focusnfe'   => $result['response'],
+        ]);
+
+        return back()->with('success', 'NF-e cancelada com sucesso.');
     }
 
-    // ── Carta de Correção ───────────────────────────────────────────────────
-
-    public function cartaCorrecao(Request $request, Nfe $nfe)
+    // ─────────────────────────────────────────────────────────────────────────
+    // Carta de Correção Eletrônica
+    // ─────────────────────────────────────────────────────────────────────────
+    public function cartaCorrecao(Request $request, Nfe $nfe): RedirectResponse
     {
         $request->validate([
             'correcao' => 'required|string|min:15|max:1000',
         ]);
 
-        try {
-            $service = new NFeService(auth()->user()->company);
-            $service->cartaCorrecao($nfe, $request->correcao);
-            return back()->with('success', 'Carta de Correção enviada com sucesso.');
-        } catch (\Exception $e) {
-            return back()->with('error', $e->getMessage());
+        if (!$nfe->isAutorizada()) {
+            return back()->with('error', 'Apenas NF-es autorizadas podem receber CC-e.');
         }
+
+        $company = auth()->user()->company;
+        $service = new FocusNfeService($company);
+        $result  = $service->cartaCorrecao($nfe->ref_focusnfe, $request->correcao);
+
+        if (($result['status'] ?? 0) >= 400) {
+            return back()->with('error', 'Erro ao enviar CC-e: ' . json_encode($result['response']));
+        }
+
+        $nfe->update([
+            'cce_correcao'  => $request->correcao,
+            'cce_protocolo' => $result['response']['protocolo'] ?? null,
+            'cce_data'      => now(),
+        ]);
+
+        return back()->with('success', 'Carta de Correção enviada com sucesso.');
     }
 
-    // ── Downloads ─────────────────────────────────────────────────────────────
-
+    // ─────────────────────────────────────────────────────────────────────────
+    // Download XML
+    // ─────────────────────────────────────────────────────────────────────────
     public function downloadXml(Nfe $nfe)
     {
-        $service = new NFeService(auth()->user()->company);
+        $company = auth()->user()->company;
+        $service = new FocusNfeService($company);
+        $result  = $service->consultar($nfe->ref_focusnfe . '?completo=true');
 
-        try {
-            $path = $nfe->xml_path ?? $service->downloadXml($nfe);
-            return Storage::disk('local')->download($path, "NF-e_{$nfe->numero_formatado}.xml");
-        } catch (\Exception $e) {
-            return back()->with('error', $e->getMessage());
+        $xmlUrl = $result['response']['caminho_xml_nota_fiscal'] ?? null;
+        if (!$xmlUrl) {
+            return back()->with('error', 'XML não disponível ainda.');
         }
+
+        return redirect($xmlUrl);
     }
 
+    // ─────────────────────────────────────────────────────────────────────────
+    // Download DANFE
+    // ─────────────────────────────────────────────────────────────────────────
     public function downloadDanfe(Nfe $nfe)
     {
-        $service = new NFeService(auth()->user()->company);
+        $company = auth()->user()->company;
+        $service = new FocusNfeService($company);
+        $result  = $service->consultar($nfe->ref_focusnfe . '?completo=true');
 
-        try {
-            $path = $nfe->danfe_path ?? $service->downloadDanfe($nfe);
-            return Storage::disk('local')->download($path, "DANFE_{$nfe->numero_formatado}.pdf");
-        } catch (\Exception $e) {
-            return back()->with('error', $e->getMessage());
+        $pdfUrl = $result['response']['caminho_danfe'] ?? null;
+        if (!$pdfUrl) {
+            return back()->with('error', 'DANFE não disponível ainda.');
         }
+
+        return redirect($pdfUrl);
     }
 }
