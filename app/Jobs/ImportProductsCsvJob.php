@@ -93,7 +93,7 @@ class ImportProductsCsvJob implements ShouldQueue
                 continue;
             }
 
-            // Resolve category_id
+            // Resolve category_id — cria se não existir
             $categoryId = null;
             if ($categoryKey !== '') {
                 if ($categories->has($categoryKey)) {
@@ -105,11 +105,18 @@ class ImportProductsCsvJob implements ShouldQueue
                 }
             }
 
-            // Resolve supplier_id
+            // Resolve supplier_id — cria se não existir
             $supplierId = null;
             if ($supplierKey !== '') {
                 if ($suppliers->has($supplierKey)) {
                     $supplierId = $suppliers[$supplierKey]->id;
+                } else {
+                    $sup = Supplier::create([
+                        'company_id' => $companyId,
+                        'name'       => trim($data['fornecedor']),
+                    ]);
+                    $suppliers->put($supplierKey, $sup);
+                    $supplierId = $sup->id;
                 }
             }
 
@@ -119,7 +126,6 @@ class ImportProductsCsvJob implements ShouldQueue
                 : null;
 
             if ($existingProduct) {
-                // Atualiza dados do produto e SOMA a quantidade
                 DB::transaction(function () use (
                     $existingProduct, $name, $price, $cost, $quantity, $minQty,
                     $unit, $description, $categoryId, $supplierId, $active,
@@ -141,7 +147,6 @@ class ImportProductsCsvJob implements ShouldQueue
                         'active'       => in_array($active, ['sim', 's', '1', 'true', 'yes']),
                     ]);
 
-                    // Registra movimentação de entrada apenas se houver quantidade a somar
                     if ($quantity > 0) {
                         StockMovement::create([
                             'company_id'      => $companyId,
@@ -180,7 +185,6 @@ class ImportProductsCsvJob implements ShouldQueue
                 'active'       => in_array($active, ['sim', 's', '1', 'true', 'yes']),
             ]);
 
-            // Registra movimentação de estoque inicial
             if ($quantity > 0) {
                 StockMovement::create([
                     'company_id'      => $companyId,
