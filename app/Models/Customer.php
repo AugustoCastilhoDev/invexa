@@ -18,11 +18,23 @@ class Customer extends Model
         'name',
         'email',
         'phone',
-        'document',   // usado pelo controller (store/update)
+        'document',
         'cpf_cnpj',
         'address',
         'city',
         'state',
+        // Endereço estruturado (NF-e)
+        'cep',
+        'logradouro',
+        'numero_endereco',
+        'complemento',
+        'bairro',
+        'municipio',
+        'uf',
+        'codigo_municipio',
+        'ie_destinatario',
+        'tipo_pessoa',
+        'indicador_ie',
         'active',
         'notes',
     ];
@@ -35,13 +47,11 @@ class Customer extends Model
     // Scopes
     // ------------------------------------
 
-    /** Filtra pelo company_id */
     public function scopeForCompany(Builder $query, int $companyId): Builder
     {
         return $query->where('company_id', $companyId);
     }
 
-    /** Filtra apenas clientes ativos */
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('active', true);
