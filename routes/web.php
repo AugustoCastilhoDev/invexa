@@ -39,8 +39,6 @@ use App\Http\Controllers\AsaasWebhookController;
 |--------------------------------------------------------------------------
 */
 
-// Landing
-
 Route::get('/api-docs', fn() => response(file_get_contents(public_path('api-docs.html')), 200, ['Content-Type' => 'text/html']))->name('api.docs');
 
 Route::get('/offline', fn() => view('offline'))->name('offline');
@@ -77,14 +75,13 @@ Route::middleware('auth')->group(function () {
     // Home
     Route::get('/home', [HomeController::class, 'index'])->name('home');
 
-    // Upgrade (antes do trial/two-factor para não bloquear pagamento)
+    // Upgrade
     Route::get('/upgrade', [UpgradeController::class, 'index'])->name('upgrade');
     Route::post('/upgrade/checkout', [SubscriptionController::class, 'checkout'])->name('subscription.checkout');
     Route::get('/upgrade/success', [SubscriptionController::class, 'success'])->name('subscription.success');
     Route::post('/upgrade/cancel', [SubscriptionController::class, 'cancel'])->name('subscription.cancel');
     Route::get('/upgrade/checkout-redirect', [SubscriptionController::class, 'checkoutRedirect'])->name('subscription.checkout.redirect');
 
-    // Todas as rotas protegidas por 2FA + paywall
     Route::middleware(['two-factor', 'trial'])->group(function () {
 
         // Dashboard
@@ -95,7 +92,7 @@ Route::middleware('auth')->group(function () {
         Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
         Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-        // 2FA Setup (dentro do app, já autenticado e verificado)
+        // 2FA Setup
         Route::get('/two-factor', [TwoFactorController::class, 'show'])->name('two-factor.index');
         Route::post('/two-factor/enable', [TwoFactorController::class, 'confirm'])->name('two-factor.enable');
         Route::post('/two-factor/disable', [TwoFactorController::class, 'disable'])->name('two-factor.disable');
@@ -103,7 +100,6 @@ Route::middleware('auth')->group(function () {
         // Company Settings
         Route::get('/settings/company',         [CompanyProfileController::class, 'edit'])->name('settings.company');
         Route::patch('/settings/company',       [CompanyProfileController::class, 'update'])->name('settings.company.update');
-
         Route::post('/settings/asaas', [CompanyProfileController::class, 'updateAsaas'])->name('settings.asaas.update');
         Route::delete('/settings/company/logo', [CompanyProfileController::class, 'destroyLogo'])->name('settings.company.logo.destroy');
 
@@ -145,9 +141,9 @@ Route::middleware('auth')->group(function () {
         Route::resource('products', ProductController::class);
         Route::resource('categories', CategoryController::class);
 
-        // Stock
+        // Stock — rota de reset ANTES do resource para não ser capturada pelo {stockMovement}
         Route::delete('/stock/reset-all', [StockMovementController::class, 'resetAll'])->name('stock.reset-all');
-        Route::resource('stock', StockMovementController::class);
+        Route::resource('stock', StockMovementController::class)->parameters(['stock' => 'stockMovement']);
 
         // Financial
         Route::resource('bills', BillController::class);
