@@ -146,6 +146,7 @@ Route::middleware('auth')->group(function () {
         Route::resource('categories', CategoryController::class);
 
         // Stock
+        Route::delete('/stock/reset-all', [StockMovementController::class, 'resetAll'])->name('stock.reset-all');
         Route::resource('stock', StockMovementController::class);
 
         // Financial

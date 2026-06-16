@@ -132,11 +132,8 @@ class StockMovementController extends Controller
                 ->find($stock->product_id);
 
             if ($product) {
-                // Estorna: inverte o delta aplicado originalmente
-                $estorno = -$stock->quantity; // se foi +5 entra, estorna -5
+                $estorno = -$stock->quantity;
                 $newQty  = $product->quantity + $estorno;
-
-                // Não deixa o estoque ficar negativo
                 $product->update(['quantity' => max(0, $newQty)]);
             }
 
@@ -144,7 +141,26 @@ class StockMovementController extends Controller
         });
 
         return redirect()->route('stock.index')
-            ->with('success', 'Movimentação excluída e estoque estornado com sucesso.');
+            ->with('success', 'Movimentação excuída e estoque estornado com sucesso.');
+    }
+
+    /**
+     * Zera TODAS as movimentações da empresa e o estoque dos produtos.
+     * Restrito a usuários com role admin.
+     */
+    public function resetAll()
+    {
+        $companyId = auth()->user()->company_id;
+
+        abort_if(auth()->user()->role !== 'admin', 403);
+
+        DB::transaction(function () use ($companyId) {
+            StockMovement::where('company_id', $companyId)->delete();
+            Product::where('company_id', $companyId)->update(['quantity' => 0]);
+        });
+
+        return redirect()->route('stock.index')
+            ->with('success', 'Todas as movimentações foram removidas e o estoque foi zerado.');
     }
 
     /** Histórico de um produto específico **/

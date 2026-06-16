@@ -11,9 +11,21 @@
                 <h4 class="mb-1 text-white">Movimentações de Estoque</h4>
                 <p class="text-soft mb-0">Histórico completo de entradas, saídas e ajustes.</p>
             </div>
-            <a href="{{ route('stock.create') }}" class="btn btn-primary btn-sm">
-                <i class="bi bi-plus-circle me-1"></i>Nova Entrada
-            </a>
+            <div class="d-flex gap-2 flex-wrap">
+                @if(auth()->user()->role === 'admin')
+                <form action="{{ route('stock.reset-all') }}" method="POST"
+                      onsubmit="return confirm('⚠️ Zerar TODAS as movimentações de estoque?\n\nEsta ação removerá todo o histórico e deixará o estoque de todos os produtos em 0. É irreversível.')">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="btn btn-sm btn-outline-warning">
+                        <i class="bi bi-arrow-counterclockwise me-1"></i>Zerar Estoque
+                    </button>
+                </form>
+                @endif
+                <a href="{{ route('stock.create') }}" class="btn btn-primary btn-sm">
+                    <i class="bi bi-plus-circle me-1"></i>Nova Entrada
+                </a>
+            </div>
         </div>
     </div>
 
