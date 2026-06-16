@@ -73,7 +73,7 @@ class BillController extends Controller
 
         $data = $request->validate([
             'description' => 'required|string|max:255',
-            'category'    => 'nullable|string|max:100',
+            'category'    => 'required|string|in:' . implode(',', array_keys(Bill::CATEGORY_LABELS)),
             'amount'      => 'required|numeric|min:0.01',
             'due_date'    => 'required|date',
             'notes'       => 'nullable|string',
@@ -106,7 +106,7 @@ class BillController extends Controller
 
         $data = $request->validate([
             'description' => 'required|string|max:255',
-            'category'    => 'nullable|string|max:100',
+            'category'    => 'required|string|in:' . implode(',', array_keys(Bill::CATEGORY_LABELS)),
             'amount'      => 'required|numeric|min:0.01',
             'due_date'    => 'required|date',
             'notes'       => 'nullable|string',

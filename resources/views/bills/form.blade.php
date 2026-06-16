@@ -52,10 +52,10 @@
 
                     {{-- Categoria --}}
                     <div class="mb-3">
-                        <label for="category" class="form-label text-soft fw-semibold" style="font-size:.8rem;">Categoria</label>
-                        <select id="category" name="category"
+                        <label for="category" class="form-label text-soft fw-semibold" style="font-size:.8rem;">Categoria <span class="text-danger">*</span></label>
+                        <select id="category" name="category" required
                                 class="form-select form-control-dark @error('category') is-invalid @enderror">
-                            <option value="">— Selecione —</option>
+                            <option value="" disabled {{ old('category', $bill->category ?? '') === '' ? 'selected' : '' }}>— Selecione —</option>
                             @foreach(\App\Models\Bill::CATEGORY_LABELS as $key => $label)
                                 <option value="{{ $key }}" {{ old('category', $bill->category ?? '') === $key ? 'selected' : '' }}>
                                     {{ $label }}
