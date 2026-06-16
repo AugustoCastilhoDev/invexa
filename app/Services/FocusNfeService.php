@@ -20,7 +20,9 @@ class FocusNfeService
         // Nomes corretos conforme tabela companies e FiscalSettingsController
         $this->ambiente = $company->focusnfe_ambiente ?? 'homologacao';
         $this->token    = $company->focusnfe_token    ?? '';
-        $this->baseUrl  = 'https://api.focusnfe.com.br';
+        $this->baseUrl  = $this->ambiente === 'producao'
+    ? 'https://api.focusnfe.com.br'
+    : 'https://homologacao.focusnfe.com.br';
     }
 
     // ─────────────────────────────────────────────────────────────────────────
