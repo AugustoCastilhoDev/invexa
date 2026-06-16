@@ -9,21 +9,21 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('companies', function (Blueprint $table) {
-            // Credenciais Focus NFe (multi-tenant)
+            // Credenciais Focus NFe
             $table->string('focusnfe_token', 100)->nullable()->after('asaas_wallet_id');
-            $table->string('focusnfe_ambiente', 10)->default('homologacao')->after('focusnfe_token'); // homologacao | producao
+            $table->string('focusnfe_ambiente', 10)->nullable()->after('focusnfe_token'); // homologacao | producao
 
             // Dados fiscais da empresa emissora
-            $table->string('ie', 20)->nullable()->after('focusnfe_ambiente');          // Inscrição Estadual
-            $table->string('im', 20)->nullable()->after('ie');                          // Inscrição Municipal (NFS-e)
-            $table->string('crt', 1)->nullable()->after('im');                         // Código Regime Tributário: 1=SN, 2=SN Excesso, 3=Normal
-            $table->unsignedTinyInteger('nfe_serie')->default(1)->after('crt');         // Série da NF-e (padrão 1)
-            $table->unsignedInteger('nfe_numero_atual')->default(0)->after('nfe_serie'); // Último número emitido
-            $table->string('certificado_pfx_path', 255)->nullable()->after('nfe_numero_atual'); // Caminho do .pfx no storage
-            $table->string('certificado_senha', 255)->nullable()->after('certificado_pfx_path'); // Senha do certificado (encrypted)
+            $table->string('ie', 20)->nullable()->after('focusnfe_ambiente');
+            $table->string('im', 20)->nullable()->after('ie');
+            $table->string('crt', 1)->nullable()->after('im'); // 1=SN, 2=SN Excesso, 3=Normal
+            $table->unsignedTinyInteger('nfe_serie')->nullable()->after('crt');
+            $table->unsignedInteger('nfe_numero_atual')->nullable()->after('nfe_serie');
+            $table->string('certificado_pfx_path', 255)->nullable()->after('nfe_numero_atual');
+            $table->string('certificado_senha', 255)->nullable()->after('certificado_pfx_path');
             $table->date('certificado_validade')->nullable()->after('certificado_senha');
 
-            // Endereço fiscal (complementa o que já existe)
+            // Endereço fiscal
             $table->string('logradouro', 150)->nullable()->after('certificado_validade');
             $table->string('numero_endereco', 10)->nullable()->after('logradouro');
             $table->string('complemento', 60)->nullable()->after('numero_endereco');
@@ -31,7 +31,7 @@ return new class extends Migration
             $table->string('municipio', 60)->nullable()->after('bairro');
             $table->string('uf', 2)->nullable()->after('municipio');
             $table->string('cep', 9)->nullable()->after('uf');
-            $table->string('codigo_municipio', 7)->nullable()->after('cep'); // Código IBGE do município
+            $table->string('codigo_municipio', 7)->nullable()->after('cep');
             $table->string('telefone_fiscal', 20)->nullable()->after('codigo_municipio');
         });
     }
