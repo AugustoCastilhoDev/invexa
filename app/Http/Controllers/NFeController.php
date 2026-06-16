@@ -72,14 +72,16 @@ class NFeController extends Controller
         ];
         $status = $statusMap[$statusFocus] ?? Nfe::STATUS_PROCESSANDO;
 
+        // numero só é atribuído pela SEFAZ após autorização; fica null até lá
         $nfe = Nfe::create([
             'company_id'       => $company->id,
             'sale_id'          => $sale->id,
             'customer_id'      => $sale->customer_id,
             'user_id'          => auth()->id(),
+            'numero'           => $retorno['numero_nfe'] ?? null,
             'serie'            => $company->nfe_serie ?? '1',
             'status'           => $status,
-            'ambiente'         => $company->nfe_ambiente ?? 'homologacao',
+            'ambiente'         => $company->focusnfe_ambiente ?? 'homologacao',
             'ref_focusnfe'     => $result['ref'],
             'data_emissao'     => now(),
             'valor_total'      => $sale->total,
