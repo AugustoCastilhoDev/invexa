@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Company;
 use App\Models\Nfe;
+use App\Models\NfeNumeration;
 use App\Models\Sale;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -14,11 +15,13 @@ class FocusNfeService
     private string $baseUrl;
     private string $token;
     private string $ambiente;
+    private Company $company;
 
     private const CNPJ_HOMOLOGACAO = '34785515000166';
 
     public function __construct(Company $company)
     {
+        $this->company  = $company;
         $this->ambiente = $company->focusnfe_ambiente ?? 'homologacao';
         $this->token    = $company->focusnfe_token    ?? '';
         $this->baseUrl  = $this->ambiente === 'producao'
@@ -107,11 +110,15 @@ class FocusNfeService
             ? self::CNPJ_HOMOLOGACAO
             : preg_replace('/\D/', '', $company->cnpj ?? '');
 
-        // Série: homologação usa 2 por convenção, produção usa 1
+        // Série: homologação usa 2 por convenção, produção usa 1 (configurável)
         $serie = $isHomologacao ? '2' : ($company->nfe_serie ?? '1');
 
-        // Número: usa o ID da venda como base ou um contador guardado na company
-        $numero = $sale->nfe_numero ?? $sale->id;
+        // ── Número sequencial controlado por empresa/série/ambiente ──
+        $numero = NfeNumeration::proximoNumero(
+            (int) $company->id,
+            $serie,
+            $this->ambiente
+        );
 
         // ── Destinatário ──
         $nomeDestinatario = $isHomologacao
