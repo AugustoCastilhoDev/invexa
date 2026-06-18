@@ -85,7 +85,7 @@
     @foreach($quote->items as $item)
         <tr>
             <td>{{ $item->description }}</td>
-            <td class="r">{{ number_format($item->quantity, 2, ',', '.') }}</td>
+            <td class="r">{{ $item->quantity == intval($item->quantity) ? intval($item->quantity) : number_format($item->quantity, 2, ',', '.') }}</td>
             <td class="r">R$ {{ number_format($item->unit_price, 2, ',', '.') }}</td>
             <td class="r">R$ {{ number_format($item->total, 2, ',', '.') }}</td>
         </tr>
