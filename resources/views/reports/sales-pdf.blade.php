@@ -9,10 +9,12 @@
   table { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
   thead th { background: #1a1a2e; color: #fff; text-align: left; padding: 8px 10px; font-size: 10px; text-transform: uppercase; }
   tbody tr:nth-child(even) { background: #f8f8f8; }
-  tbody td { padding: 7px 10px; border-bottom: 1px solid #eee; }
+  tbody td { padding: 7px 10px; border-bottom: 1px solid #eee; vertical-align: top; }
   .text-end { text-align: right; }
   .badge-ok { background:#dcfce7; color:#166534; padding:2px 7px; border-radius:4px; font-size:10px; }
   .badge-cancel { background:#fee2e2; color:#991b1b; padding:2px 7px; border-radius:4px; font-size:10px; }
+  .items-list { margin-top: 4px; }
+  .items-list span { display: inline-block; background: #f1f5f9; color: #334155; font-size: 9px; padding: 1px 6px; border-radius: 3px; margin: 1px 2px 1px 0; white-space: nowrap; }
   @media print { body { padding: 0; } .no-print { display: none; } }
 </style>
 </head>
@@ -32,13 +34,32 @@
 
 <table>
   <thead>
-    <tr><th>#</th><th>Cliente</th><th>Data</th><th>Status</th><th class="text-end">Total</th></tr>
+    <tr>
+      <th>#</th>
+      <th>Cliente</th>
+      <th>Produtos</th>
+      <th>Data</th>
+      <th>Status</th>
+      <th class="text-end">Total</th>
+    </tr>
   </thead>
   <tbody>
     @foreach($sales as $s)
     <tr>
       <td>{{ $s->id }}</td>
       <td>{{ optional($s->customer)->name ?? 'Consumidor Final' }}</td>
+      <td>
+        <div class="items-list">
+          @forelse($s->items as $item)
+            <span>
+              {{ $item->quantity == intval($item->quantity) ? intval($item->quantity) : number_format($item->quantity, 2, ',', '.') }}x
+              {{ Str::limit($item->product?->name ?? $item->description ?? 'Produto', 30) }}
+            </span>
+          @empty
+            <span style="color:#9ca3af;">—</span>
+          @endforelse
+        </div>
+      </td>
       <td>{{ $s->created_at->format('d/m/Y') }}</td>
       <td><span class="{{ $s->status === 'cancelada' ? 'badge-cancel' : 'badge-ok' }}">{{ ucfirst($s->status) }}</span></td>
       <td class="text-end">R$ {{ number_format($s->total,2,',','.') }}</td>
