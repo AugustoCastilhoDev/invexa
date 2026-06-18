@@ -8,7 +8,7 @@
         <div class="d-flex justify-content-between align-items-center gap-3 flex-wrap">
             <div>
                 <h4 class="mb-1 text-white"><i class="bi bi-file-earmark-text me-2"></i>{{ $quote->number }}</h4>
-                <p class="text-soft mb-0">Criado em {{ $quote->created_at->format('d/m/Y \à\s H:i') }}</p>
+                <p class="text-soft mb-0">Criado em {{ $quote->created_at->format('d/m/Y \\\u00e0\\s H:i') }}</p>
             </div>
             <div class="d-flex gap-2 flex-wrap">
                 <a href="{{ route('quotes.index') }}" class="btn btn-outline-light btn-sm">
@@ -22,7 +22,18 @@
                         <i class="bi bi-whatsapp me-1"></i> Enviar WhatsApp
                     </a>
                 @endif
-                @if(!in_array($quote->status, ['converted','rejected']))
+                @if(!in_array($quote->status, ['converted', 'rejected', 'expired']))
+                    <form action="{{ route('quotes.status', $quote) }}" method="POST" class="d-inline">
+                        @csrf
+                        @method('PATCH')
+                        <input type="hidden" name="status" value="rejected">
+                        <button type="submit" class="btn btn-outline-danger btn-sm"
+                            onclick="return confirm('Marcar este orçamento como recusado?')">
+                            <i class="bi bi-x-circle me-1"></i> Recusado
+                        </button>
+                    </form>
+                @endif
+                @if(!in_array($quote->status, ['converted', 'rejected']))
                     <form action="{{ route('quotes.convert', $quote) }}" method="POST" class="d-inline">
                         @csrf
                         <button type="submit" class="btn btn-primary btn-sm"
