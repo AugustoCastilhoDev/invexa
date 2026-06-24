@@ -165,6 +165,7 @@ Route::middleware('auth')->group(function () {
         Route::resource('bills', BillController::class);
         Route::post('/bills/{bill}/pay',         [BillController::class, 'pay'])->name('bills.pay');
         Route::post('/bills/bulk-pay',           [BillController::class, 'bulkPay'])->name('bills.bulk-pay');
+        Route::get('/bills/{bill}/pdf',          [BillController::class, 'pdf'])->name('bills.pdf');
         Route::post('/receivables/bulk-receive', [ReceivableController::class, 'bulkReceive'])->name('receivables.bulk-receive');
         Route::resource('receivables', ReceivableController::class);
         Route::post('/receivables/{receivable}/receive', [ReceivableController::class, 'receive'])->name('receivables.receive');
