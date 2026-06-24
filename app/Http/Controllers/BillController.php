@@ -15,7 +15,9 @@ class BillController extends Controller
     public function index(Request $request)
     {
         $companyId = auth()->user()->company_id;
-        $query = Bill::where('company_id', $companyId);
+
+        $query = Bill::where('company_id', $companyId)
+            ->where(fn($q) => $q->whereNull('installment_number')->orWhere('installment_number', '!=', 0));
 
         if ($request->filled('search')) {
             $query->where('description', 'like', '%' . $request->search . '%');
@@ -33,7 +35,8 @@ class BillController extends Controller
             $query->whereDate('due_date', '<=', $request->to);
         }
 
-        $base = Bill::where('company_id', $companyId);
+        $base = Bill::where('company_id', $companyId)
+            ->where(fn($q) => $q->whereNull('installment_number')->orWhere('installment_number', '!=', 0));
 
         $totalPending  = (clone $base)->where('status', 'pendente')->sum('amount');
         $totalPaid     = (clone $base)->where('status', 'paga')->sum('amount_paid');
@@ -121,7 +124,7 @@ class BillController extends Controller
 
             AuditLogger::action('bill.created_installments', $parent);
             return redirect()->route('bills.index')
-                ->with('success', "Conta parcelada criada: {$n} parcelas de R\$ " . number_format($installValue, 2, ',', '.') . '.');
+                ->with('success', "Conta parcelada criada: {$n} parcelas de R\$\u00a0" . number_format($installValue, 2, ',', '.') . '.');
         }
 
         // --- Recorrente ---
@@ -144,7 +147,7 @@ class BillController extends Controller
             for ($i = 1; $i <= $n; $i++) {
                 Bill::create([
                     'company_id'         => $companyId,
-                    'description'        => $data['description'] . ' – ' . $baseDate->copy()->addMonthsNoOverflow($i - 1)->format('m/Y'),
+                    'description'        => $data['description'] . ' \u2013 ' . $baseDate->copy()->addMonthsNoOverflow($i - 1)->format('m/Y'),
                     'category'           => $data['category'],
                     'amount'             => $data['amount'],
                     'due_date'           => $baseDate->copy()->addMonthsNoOverflow($i - 1),
@@ -158,12 +161,12 @@ class BillController extends Controller
 
             AuditLogger::action('bill.created_recurrent', $parent);
             return redirect()->route('bills.index')
-                ->with('success', "Despesa recorrente criada: {$n} meses de R\$ " . number_format($data['amount'], 2, ',', '.') . '.');
+                ->with('success', "Despesa recorrente criada: {$n} meses de R\$\u00a0" . number_format($data['amount'], 2, ',', '.') . '.');
         }
 
         // --- Pagamento único ---
         $bill = Bill::create([
-            'company_id' => $companyId,
+            'company_id'  => $companyId,
             'description' => $data['description'],
             'category'    => $data['category'],
             'amount'      => $data['amount'],
