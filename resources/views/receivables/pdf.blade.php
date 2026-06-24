@@ -77,7 +77,7 @@
             @if($company->logo_path)
                 <img src="{{ public_path('storage/' . $company->logo_path) }}" style="height:40px;" alt="Logo">
             @else
-                <h1>{{ strtoupper(substr($company->name, 0, 6)) }}</h1>
+                <h1>INVEXA</h1>
             @endif
             <div class="sub">{{ $company->name }}</div>
         </div>
