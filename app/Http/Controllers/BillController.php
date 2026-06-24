@@ -6,6 +6,7 @@ use App\Services\AuditLogger;
 use App\Models\Bill;
 use App\Services\WebhookDispatcher;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -70,17 +71,106 @@ class BillController extends Controller
         $companyId = auth()->user()->company_id;
 
         $data = $request->validate([
-            'description' => 'required|string|max:255',
-            'category'    => 'required|string|in:' . implode(',', array_keys(Bill::CATEGORY_LABELS)),
-            'amount'      => 'required|numeric|min:0.01',
-            'due_date'    => 'required|date',
-            'notes'       => 'nullable|string',
+            'description'  => 'required|string|max:255',
+            'category'     => 'required|string|in:' . implode(',', array_keys(Bill::CATEGORY_LABELS)),
+            'amount'       => 'required|numeric|min:0.01',
+            'due_date'     => 'required|date',
+            'notes'        => 'nullable|string',
+            'billing_type' => 'nullable|in:single,installments,recurrent',
+            'installments' => 'nullable|integer|min:2|max:60',
+            'recurrence'   => 'nullable|integer|min:2|max:60',
         ]);
 
-        $bill = Bill::create(array_merge($data, [
+        $billingType = $data['billing_type'] ?? 'single';
+        $baseDate    = Carbon::parse($data['due_date']);
+
+        // --- Parcelado ---
+        if ($billingType === 'installments') {
+            $request->validate(['installments' => 'required|integer|min:2|max:60']);
+            $n            = (int) $data['installments'];
+            $installValue = round($data['amount'] / $n, 2);
+            $diff         = round($data['amount'] - ($installValue * $n), 2);
+
+            $parent = Bill::create([
+                'company_id'         => $companyId,
+                'description'        => $data['description'],
+                'category'           => $data['category'],
+                'amount'             => $data['amount'],
+                'due_date'           => $baseDate,
+                'notes'              => $data['notes'] ?? null,
+                'status'             => 'pendente',
+                'installments'       => $n,
+                'installment_number' => 0,
+            ]);
+
+            for ($i = 1; $i <= $n; $i++) {
+                $parcVal = $installValue + ($i === $n ? $diff : 0);
+                Bill::create([
+                    'company_id'         => $companyId,
+                    'description'        => $data['description'] . ' (' . $i . '/' . $n . ')',
+                    'category'           => $data['category'],
+                    'amount'             => $parcVal,
+                    'due_date'           => $baseDate->copy()->addMonthsNoOverflow($i - 1),
+                    'notes'              => $data['notes'] ?? null,
+                    'status'             => 'pendente',
+                    'installments'       => $n,
+                    'installment_number' => $i,
+                    'parent_bill_id'     => $parent->id,
+                ]);
+            }
+
+            AuditLogger::action('bill.created_installments', $parent);
+            return redirect()->route('bills.index')
+                ->with('success', "Conta parcelada criada: {$n} parcelas de R\$ " . number_format($installValue, 2, ',', '.') . '.');
+        }
+
+        // --- Recorrente ---
+        if ($billingType === 'recurrent') {
+            $request->validate(['recurrence' => 'required|integer|min:2|max:60']);
+            $n = (int) $data['recurrence'];
+
+            $parent = Bill::create([
+                'company_id'         => $companyId,
+                'description'        => $data['description'],
+                'category'           => $data['category'],
+                'amount'             => $data['amount'],
+                'due_date'           => $baseDate,
+                'notes'              => $data['notes'] ?? null,
+                'status'             => 'pendente',
+                'recurrence'         => $n,
+                'installment_number' => 0,
+            ]);
+
+            for ($i = 1; $i <= $n; $i++) {
+                Bill::create([
+                    'company_id'         => $companyId,
+                    'description'        => $data['description'] . ' – ' . $baseDate->copy()->addMonthsNoOverflow($i - 1)->format('m/Y'),
+                    'category'           => $data['category'],
+                    'amount'             => $data['amount'],
+                    'due_date'           => $baseDate->copy()->addMonthsNoOverflow($i - 1),
+                    'notes'              => $data['notes'] ?? null,
+                    'status'             => 'pendente',
+                    'recurrence'         => $n,
+                    'installment_number' => $i,
+                    'parent_bill_id'     => $parent->id,
+                ]);
+            }
+
+            AuditLogger::action('bill.created_recurrent', $parent);
+            return redirect()->route('bills.index')
+                ->with('success', "Despesa recorrente criada: {$n} meses de R\$ " . number_format($data['amount'], 2, ',', '.') . '.');
+        }
+
+        // --- Pagamento único ---
+        $bill = Bill::create([
             'company_id' => $companyId,
-            'status'     => 'pendente',
-        ]));
+            'description' => $data['description'],
+            'category'    => $data['category'],
+            'amount'      => $data['amount'],
+            'due_date'    => $data['due_date'],
+            'notes'       => $data['notes'] ?? null,
+            'status'      => 'pendente',
+        ]);
 
         AuditLogger::action('bill.created', $bill);
         return redirect()->route('bills.index')->with('success', 'Conta a pagar criada com sucesso.');
