@@ -204,6 +204,48 @@
             transition: opacity .2s ease;
         }
         .support-fab:hover .fab-tooltip { opacity: 1; }
+
+        /* ── Paginação — tema escuro ── */
+        .pagination {
+            --bs-pagination-color: rgba(148,163,184,.75);
+            --bs-pagination-bg: rgba(13,25,41,.7);
+            --bs-pagination-border-color: rgba(14,165,233,.15);
+            --bs-pagination-hover-color: #38BDF8;
+            --bs-pagination-hover-bg: rgba(14,165,233,.12);
+            --bs-pagination-hover-border-color: rgba(14,165,233,.35);
+            --bs-pagination-focus-color: #38BDF8;
+            --bs-pagination-focus-bg: rgba(14,165,233,.12);
+            --bs-pagination-focus-box-shadow: 0 0 0 .2rem rgba(14,165,233,.2);
+            --bs-pagination-active-color: #080D1A;
+            --bs-pagination-active-bg: #0EA5E9;
+            --bs-pagination-active-border-color: #0EA5E9;
+            --bs-pagination-disabled-color: rgba(148,163,184,.3);
+            --bs-pagination-disabled-bg: rgba(13,25,41,.4);
+            --bs-pagination-disabled-border-color: rgba(14,165,233,.08);
+            gap: .15rem;
+        }
+        .page-link {
+            border-radius: .4rem !important;
+            font-size: .78rem;
+            font-weight: 600;
+            padding: .3rem .65rem;
+            transition: background .15s ease, color .15s ease, border-color .15s ease;
+        }
+        .page-item.active .page-link {
+            background: linear-gradient(135deg, #0EA5E9, #38BDF8) !important;
+            border-color: #0EA5E9 !important;
+            color: #080D1A !important;
+            box-shadow: 0 2px 8px rgba(14,165,233,.35);
+        }
+        .page-item:not(.active):not(.disabled) .page-link:hover {
+            background: rgba(14,165,233,.12) !important;
+            border-color: rgba(14,165,233,.35) !important;
+            color: #38BDF8 !important;
+        }
+        .page-item.disabled .page-link {
+            opacity: .4;
+            cursor: not-allowed;
+        }
     </style>
     @stack('styles')
 </head>
