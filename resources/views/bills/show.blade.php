@@ -9,6 +9,15 @@
         <p class="text-soft mb-0">Conta a Pagar &mdash; {{ $bill->category_label }}</p>
     </div>
     <div class="d-flex flex-wrap gap-2">
+        {{-- Botão PDF --}}
+        <a href="{{ route('bills.pdf', $bill) }}"
+           target="_blank"
+           class="btn btn-sm"
+           style="background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.4);color:#fca5a5;"
+           title="Gerar PDF da despesa">
+            <i class="bi bi-file-earmark-pdf me-1"></i>PDF / Imprimir
+        </a>
+
         @if($bill->status === 'pendente')
             <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#markAsPaidModal">
                 <i class="bi bi-check-circle me-1"></i>Marcar como Paga

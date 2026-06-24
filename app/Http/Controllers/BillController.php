@@ -3,9 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Services\AuditLogger;
-
 use App\Models\Bill;
 use App\Services\WebhookDispatcher;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -32,7 +32,6 @@ class BillController extends Controller
             $query->whereDate('due_date', '<=', $request->to);
         }
 
-        // KPI base query (sem filtros de busca para refletir totais reais da empresa)
         $base = Bill::where('company_id', $companyId);
 
         $totalPending  = (clone $base)->where('status', 'pendente')->sum('amount');
@@ -42,7 +41,6 @@ class BillController extends Controller
 
         $bills = $query->orderBy('due_date')->paginate(15);
 
-        // Listas para os selects de filtro
         $statuses   = Bill::STATUS_LABELS ?? [
             'pendente'  => 'Pendente',
             'paga'      => 'Paga',
@@ -118,6 +116,21 @@ class BillController extends Controller
         return redirect()->route('bills.index')->with('success', 'Conta atualizada com sucesso.');
     }
 
+    public function pdf(Bill $bill)
+    {
+        $this->authorizeBill($bill);
+
+        $bill->load('supplier');
+        $company = auth()->user()->company;
+
+        $pdf = Pdf::loadView('bills.pdf', compact('bill', 'company'))
+            ->setPaper('a4', 'portrait');
+
+        $filename = 'despesa-' . str_pad($bill->id, 6, '0', STR_PAD_LEFT) . '.pdf';
+
+        return $pdf->download($filename);
+    }
+
     public function pay(Request $request, Bill $bill)
     {
         $this->authorizeBill($bill);
@@ -134,7 +147,6 @@ class BillController extends Controller
             'status'      => 'paga',
         ]);
 
-        // Webhook bill.paid
         WebhookDispatcher::dispatch($company, 'bill.paid', [
             'id'          => $bill->id,
             'description' => $bill->description,
