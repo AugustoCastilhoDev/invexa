@@ -11,6 +11,15 @@
                 <p class="text-soft mb-0">{{ $receivable->description }}</p>
             </div>
             <div class="d-flex gap-2 flex-wrap">
+                {{-- Botão PDF --}}
+                <a href="{{ route('receivables.pdf', $receivable) }}"
+                   target="_blank"
+                   class="btn btn-sm"
+                   style="background:rgba(14,165,233,.15);border:1px solid rgba(14,165,233,.4);color:#38bdf8;"
+                   title="Gerar PDF de cobrança">
+                    <i class="bi bi-file-earmark-pdf me-1"></i>PDF / Imprimir
+                </a>
+
                 @if(!in_array($receivable->status, ['recebida', 'cancelada']))
                     <a href="{{ route('receivables.edit', $receivable) }}" class="btn btn-outline-primary btn-sm">
                         <i class="bi bi-pencil me-1"></i>Editar
@@ -140,6 +149,16 @@
                                     #{{ $receivable->sale_id }}
                                 </a>
                             </dd>
+                            @endif
+
+                            @if($receivable->installment_number && $receivable->installments)
+                            <dt class="col-5 text-soft">Parcela</dt>
+                            <dd class="col-7 text-white">{{ $receivable->installment_number }}/{{ $receivable->installments }}</dd>
+                            @endif
+
+                            @if($receivable->recurrence && $receivable->installment_number)
+                            <dt class="col-5 text-soft">Recorrência</dt>
+                            <dd class="col-7 text-white">{{ $receivable->installment_number }}/{{ $receivable->recurrence }}</dd>
                             @endif
 
                             @if($receivable->notes)

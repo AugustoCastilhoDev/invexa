@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Services\AuditLogger;
 use App\Models\Receivable;
 use App\Services\WebhookDispatcher;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
@@ -14,7 +15,6 @@ class ReceivableController extends Controller
     {
         $companyId = auth()->user()->company_id;
 
-        // Exclui registros pai (agrupadores de parcelamento/recorrência)
         $query = Receivable::with('customer')
             ->where('company_id', $companyId)
             ->where(fn($q) => $q->whereNull('installment_number')->orWhere('installment_number', '!=', 0));
@@ -31,7 +31,6 @@ class ReceivableController extends Controller
         if ($request->filled('from'))     { $query->whereDate('due_date', '>=', $request->from); }
         if ($request->filled('to'))       { $query->whereDate('due_date', '<=', $request->to); }
 
-        // KPIs também excluem os pais
         $base = Receivable::where('company_id', $companyId)
             ->where(fn($q) => $q->whereNull('installment_number')->orWhere('installment_number', '!=', 0));
 
@@ -161,7 +160,6 @@ class ReceivableController extends Controller
                 ->with('success', "Cobrança recorrente criada: {$n} meses de R$ " . number_format($data['amount'], 2, ',', '.') . '.');
         }
 
-        // Cobrança única
         $receivable = Receivable::create(array_merge($data, [
             'company_id' => $companyId,
             'status'     => 'pendente',
@@ -206,6 +204,26 @@ class ReceivableController extends Controller
 
         AuditLogger::action('receivable.updated', $receivable);
         return redirect()->route('receivables.index')->with('success', 'Recebível atualizado com sucesso.');
+    }
+
+    public function pdf(Receivable $receivable)
+    {
+        $this->authorizeReceivable($receivable);
+
+        $receivable->load('customer');
+        $company = auth()->user()->company;
+        $installments = collect();
+
+        if ($receivable->installment_number === 0) {
+            $installments = $receivable->installmentReceivables()->orderBy('installment_number')->get();
+        }
+
+        $pdf = Pdf::loadView('receivables.pdf', compact('receivable', 'company', 'installments'))
+            ->setPaper('a4', 'portrait');
+
+        $filename = 'cobranca-' . str_pad($receivable->id, 6, '0', STR_PAD_LEFT) . '.pdf';
+
+        return $pdf->download($filename);
     }
 
     public function cancel(Receivable $receivable)

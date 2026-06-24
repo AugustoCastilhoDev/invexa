@@ -169,6 +169,7 @@ Route::middleware('auth')->group(function () {
         Route::resource('receivables', ReceivableController::class);
         Route::post('/receivables/{receivable}/receive', [ReceivableController::class, 'receive'])->name('receivables.receive');
         Route::patch('/receivables/{receivable}/cancel', [ReceivableController::class, 'cancel'])->name('receivables.cancel');
+        Route::get('/receivables/{receivable}/pdf',      [ReceivableController::class, 'pdf'])->name('receivables.pdf');
 
         // Reports
         Route::prefix('reports')->name('reports.')->group(function () {
