@@ -112,7 +112,7 @@
                 </div>
                 <div class="col-12 col-sm-6">
                     <label class="form-label text-soft" style="font-size:.8rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;">
-                        Vencimento <span class="text-danger">*</span>
+                        Vencimento (1ª parcela) <span class="text-danger">*</span>
                     </label>
                     <input type="date" name="due_date"
                            class="form-control @error('due_date') is-invalid @enderror"
@@ -123,6 +123,76 @@
                     @enderror
                 </div>
             </div>
+
+            {{-- Tipo de cobrança --}}
+            @if(!isset($receivable))
+            <div class="mb-3">
+                <label class="form-label text-soft" style="font-size:.8rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;">
+                    Tipo de Cobrança
+                </label>
+                <div class="d-flex gap-3 flex-wrap mt-1">
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="billing_type" id="type_single" value="single"
+                               {{ old('billing_type', 'single') === 'single' ? 'checked' : '' }}>
+                        <label class="form-check-label text-soft" for="type_single">Cobrança única</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="billing_type" id="type_installments" value="installments"
+                               {{ old('billing_type') === 'installments' ? 'checked' : '' }}>
+                        <label class="form-check-label text-soft" for="type_installments">Parcelado</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="billing_type" id="type_recurrent" value="recurrent"
+                               {{ old('billing_type') === 'recurrent' ? 'checked' : '' }}>
+                        <label class="form-check-label text-soft" for="type_recurrent">Recorrente</label>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Painel: Parcelado --}}
+            <div id="panel_installments" class="mb-3" style="display:none;">
+                <div class="card" style="background:rgba(14,165,233,.07);border:1px solid rgba(14,165,233,.25);border-radius:8px;padding:16px;">
+                    <label class="form-label text-soft mb-2" style="font-size:.8rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;">
+                        <i class="bi bi-grid-3x3-gap me-1 text-info"></i> Número de Parcelas
+                    </label>
+                    <select name="installments" class="form-select @error('installments') is-invalid @enderror" style="max-width:220px;">
+                        <option value="">— Selecione —</option>
+                        @foreach([2,3,4,5,6,7,8,9,10,11,12,18,24,36,48,60] as $n)
+                            <option value="{{ $n }}" {{ old('installments') == $n ? 'selected' : '' }}>{{ $n }}x</option>
+                        @endforeach
+                    </select>
+                    <small class="text-soft mt-2 d-block">
+                        <i class="bi bi-info-circle me-1"></i>
+                        O valor informado será dividido igualmente. Os vencimentos são gerados mensalmente a partir da data da 1ª parcela.
+                    </small>
+                    @error('installments')
+                        <div class="text-danger mt-1" style="font-size:.8rem;">{{ $message }}</div>
+                    @enderror
+                </div>
+            </div>
+
+            {{-- Painel: Recorrente --}}
+            <div id="panel_recurrent" class="mb-3" style="display:none;">
+                <div class="card" style="background:rgba(168,85,247,.07);border:1px solid rgba(168,85,247,.25);border-radius:8px;padding:16px;">
+                    <label class="form-label text-soft mb-2" style="font-size:.8rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;">
+                        <i class="bi bi-arrow-repeat me-1 text-purple" style="color:#a855f7;"></i> Quantidade de Recorrências (meses)
+                    </label>
+                    <select name="recurrence" class="form-select @error('recurrence') is-invalid @enderror" style="max-width:220px;">
+                        <option value="">— Selecione —</option>
+                        @foreach([2,3,4,5,6,7,8,9,10,11,12,18,24,36,48,60] as $n)
+                            <option value="{{ $n }}" {{ old('recurrence') == $n ? 'selected' : '' }}>{{ $n }} meses</option>
+                        @endforeach
+                    </select>
+                    <small class="text-soft mt-2 d-block">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Gera cobranças mensais com o mesmo valor. Cada mês é uma conta independente.
+                    </small>
+                    @error('recurrence')
+                        <div class="text-danger mt-1" style="font-size:.8rem;">{{ $message }}</div>
+                    @enderror
+                </div>
+            </div>
+            @endif
 
             {{-- Observações --}}
             <div class="mb-4">
@@ -149,4 +219,21 @@
         </form>
     </div>
 </div>
+
+@push('scripts')
+<script>
+    const radios = document.querySelectorAll('input[name="billing_type"]');
+    const panelInstallments = document.getElementById('panel_installments');
+    const panelRecurrent    = document.getElementById('panel_recurrent');
+
+    function togglePanels() {
+        const val = document.querySelector('input[name="billing_type"]:checked')?.value;
+        panelInstallments.style.display = val === 'installments' ? 'block' : 'none';
+        panelRecurrent.style.display    = val === 'recurrent'    ? 'block' : 'none';
+    }
+
+    radios.forEach(r => r.addEventListener('change', togglePanels));
+    togglePanels();
+</script>
+@endpush
 @endsection

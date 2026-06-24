@@ -3,9 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Services\AuditLogger;
-
 use App\Models\Receivable;
 use App\Services\WebhookDispatcher;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class ReceivableController extends Controller
@@ -27,7 +27,6 @@ class ReceivableController extends Controller
         if ($request->filled('from'))     { $query->whereDate('due_date', '>=', $request->from); }
         if ($request->filled('to'))       { $query->whereDate('due_date', '<=', $request->to); }
 
-        // KPIs (base completa da empresa, sem filtros de busca)
         $base = Receivable::where('company_id', $companyId);
 
         $totalPending  = (clone $base)->where('status', 'pendente')->sum('amount');
@@ -37,7 +36,6 @@ class ReceivableController extends Controller
 
         $receivables = $query->orderBy('due_date')->paginate(15);
 
-        // Listas para filtros
         $statuses   = Receivable::STATUS_LABELS;
         $categories = Receivable::CATEGORY_LABELS;
 
@@ -64,14 +62,104 @@ class ReceivableController extends Controller
         $companyId = auth()->user()->company_id;
 
         $data = $request->validate([
-            'customer_id' => 'nullable|exists:customers,id',
-            'description' => 'required|string|max:255',
-            'category'    => 'nullable|string|max:100',
-            'amount'      => 'required|numeric|min:0.01',
-            'due_date'    => 'required|date',
-            'notes'       => 'nullable|string',
+            'customer_id'  => 'nullable|exists:customers,id',
+            'description'  => 'required|string|max:255',
+            'category'     => 'nullable|string|max:100',
+            'amount'       => 'required|numeric|min:0.01',
+            'due_date'     => 'required|date',
+            'notes'        => 'nullable|string',
+            'billing_type' => 'nullable|in:single,installments,recurrent',
+            'installments' => 'nullable|integer|min:2|max:60',
+            'recurrence'   => 'nullable|integer|min:2|max:60',
         ]);
 
+        $billingType = $data['billing_type'] ?? 'single';
+        $baseDate    = Carbon::parse($data['due_date']);
+
+        if ($billingType === 'installments') {
+            $request->validate(['installments' => 'required|integer|min:2|max:60']);
+            $n            = (int) $data['installments'];
+            $installValue = round($data['amount'] / $n, 2);
+            $diff         = round($data['amount'] - ($installValue * $n), 2);
+
+            // Registro pai (agrupador)
+            $parent = Receivable::create([
+                'company_id'   => $companyId,
+                'customer_id'  => $data['customer_id'] ?? null,
+                'description'  => $data['description'],
+                'category'     => $data['category'] ?? null,
+                'amount'       => $data['amount'],
+                'due_date'     => $baseDate,
+                'notes'        => $data['notes'] ?? null,
+                'status'       => 'pendente',
+                'installments' => $n,
+                'installment_number' => 0,
+            ]);
+
+            // Gera as parcelas
+            for ($i = 1; $i <= $n; $i++) {
+                $parcVal = $installValue + ($i === $n ? $diff : 0);
+                Receivable::create([
+                    'company_id'         => $companyId,
+                    'customer_id'        => $data['customer_id'] ?? null,
+                    'description'        => $data['description'] . ' (' . $i . '/' . $n . ')',
+                    'category'           => $data['category'] ?? null,
+                    'amount'             => $parcVal,
+                    'due_date'           => $baseDate->copy()->addMonthsNoOverflow($i - 1),
+                    'notes'              => $data['notes'] ?? null,
+                    'status'             => 'pendente',
+                    'installments'       => $n,
+                    'installment_number' => $i,
+                    'parent_receivable_id' => $parent->id,
+                ]);
+            }
+
+            AuditLogger::action('receivable.created_installments', $parent);
+            return redirect()->route('receivables.index')
+                ->with('success', "Conta parcelada criada: {$n} parcelas de R$ " . number_format($installValue, 2, ',', '.') . '.');
+        }
+
+        if ($billingType === 'recurrent') {
+            $request->validate(['recurrence' => 'required|integer|min:2|max:60']);
+            $n = (int) $data['recurrence'];
+
+            // Registro pai (agrupador)
+            $parent = Receivable::create([
+                'company_id'  => $companyId,
+                'customer_id' => $data['customer_id'] ?? null,
+                'description' => $data['description'],
+                'category'    => $data['category'] ?? null,
+                'amount'      => $data['amount'],
+                'due_date'    => $baseDate,
+                'notes'       => $data['notes'] ?? null,
+                'status'      => 'pendente',
+                'recurrence'  => $n,
+                'installment_number' => 0,
+            ]);
+
+            // Gera as recorrências
+            for ($i = 1; $i <= $n; $i++) {
+                Receivable::create([
+                    'company_id'         => $companyId,
+                    'customer_id'        => $data['customer_id'] ?? null,
+                    'description'        => $data['description'] . ' – ' . $baseDate->copy()->addMonthsNoOverflow($i - 1)->format('m/Y'),
+                    'category'           => $data['category'] ?? null,
+                    'amount'             => $data['amount'],
+                    'due_date'           => $baseDate->copy()->addMonthsNoOverflow($i - 1),
+                    'notes'              => $data['notes'] ?? null,
+                    'status'             => 'pendente',
+                    'recurrence'         => $n,
+                    'installment_number' => $i,
+                    'parent_receivable_id' => $parent->id,
+                ]);
+            }
+
+            AuditLogger::action('receivable.created_recurrent', $parent);
+            return redirect()->route('receivables.index')
+                ->with('success', "Cobrança recorrente criada: {$n} meses de R$ " . number_format($data['amount'], 2, ',', '.') . '.');
+        }
+
+        // Cobrança única
         $receivable = Receivable::create(array_merge($data, [
             'company_id' => $companyId,
             'status'     => 'pendente',
@@ -84,7 +172,11 @@ class ReceivableController extends Controller
     public function show(Receivable $receivable)
     {
         $this->authorizeReceivable($receivable);
-        return view('receivables.show', compact('receivable'));
+        $installments = collect();
+        if ($receivable->installment_number === 0) {
+            $installments = $receivable->installmentReceivables()->orderBy('installment_number')->get();
+        }
+        return view('receivables.show', compact('receivable', 'installments'));
     }
 
     public function edit(Receivable $receivable)
