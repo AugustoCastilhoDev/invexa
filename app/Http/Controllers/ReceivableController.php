@@ -13,7 +13,11 @@ class ReceivableController extends Controller
     public function index(Request $request)
     {
         $companyId = auth()->user()->company_id;
-        $query = Receivable::with('customer')->where('company_id', $companyId);
+
+        // Exclui registros pai (agrupadores de parcelamento/recorrência)
+        $query = Receivable::with('customer')
+            ->where('company_id', $companyId)
+            ->where(fn($q) => $q->whereNull('installment_number')->orWhere('installment_number', '!=', 0));
 
         if ($request->filled('search')) {
             $search = '%' . $request->search . '%';
@@ -27,7 +31,9 @@ class ReceivableController extends Controller
         if ($request->filled('from'))     { $query->whereDate('due_date', '>=', $request->from); }
         if ($request->filled('to'))       { $query->whereDate('due_date', '<=', $request->to); }
 
-        $base = Receivable::where('company_id', $companyId);
+        // KPIs também excluem os pais
+        $base = Receivable::where('company_id', $companyId)
+            ->where(fn($q) => $q->whereNull('installment_number')->orWhere('installment_number', '!=', 0));
 
         $totalPending  = (clone $base)->where('status', 'pendente')->sum('amount');
         $totalReceived = (clone $base)->where('status', 'recebida')->sum('amount_received');
@@ -82,34 +88,32 @@ class ReceivableController extends Controller
             $installValue = round($data['amount'] / $n, 2);
             $diff         = round($data['amount'] - ($installValue * $n), 2);
 
-            // Registro pai (agrupador)
             $parent = Receivable::create([
-                'company_id'   => $companyId,
-                'customer_id'  => $data['customer_id'] ?? null,
-                'description'  => $data['description'],
-                'category'     => $data['category'] ?? null,
-                'amount'       => $data['amount'],
-                'due_date'     => $baseDate,
-                'notes'        => $data['notes'] ?? null,
-                'status'       => 'pendente',
-                'installments' => $n,
+                'company_id'         => $companyId,
+                'customer_id'        => $data['customer_id'] ?? null,
+                'description'        => $data['description'],
+                'category'           => $data['category'] ?? null,
+                'amount'             => $data['amount'],
+                'due_date'           => $baseDate,
+                'notes'              => $data['notes'] ?? null,
+                'status'             => 'pendente',
+                'installments'       => $n,
                 'installment_number' => 0,
             ]);
 
-            // Gera as parcelas
             for ($i = 1; $i <= $n; $i++) {
                 $parcVal = $installValue + ($i === $n ? $diff : 0);
                 Receivable::create([
-                    'company_id'         => $companyId,
-                    'customer_id'        => $data['customer_id'] ?? null,
-                    'description'        => $data['description'] . ' (' . $i . '/' . $n . ')',
-                    'category'           => $data['category'] ?? null,
-                    'amount'             => $parcVal,
-                    'due_date'           => $baseDate->copy()->addMonthsNoOverflow($i - 1),
-                    'notes'              => $data['notes'] ?? null,
-                    'status'             => 'pendente',
-                    'installments'       => $n,
-                    'installment_number' => $i,
+                    'company_id'           => $companyId,
+                    'customer_id'          => $data['customer_id'] ?? null,
+                    'description'          => $data['description'] . ' (' . $i . '/' . $n . ')',
+                    'category'             => $data['category'] ?? null,
+                    'amount'               => $parcVal,
+                    'due_date'             => $baseDate->copy()->addMonthsNoOverflow($i - 1),
+                    'notes'                => $data['notes'] ?? null,
+                    'status'               => 'pendente',
+                    'installments'         => $n,
+                    'installment_number'   => $i,
                     'parent_receivable_id' => $parent->id,
                 ]);
             }
@@ -123,33 +127,31 @@ class ReceivableController extends Controller
             $request->validate(['recurrence' => 'required|integer|min:2|max:60']);
             $n = (int) $data['recurrence'];
 
-            // Registro pai (agrupador)
             $parent = Receivable::create([
-                'company_id'  => $companyId,
-                'customer_id' => $data['customer_id'] ?? null,
-                'description' => $data['description'],
-                'category'    => $data['category'] ?? null,
-                'amount'      => $data['amount'],
-                'due_date'    => $baseDate,
-                'notes'       => $data['notes'] ?? null,
-                'status'      => 'pendente',
-                'recurrence'  => $n,
+                'company_id'         => $companyId,
+                'customer_id'        => $data['customer_id'] ?? null,
+                'description'        => $data['description'],
+                'category'           => $data['category'] ?? null,
+                'amount'             => $data['amount'],
+                'due_date'           => $baseDate,
+                'notes'              => $data['notes'] ?? null,
+                'status'             => 'pendente',
+                'recurrence'         => $n,
                 'installment_number' => 0,
             ]);
 
-            // Gera as recorrências
             for ($i = 1; $i <= $n; $i++) {
                 Receivable::create([
-                    'company_id'         => $companyId,
-                    'customer_id'        => $data['customer_id'] ?? null,
-                    'description'        => $data['description'] . ' – ' . $baseDate->copy()->addMonthsNoOverflow($i - 1)->format('m/Y'),
-                    'category'           => $data['category'] ?? null,
-                    'amount'             => $data['amount'],
-                    'due_date'           => $baseDate->copy()->addMonthsNoOverflow($i - 1),
-                    'notes'              => $data['notes'] ?? null,
-                    'status'             => 'pendente',
-                    'recurrence'         => $n,
-                    'installment_number' => $i,
+                    'company_id'           => $companyId,
+                    'customer_id'          => $data['customer_id'] ?? null,
+                    'description'          => $data['description'] . ' – ' . $baseDate->copy()->addMonthsNoOverflow($i - 1)->format('m/Y'),
+                    'category'             => $data['category'] ?? null,
+                    'amount'               => $data['amount'],
+                    'due_date'             => $baseDate->copy()->addMonthsNoOverflow($i - 1),
+                    'notes'                => $data['notes'] ?? null,
+                    'status'               => 'pendente',
+                    'recurrence'           => $n,
+                    'installment_number'   => $i,
                     'parent_receivable_id' => $parent->id,
                 ]);
             }
