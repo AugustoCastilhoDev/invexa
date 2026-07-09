@@ -44,7 +44,7 @@ class FinancialReportTest extends TestCase
         Bill::factory()->create([
             'company_id' => $this->company->id,
             'amount'     => 400.00,
-            'status'     => 'pago',
+            'status'     => 'paga',
             'paid_at'     => now(),
             'due_date'   => now(),
         ]);
