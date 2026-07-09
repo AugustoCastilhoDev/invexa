@@ -507,6 +507,14 @@
                                 <i class="bi bi-receipt me-2"></i>Configuração Fiscal
                             </a>
                         </li>
+                        <li>
+                            <a class="dropdown-item {{ request()->routeIs('two-factor.index') ? 'active' : '' }}" href="{{ route('two-factor.index') }}">
+                                <i class="bi bi-shield-lock me-2"></i>Autenticação em Dois Fatores
+                                @if(Auth::user()->two_factor_confirmed_at)
+                                    <span class="badge ms-1" style="background:rgba(25,135,84,.15); color:#198754; font-size:.6rem;">Ativo</span>
+                                @endif
+                            </a>
+                        </li>
                         <li><hr class="dropdown-divider"></li>
                         <li><span class="dropdown-item-text">INTEGRAÇÕES</span></li>
                         <li>
