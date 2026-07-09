@@ -8,17 +8,20 @@ class TwoFactorController extends Controller
 {
     private int $window = 1;
 
-    // ── Exibe a tela de setup (QR Code)
+    // ── Exibe a tela de setup (QR Code) ou o status, se já ativo
     public function show()
     {
         $user      = auth()->user();
-        $google2fa = app('pragmarx.google2fa');
+        $isEnabled = (bool) $user->two_factor_confirmed_at;
 
-        $secret = $google2fa->generateSecretKey();
-        $user->update([
-            'two_factor_secret'       => encrypt($secret),
-            'two_factor_confirmed_at' => null,
-        ]);
+        if ($isEnabled) {
+            return view('settings.two-factor', compact('isEnabled'));
+        }
+
+        $google2fa = app('pragmarx.google2fa');
+        $secret    = $google2fa->generateSecretKey();
+
+        $user->update(['two_factor_secret' => encrypt($secret)]);
         session(['2fa_setup_secret' => $secret]);
 
         $qrCodeUrl = $google2fa->getQRCodeUrl(
@@ -26,8 +29,6 @@ class TwoFactorController extends Controller
             $user->email,
             $secret
         );
-
-        $isEnabled = (bool) $user->two_factor_confirmed_at;
 
         return view('settings.two-factor', compact('qrCodeUrl', 'secret', 'isEnabled'));
     }
@@ -47,7 +48,7 @@ class TwoFactorController extends Controller
         $secret    = session('2fa_setup_secret');
 
         if (! $secret) {
-            return redirect()->route('settings.two-factor')
+            return redirect()->route('two-factor.index')
                 ->withErrors(['code' => 'Sessão expirada. Escaneie o QR Code novamente.']);
         }
 

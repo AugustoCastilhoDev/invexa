@@ -25,9 +25,8 @@
             <div class="card-body">
                 <h6 class="fw-bold text-danger mb-3">Desativar 2FA</h6>
                 <p class="text-muted small">Para desativar, confirme sua senha atual.</p>
-                <form method="POST" action="{{ route('settings.two-factor.disable') }}">
+                <form method="POST" action="{{ route('two-factor.disable') }}">
                     @csrf
-                    @method('DELETE')
                     <div class="mb-3">
                         <label class="form-label">Senha atual</label>
                         <input type="password" name="password" class="form-control @error('password') is-invalid @enderror" required>
@@ -59,7 +58,7 @@
                 <h6 class="fw-bold mb-3">Passo 2 — Confirme o código</h6>
                 <p class="text-muted small">Digite o código de 6 dígitos exibido no aplicativo:</p>
 
-                <form method="POST" action="{{ route('settings.two-factor.confirm') }}">
+                <form method="POST" action="{{ route('two-factor.enable') }}">
                     @csrf
                     <div class="mb-3">
                         <input

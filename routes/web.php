@@ -244,8 +244,6 @@ Route::middleware('auth')->group(function () {
         // Super Admin
         Route::middleware('superadmin')->prefix('superadmin')->name('admin.')->group(function () {
             Route::get('/',          [SuperAdminController::class, 'index'])->name('index');
-            Route::get('/users',     [SuperAdminController::class, 'users'])->name('users');
-            Route::get('/plans',     [SuperAdminController::class, 'plans'])->name('plans');
 
             Route::post('/companies/{company}/impersonate',  [SuperAdminController::class, 'impersonate'])->name('companies.impersonate');
             Route::patch('/companies/{company}/toggle',      [SuperAdminController::class, 'toggleCompany'])->name('companies.toggle');
