@@ -257,4 +257,4 @@ Route::middleware('auth')->group(function () {
 }); // end middleware('auth')
 
 // Stripe Webhook (sem auth)
-Route::post('/stripe/webhook', [StripeWebhookController::class, 'handle'])->name('stripe.webhook');
+Route::post('/stripe/webhook', [StripeWebhookController::class, 'handleWebhook'])->name('stripe.webhook');
