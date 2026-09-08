@@ -224,6 +224,46 @@ class PurchaseOrderController extends Controller
             ->with('success', 'Ordem de compra recebida e estoque atualizado com sucesso.');
     }
 
+    /**
+     * Reprocessa itens pendentes (quantity_received < quantity) de uma OC já
+     * marcada como "recebida". Usado pelo comando oc:fix-stock para corrigir
+     * ordens que ficaram com o estoque só parcialmente atualizado.
+     */
+    public function processStockReceipt(PurchaseOrder $purchaseOrder, int $companyId): void
+    {
+        DB::transaction(function () use ($purchaseOrder, $companyId) {
+            $purchaseOrder->load('items.product');
+
+            foreach ($purchaseOrder->items as $item) {
+                $pending = $item->quantity - $item->quantity_received;
+                if ($pending <= 0) continue;
+
+                $product = Product::lockForUpdate()->find($item->product_id);
+                if (!$product) continue;
+
+                $before = $product->quantity;
+                $after  = $before + $pending;
+                $product->update(['quantity' => $after]);
+
+                $item->update(['quantity_received' => $item->quantity]);
+
+                StockMovement::create([
+                    'product_id'      => $product->id,
+                    'company_id'      => $companyId,
+                    'user_id'         => $purchaseOrder->user_id,
+                    'type'            => 'entrada',
+                    'quantity'        => $pending,
+                    'quantity_before' => $before,
+                    'quantity_after'  => $after,
+                    'reason'          => 'compra',
+                    'notes'           => "Correção de estoque pendente da Ordem de Compra #{$purchaseOrder->id}",
+                    'source_type'     => PurchaseOrder::class,
+                    'source_id'       => $purchaseOrder->id,
+                ]);
+            }
+        });
+    }
+
     public function destroy(PurchaseOrder $purchaseOrder)
     {
         $this->authorizeOrder($purchaseOrder);
