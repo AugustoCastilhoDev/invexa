@@ -13,6 +13,16 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // O texto criptografado do Laravel (IV + MAC + JSON + base64) sempre
+        // passa de 255 caracteres — essas colunas eram VARCHAR(255), igual
+        // asaas_api_key era antes de virar TEXT. Alarga antes de criptografar.
+        // SQLite (usado nos testes) não tem MODIFY COLUMN e nem aplica limite
+        // de tamanho em VARCHAR, então não precisa de nada lá.
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement('ALTER TABLE companies MODIFY focusnfe_token TEXT NULL');
+            DB::statement('ALTER TABLE companies MODIFY csc_token TEXT NULL');
+        }
+
         $companies = DB::table('companies')
             ->whereNotNull('focusnfe_token')
             ->orWhereNotNull('csc_token')
