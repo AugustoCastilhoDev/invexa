@@ -2,7 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Auth\Events\Lockout;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Validation\ValidationException;
 
 class TwoFactorController extends Controller
 {
@@ -108,6 +111,21 @@ class TwoFactorController extends Controller
         $userId = session('2fa_user_id');
         if (! $userId) return redirect()->route('login');
 
+        $throttleKey = 'two-factor|' . $userId . '|' . $request->ip();
+
+        if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
+            event(new Lockout($request));
+
+            $seconds = RateLimiter::availableIn($throttleKey);
+
+            throw ValidationException::withMessages([
+                'code' => trans('auth.throttle', [
+                    'seconds' => $seconds,
+                    'minutes' => ceil($seconds / 60),
+                ]),
+            ]);
+        }
+
         $user      = \App\Models\User::findOrFail($userId);
         $google2fa = app('pragmarx.google2fa');
 
@@ -121,9 +139,11 @@ class TwoFactorController extends Controller
         $valid = $google2fa->verifyKey($secret, $request->code, $this->window);
 
         if (! $valid) {
+            RateLimiter::hit($throttleKey, 60);
             return back()->withErrors(['code' => 'Código inválido. Verifique o app e tente novamente.']);
         }
 
+        RateLimiter::clear($throttleKey);
         session()->forget('2fa_user_id');
         auth()->login($user);
 
