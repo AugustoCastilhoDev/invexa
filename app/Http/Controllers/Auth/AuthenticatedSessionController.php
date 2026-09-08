@@ -29,7 +29,7 @@ class AuthenticatedSessionController extends Controller
             return redirect()->route('two-factor.verify');
         }
 
-        return redirect()->intended(route('dashboard'));
+        return redirect()->intended(route('home'));
     }
 
     public function destroy(Request $request): RedirectResponse

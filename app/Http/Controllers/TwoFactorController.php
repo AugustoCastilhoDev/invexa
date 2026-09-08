@@ -147,6 +147,6 @@ class TwoFactorController extends Controller
         session()->forget('2fa_user_id');
         auth()->login($user);
 
-        return redirect()->intended(route('dashboard'));
+        return redirect()->intended(route('home'));
     }
 }

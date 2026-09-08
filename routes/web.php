@@ -74,9 +74,6 @@ Route::middleware('auth')->group(function () {
     Route::get('/onboarding', [OnboardingController::class, 'index'])->name('onboarding');
     Route::post('/onboarding', [OnboardingController::class, 'store'])->name('onboarding.store');
 
-    // Home
-    Route::get('/home', [HomeController::class, 'index'])->name('home');
-
     // Upgrade
     Route::get('/upgrade', [UpgradeController::class, 'index'])->name('upgrade');
     Route::post('/upgrade/checkout', [SubscriptionController::class, 'checkout'])->name('subscription.checkout');
@@ -85,6 +82,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/upgrade/checkout-redirect', [SubscriptionController::class, 'checkoutRedirect'])->name('subscription.checkout.redirect');
 
     Route::middleware(['two-factor', 'trial'])->group(function () {
+
+        // Home (página inicial pós-login)
+        Route::get('/home', [HomeController::class, 'index'])->name('home');
 
         // Dashboard
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
