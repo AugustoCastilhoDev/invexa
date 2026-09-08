@@ -5,9 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\DB;
+use App\Traits\BelongsToCompany;
 
 class NfeNumeration extends Model
 {
+    use BelongsToCompany;
+
     protected $fillable = [
         'company_id',
         'ambiente',

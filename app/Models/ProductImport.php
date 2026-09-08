@@ -4,9 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Traits\BelongsToCompany;
 
 class ProductImport extends Model
 {
+    use BelongsToCompany;
+
     protected $fillable = [
         'company_id', 'user_id', 'filename',
         'status', 'total_rows', 'imported_rows', 'failed_rows',

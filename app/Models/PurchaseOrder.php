@@ -7,10 +7,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use App\Traits\BelongsToCompany;
 
 class PurchaseOrder extends Model
 {
-    use SoftDeletes;
+    use SoftDeletes, BelongsToCompany;
 
     const STATUS_LABELS = [
         'pendente'  => 'Pendente',
