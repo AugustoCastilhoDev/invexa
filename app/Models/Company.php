@@ -35,6 +35,8 @@ class Company extends Model
         'trial_ends_at'        => 'datetime',
         'onboarding_completed' => 'boolean',
         'proximo_numero_nfe'   => 'integer',
+        'focusnfe_token'       => 'encrypted',
+        'csc_token'            => 'encrypted',
     ];
 
     // ── Fiscal helpers ────────────────────────────────────────────────────────
