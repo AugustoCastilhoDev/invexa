@@ -6,6 +6,11 @@ use Illuminate\Http\Request;
 
 class FiscalSettingsController extends Controller
 {
+    public function __construct()
+    {
+        abort_unless(config('features.nfe_enabled'), 404);
+    }
+
     public function edit()
     {
         $company = auth()->user()->company;

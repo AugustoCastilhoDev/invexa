@@ -11,6 +11,11 @@ use Illuminate\View\View;
 
 class NFeController extends Controller
 {
+    public function __construct()
+    {
+        abort_unless(config('features.nfe_enabled'), 404);
+    }
+
     // ─────────────────────────────────────────────────────────────────────────
     // Listagem
     // ─────────────────────────────────────────────────────────────────────────

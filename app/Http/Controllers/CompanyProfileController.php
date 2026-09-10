@@ -53,6 +53,8 @@ class CompanyProfileController extends Controller
     }
     public function updateAsaas(Request $request)
     {
+        abort_unless(config('features.pix_enabled'), 404);
+
         $request->validate([
             'asaas_api_key'     => ['nullable', 'string', 'max:255'],
             'asaas_environment' => ['required', 'in:sandbox,production'],

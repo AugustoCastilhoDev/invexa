@@ -54,7 +54,7 @@
              style="background:rgba(14,165,233,.07);border:1px solid rgba(14,165,233,.18);">
             <i class="bi bi-building" style="font-size:1.1rem;color:#38BDF8;flex-shrink:0;"></i>
             <div style="font-size:.84rem;color:rgba(148,163,184,.85);">
-                Para editar os dados da empresa, logo, informações fiscais e integração Pix,
+                Para editar os dados da empresa e logo,
                 acesse
                 <a href="{{ route('settings.company') }}" style="color:#38BDF8;font-weight:600;">
                     Configurações da Empresa <i class="bi bi-arrow-right ms-1" style="font-size:.75rem;"></i>

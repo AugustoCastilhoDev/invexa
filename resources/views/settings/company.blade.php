@@ -103,6 +103,7 @@
         </form>
 
         {{-- ── Integração Pix / Asaas ── --}}
+        @if(config('features.pix_enabled'))
         <div class="card card-dark-bg" style="border-color:rgba(14,165,233,.2);">
             <div class="card-body p-4">
 
@@ -183,6 +184,7 @@
 
             </div>
         </div>
+        @endif
 
     </div>
 </div>

@@ -17,8 +17,8 @@
                     <i class="bi bi-file-earmark-pdf me-1"></i>Baixar NF (PDF)
                 </a>
 
-                {{-- ── Botão Emitir NF-e (só exibe se as rotas já existirem) ── --}}
-                @if($sale->status !== 'cancelada' && Route::has('nfes.emitir'))
+                {{-- ── Botão Emitir NF-e (só exibe se a funcionalidade estiver ativa) ── --}}
+                @if(config('features.nfe_enabled') && $sale->status !== 'cancelada' && Route::has('nfes.emitir'))
                     @php $nfeAtiva = $sale->nfes()->whereIn('status', ['autorizada','pendente','processando'])->latest()->first(); @endphp
 
                     @if($nfeAtiva && Route::has('nfes.show'))
@@ -157,8 +157,8 @@
             </div>
         </div>
 
-        {{-- ── Card NF-e vinculada (só exibe se a relação e rotas existirem) ── --}}
-        @if(Route::has('nfes.show'))
+        {{-- ── Card NF-e vinculada (só exibe se a funcionalidade estiver ativa) ── --}}
+        @if(config('features.nfe_enabled') && Route::has('nfes.show'))
         @php $nfes = $sale->nfes()->latest()->get(); @endphp
         @if($nfes->isNotEmpty())
         <div class="card card-dark-bg mb-4" style="border:1px solid rgba(99,179,237,.25);">
@@ -232,7 +232,7 @@
 
 
         {{-- ── Seção Pix ─────────────────────────────────────────────────── --}}
-        @if($sale->pix_charge_id && $sale->status === 'pendente')
+        @if(config('features.pix_enabled') && $sale->pix_charge_id && $sale->status === 'pendente')
         <div class="card card-dark-bg mb-4" style="border:1px solid rgba(14,165,233,.25);">
             <div class="card-body p-4">
                 <div class="d-flex align-items-center gap-2 mb-3">

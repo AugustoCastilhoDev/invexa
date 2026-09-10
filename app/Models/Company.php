@@ -61,7 +61,7 @@ class Company extends Model
 
     public function hasAsaasConfigured(): bool
     {
-        return ! empty($this->asaas_api_key);
+        return config('features.pix_enabled') && ! empty($this->asaas_api_key);
     }
 
     // ── Slug único ────────────────────────────────────────────────────────────

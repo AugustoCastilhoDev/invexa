@@ -212,8 +212,8 @@ class SaleController extends Controller
             return back()->withInput()->with('error', $e->getMessage());
         }
 
-        // Gera cobrança Pix se empresa configurou Asaas e venda é pendente com cliente
-        if ($sale->status === 'pendente' && $sale->customer_id && $company->asaas_api_key) {
+        // Gera cobrança Pix se a funcionalidade está ativa, empresa configurou Asaas e venda é pendente com cliente
+        if ($sale->status === 'pendente' && $sale->customer_id && $company->hasAsaasConfigured()) {
             try {
                 $pixService = new \App\Services\PixPaymentService($company);
                 $pix = $pixService->generateCharge($sale);
@@ -468,10 +468,10 @@ class SaleController extends Controller
         ]);
     }
 
-        // Regenera Pix ao mudar para pendente se empresa tem Asaas
+        // Regenera Pix ao mudar para pendente se a funcionalidade está ativa e empresa tem Asaas
         if ($request->status === 'pendente' && $sale->customer_id) {
             $company = auth()->user()->company;
-            if ($company->asaas_api_key) {
+            if ($company->hasAsaasConfigured()) {
                 try {
                     $pixService = new \App\Services\PixPaymentService($company);
                     $pix = $pixService->generateCharge($sale);

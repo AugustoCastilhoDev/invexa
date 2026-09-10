@@ -625,11 +625,13 @@
                                 <i class="bi bi-building-gear me-2"></i>Dados da Empresa
                             </a>
                         </li>
+                        @if(config('features.nfe_enabled'))
                         <li>
                             <a class="dropdown-item {{ request()->routeIs('settings.fiscal*') ? 'active' : '' }}" href="{{ route('settings.fiscal') }}">
                                 <i class="bi bi-receipt me-2"></i>Configuração Fiscal
                             </a>
                         </li>
+                        @endif
                         <li>
                             <a class="dropdown-item {{ request()->routeIs('two-factor.index') ? 'active' : '' }}" href="{{ route('two-factor.index') }}">
                                 <i class="bi bi-shield-lock me-2"></i>Autenticação em Dois Fatores

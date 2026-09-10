@@ -78,10 +78,13 @@ class RoleAuthorizationTest extends TestCase
 
     public function test_admin_can_access_everything()
     {
+        // settings.fiscal fica de fora: está atrás da feature flag nfe_enabled
+        // (desligada por padrão), coberta em FeatureTogglesTest.
+
         $admin = $this->makeUser('admin');
 
         foreach (['users.index', 'suppliers.index', 'bills.index', 'reports.index',
-                  'settings.company', 'settings.fiscal', 'settings.api', 'webhooks.index', 'upgrade'] as $route) {
+                  'settings.company', 'settings.api', 'webhooks.index', 'upgrade'] as $route) {
             $this->actingAs($admin)->get(route($route))->assertOk();
         }
     }
