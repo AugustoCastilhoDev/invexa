@@ -71,15 +71,18 @@ Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 
     // Onboarding
-    Route::get('/onboarding', [OnboardingController::class, 'index'])->name('onboarding');
+    Route::get('/onboarding', [OnboardingController::class, 'show'])->name('onboarding.show');
     Route::post('/onboarding', [OnboardingController::class, 'store'])->name('onboarding.store');
+    Route::post('/onboarding/skip', [OnboardingController::class, 'skip'])->name('onboarding.skip');
 
-    // Upgrade
-    Route::get('/upgrade', [UpgradeController::class, 'index'])->name('upgrade');
-    Route::post('/upgrade/checkout', [SubscriptionController::class, 'checkout'])->name('subscription.checkout');
-    Route::get('/upgrade/success', [SubscriptionController::class, 'success'])->name('subscription.success');
-    Route::post('/upgrade/cancel', [SubscriptionController::class, 'cancel'])->name('subscription.cancel');
-    Route::get('/upgrade/checkout-redirect', [SubscriptionController::class, 'checkoutRedirect'])->name('subscription.checkout.redirect');
+    // Upgrade / Assinatura — somente admin da empresa gerencia plano e cobrança
+    Route::middleware('role:admin,superadmin')->group(function () {
+        Route::get('/upgrade', [UpgradeController::class, 'index'])->name('upgrade');
+        Route::post('/upgrade/checkout', [SubscriptionController::class, 'checkout'])->name('subscription.checkout');
+        Route::get('/upgrade/success', [SubscriptionController::class, 'success'])->name('subscription.success');
+        Route::post('/upgrade/cancel', [SubscriptionController::class, 'cancel'])->name('subscription.cancel');
+        Route::get('/upgrade/checkout-redirect', [SubscriptionController::class, 'checkoutRedirect'])->name('subscription.checkout.redirect');
+    });
 
     Route::middleware(['two-factor', 'trial'])->group(function () {
 
@@ -99,15 +102,16 @@ Route::middleware('auth')->group(function () {
         Route::post('/two-factor/enable', [TwoFactorController::class, 'confirm'])->name('two-factor.enable');
         Route::post('/two-factor/disable', [TwoFactorController::class, 'disable'])->name('two-factor.disable');
 
-        // Company Settings
-        Route::get('/settings/company',         [CompanyProfileController::class, 'edit'])->name('settings.company');
-        Route::patch('/settings/company',       [CompanyProfileController::class, 'update'])->name('settings.company.update');
-        Route::post('/settings/asaas',          [CompanyProfileController::class, 'updateAsaas'])->name('settings.asaas.update');
-        Route::delete('/settings/company/logo', [CompanyProfileController::class, 'destroyLogo'])->name('settings.company.logo.destroy');
+        // Company Settings / Fiscal Settings — somente admin
+        Route::middleware('role:admin,superadmin')->group(function () {
+            Route::get('/settings/company',         [CompanyProfileController::class, 'edit'])->name('settings.company');
+            Route::patch('/settings/company',       [CompanyProfileController::class, 'update'])->name('settings.company.update');
+            Route::post('/settings/asaas',          [CompanyProfileController::class, 'updateAsaas'])->name('settings.asaas.update');
+            Route::delete('/settings/company/logo', [CompanyProfileController::class, 'destroyLogo'])->name('settings.company.logo.destroy');
 
-        // Fiscal Settings
-        Route::get('/settings/fiscal',   [FiscalSettingsController::class, 'edit'])->name('settings.fiscal');
-        Route::patch('/settings/fiscal', [FiscalSettingsController::class, 'update'])->name('settings.fiscal.update');
+            Route::get('/settings/fiscal',   [FiscalSettingsController::class, 'edit'])->name('settings.fiscal');
+            Route::patch('/settings/fiscal', [FiscalSettingsController::class, 'update'])->name('settings.fiscal.update');
+        });
 
         // NF-e
         Route::get('/nfes',                        [NFeController::class, 'index'])->name('nfes.index');
@@ -141,6 +145,9 @@ Route::middleware('auth')->group(function () {
         // Returns
         Route::resource('returns', SaleReturnController::class);
         Route::get('returns/{sale}/items', [SaleReturnController::class, 'items'])->name('returns.items');
+
+        // Módulos de gestão (Estoque/Compras/Financeiro/Relatórios) — gerente ou admin
+        Route::middleware('role:admin,superadmin,gerente')->group(function () {
 
         // Suppliers
         Route::resource('suppliers', SupplierController::class);
@@ -213,6 +220,8 @@ Route::middleware('auth')->group(function () {
             Route::get('/bills/csv', [ReportController::class, 'billsCsv'])->name('bills.csv');
         });
 
+        }); // end middleware('role:admin,superadmin,gerente')
+
         // Notifications
         Route::get('/notifications',                              [NotificationController::class, 'index'])->name('notifications.index');
         Route::get('/notifications/unread',                       [NotificationController::class, 'unread'])->name('notifications.unread');
@@ -220,23 +229,26 @@ Route::middleware('auth')->group(function () {
         Route::post('/notifications/{notification}/read',         [NotificationController::class, 'markRead'])->name('notifications.mark-read');
         Route::delete('/notifications/{notification}',            [NotificationController::class, 'destroy'])->name('notifications.destroy');
 
-        // Company Profile
-        Route::get('/company-profile', [CompanyProfileController::class, 'edit'])->name('company-profile.edit');
-        Route::put('/company-profile', [CompanyProfileController::class, 'update'])->name('company-profile.update');
+        // Company Profile / API Tokens / Webhooks / Users — somente admin
+        Route::middleware('role:admin,superadmin')->group(function () {
+            // Company Profile
+            Route::get('/company-profile', [CompanyProfileController::class, 'edit'])->name('company-profile.edit');
+            Route::put('/company-profile', [CompanyProfileController::class, 'update'])->name('company-profile.update');
 
-        // API Tokens
-        Route::get('/settings/api',                   [ApiTokenController::class, 'index'])->name('settings.api');
-        Route::post('/settings/api/tokens',           [ApiTokenController::class, 'store'])->name('settings.api.tokens.store');
-        Route::delete('/settings/api/tokens/{token}', [ApiTokenController::class, 'destroy'])->name('settings.api.tokens.destroy');
+            // API Tokens
+            Route::get('/settings/api',                   [ApiTokenController::class, 'index'])->name('settings.api');
+            Route::post('/settings/api/tokens',           [ApiTokenController::class, 'store'])->name('settings.api.tokens.store');
+            Route::delete('/settings/api/tokens/{token}', [ApiTokenController::class, 'destroy'])->name('settings.api.tokens.destroy');
 
-        // Webhooks
-        Route::resource('webhooks', WebhookEndpointController::class);
+            // Webhooks
+            Route::resource('webhooks', WebhookEndpointController::class);
 
-        // Users
-        Route::resource('users', UserController::class);
-        Route::post('/users/{user}/resend-invite',  [UserInviteController::class, 'resend'])->name('users.resend-invite');
-        Route::post('/users/{user}/invite',         [UserInviteController::class, 'send'])->name('users.invite.send');
-        Route::patch('/users/{user}/toggle-active', [UserController::class, 'toggleActive'])->name('users.toggle-active');
+            // Users
+            Route::resource('users', UserController::class);
+            Route::post('/users/{user}/resend-invite',  [UserInviteController::class, 'resend'])->name('users.resend-invite');
+            Route::post('/users/{user}/invite',         [UserInviteController::class, 'send'])->name('users.invite.send');
+            Route::patch('/users/{user}/toggle-active', [UserController::class, 'toggleActive'])->name('users.toggle-active');
+        });
 
         // Sair do modo suporte
         Route::post('/superadmin/leave-impersonate', [SuperAdminController::class, 'leaveImpersonate'])->name('admin.leave-impersonate');

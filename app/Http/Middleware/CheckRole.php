@@ -27,7 +27,7 @@ class CheckRole
                 ->withErrors(['email' => 'Sua conta foi desativada. Entre em contato com o administrador.']);
         }
 
-        if (! $user->hasRole($roles)) {
+        if (! $user->hasLegacyRole($roles)) {
             abort(403, 'Você não tem permissão para acessar esta página.');
         }
 
