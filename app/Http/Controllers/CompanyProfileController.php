@@ -25,7 +25,7 @@ class CompanyProfileController extends Controller
             'phone'   => 'nullable|string|max:20',
             'cnpj'    => 'nullable|string|max:18',
             'address' => 'nullable|string|max:255',
-            'logo'    => 'nullable|image|mimes:jpg,jpeg,png,webp,svg|max:2048',
+            'logo'    => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
 
         if ($request->hasFile('logo')) {

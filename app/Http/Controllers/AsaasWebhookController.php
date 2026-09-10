@@ -23,10 +23,12 @@ class AsaasWebhookController extends Controller
             return response()->json(['error' => 'Company not found'], 404);
         }
 
-        // Valida token do webhook configurado no .env
+        // Valida token do webhook configurado no .env.
+        // Falha fechado: sem token configurado no servidor, nenhuma requisição é aceita
+        // (evita que qualquer um marque vendas como pagas quando ASAAS_WEBHOOK_TOKEN não existe).
         $expectedToken = config('services.asaas.webhook_token');
-        if ($expectedToken && $request->header('asaas-access-token') !== $expectedToken) {
-            Log::warning("Asaas webhook: token inválido para [{$companySlug}]");
+        if (! $expectedToken || $request->header('asaas-access-token') !== $expectedToken) {
+            Log::warning("Asaas webhook: token inválido ou não configurado para [{$companySlug}]");
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 

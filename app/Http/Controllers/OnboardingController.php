@@ -88,7 +88,7 @@ class OnboardingController extends Controller
                     'company_id'   => $company->id,
                     'category_id'  => $category->id,
                     'name'         => $request->product_name,
-                    'sale_price'   => $request->product_price,
+                    'price'        => $request->product_price,
                     'quantity'     => $request->product_qty,
                     'min_quantity' => 0,
                     'active'       => true,
