@@ -6,7 +6,7 @@
 
     {{-- SEO --}}
     <title>Invexa — Sistema de Gestão para Pequenas Empresas</title>
-    <meta name="description" content="Controle vendas, estoque, contas a pagar e receber em um só lugar. Experimente grátis por 30 dias, sem cartão de crédito.">
+    <meta name="description" content="Controle vendas, estoque, contas a pagar e receber em um só lugar. Experimente grátis por 14 dias, sem cartão de crédito.">
     <meta name="keywords" content="sistema de gestão, ERP, controle de estoque, vendas, contas a pagar, pequenas empresas, SaaS">
     <meta name="robots" content="index, follow">
     <link rel="canonical" href="{{ url('/') }}">
@@ -15,7 +15,7 @@
     <meta property="og:type" content="website">
     <meta property="og:url" content="{{ url('/') }}">
     <meta property="og:title" content="Invexa — Sistema de Gestão para Pequenas Empresas">
-    <meta property="og:description" content="Controle vendas, estoque, contas a pagar e receber em um só lugar. 30 dias grátis.">
+    <meta property="og:description" content="Controle vendas, estoque, contas a pagar e receber em um só lugar. 14 dias grátis.">
     <meta property="og:image" content="{{ asset('images/og-image.png') }}">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
@@ -249,7 +249,7 @@
 {{-- HERO --}}
 <section class="hero text-center">
     <div class="container">
-        <div class="hero-badge"><i class="bi bi-stars"></i>30 dias grátis · Sem cartão de crédito</div>
+        <div class="hero-badge"><i class="bi bi-stars"></i>14 dias grátis · Sem cartão de crédito</div>
         <h1>Gerencie seu negócio<br><span>com simplicidade e controle</span></h1>
         <p class="lead mx-auto">Invexa é o sistema de gestão completo para pequenas e médias empresas: vendas, estoque, financeiro e relatórios — tudo em um só lugar.</p>
         <div class="d-flex justify-content-center gap-3 flex-wrap">
@@ -257,7 +257,7 @@
             <a href="#how" class="btn-hero-secondary">Ver como funciona</a>
         </div>
         <div class="hero-metrics">
-            <div class="metric-item"><div class="value">30 dias</div><div class="label">Trial gratuito</div></div>
+            <div class="metric-item"><div class="value">14 dias</div><div class="label">Trial gratuito</div></div>
             <div class="metric-item"><div class="value">3 min</div><div class="label">Para começar</div></div>
             <div class="metric-item"><div class="value">100%</div><div class="label">Web — sem instalação</div></div>
             <div class="metric-item"><div class="value">Multi</div><div class="label">Usuários por empresa</div></div>
@@ -584,7 +584,7 @@
                 <p>Crie sua conta grátis agora — sem cartão, sem burocracia. Em 3 minutos você já tem tudo funcionando.</p>
             </div>
             <a href="{{ route('register') }}" class="btn-hero-primary flex-shrink-0" style="white-space:nowrap;">
-                <i class="bi bi-rocket-takeoff me-2"></i>Começar grátis por 30 dias
+                <i class="bi bi-rocket-takeoff me-2"></i>Começar grátis por 14 dias
             </a>
         </div>
 
@@ -644,7 +644,7 @@
         <div class="text-center mb-4">
             <span class="section-label">Planos &amp; Preços</span>
             <h2 class="section-title">Simples, transparente e justo</h2>
-            <p class="section-sub mb-0">Plano Free para sempre, ou comece o trial de 30 dias dos planos pagos. Sem cartão de crédito.</p>
+            <p class="section-sub mb-0">14 dias de trial completo em qualquer plano — sem cartão de crédito. Depois, é só escolher o plano ideal para continuar.</p>
         </div>
 
         <div class="billing-toggle">
@@ -656,43 +656,11 @@
             <span class="toggle-label" id="label-annual">Anual <span class="annual-badge ms-1">-20%</span></span>
         </div>
 
-        {{-- PLANOS — 3 cards: Free · Pro · Business --}}
+        {{-- PLANOS — 2 cards: Pro · Business (trial de 14 dias, sem plano free permanente) --}}
         <div class="row g-4 justify-content-center align-items-stretch">
 
-            {{-- FREE --}}
-            <div class="col-md-4">
-                <div class="plan-card h-100 d-flex flex-column">
-                    <div class="plan-name" style="color:#94a3b8;">Free</div>
-
-                    <div class="price-monthly">
-                        <div class="plan-price" style="color:#94a3b8;">R$ 0 <span>/mês</span></div>
-                        <div class="plan-price-billed">para sempre gratuito</div>
-                    </div>
-                    <div class="price-annual" style="display:none;">
-                        <div class="plan-price" style="color:#94a3b8;">R$ 0 <span>/mês</span></div>
-                        <div class="plan-price-billed">para sempre gratuito</div>
-                    </div>
-
-                    <p class="plan-desc mt-2">Para quem está começando e quer testar sem compromisso.</p>
-                    <ul class="list-unstyled plan-features">
-                        <li><i class="bi bi-check-circle-fill"></i> Até 50 produtos</li>
-                        <li><i class="bi bi-check-circle-fill"></i> Até 100 clientes</li>
-                        <li><i class="bi bi-check-circle-fill"></i> 2 usuários</li>
-                        <li><i class="bi bi-check-circle-fill"></i> PDV, estoque e financeiro</li>
-                        <li class="disabled"><i class="bi bi-dash-circle-fill"></i> Relatórios PDF/CSV</li>
-                        <li class="disabled"><i class="bi bi-dash-circle-fill"></i> Ordens de compra</li>
-                        <li class="disabled"><i class="bi bi-dash-circle-fill"></i> Suporte por e-mail</li>
-                    </ul>
-                    <a href="{{ route('register') }}"
-                       class="btn w-100 mt-auto"
-                       style="margin-top:1.5rem; border:1px solid rgba(148,163,184,.3); color:#94a3b8; font-weight:600; background:transparent;">
-                        Criar conta gratuita
-                    </a>
-                </div>
-            </div>
-
             {{-- PRO --}}
-            <div class="col-md-4">
+            <div class="col-md-6 col-lg-5">
                 <div class="plan-card featured h-100 d-flex flex-column">
                     <span class="plan-badge">Mais popular</span>
                     <div class="plan-name">Pro</div>
@@ -728,7 +696,7 @@
             </div>
 
             {{-- BUSINESS --}}
-            <div class="col-md-4">
+            <div class="col-md-6 col-lg-5">
                 <div class="plan-card h-100 d-flex flex-column">
                     <div class="plan-name">Business</div>
 
@@ -767,9 +735,9 @@
             <div class="trial-notice" style="background:rgba(56,189,248,.07);border-color:rgba(56,189,248,.3);">
                 <i class="bi bi-info-circle-fill" style="color:#38BDF8;"></i>
                 <span style="color:#BAE6FD;">
-                    <strong style="color:#7DD3FC;">Trial Pro por 30 dias:</strong> você experimenta todos os recursos sem restrição.
-                    Ao final, sua conta passa automaticamente para o <strong style="color:#7DD3FC;">plano Free</strong> — sem bloqueio, sem perda de dados.
-                    Quando quiser mais, é só fazer upgrade.
+                    <strong style="color:#7DD3FC;">Trial gratuito por 14 dias:</strong> você experimenta todos os recursos sem restrição, sem precisar de cartão de crédito.
+                    Ao final, é necessário assinar um plano (Pro ou Business) para continuar usando o sistema — seus dados ficam guardados com segurança,
+                    sem perda de informações.
                 </span>
             </div>
         </div>
@@ -793,7 +761,7 @@
                             <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">Preciso de cartão de crédito para testar?</button>
                         </h2>
                         <div id="faq1" class="accordion-collapse collapse show" data-bs-parent="#faqAccordion">
-                            <div class="accordion-body">Não. O trial de 30 dias é totalmente gratuito e não exige dados de pagamento. Você só escolhe um plano quando decidir continuar.</div>
+                            <div class="accordion-body">Não. O trial de 14 dias é totalmente gratuito e não exige dados de pagamento. Ao final do período, você escolhe um plano para continuar usando o sistema.</div>
                         </div>
                     </div>
                     <div class="accordion-item">
@@ -833,7 +801,7 @@
                             <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq6">O que acontece quando o trial termina?</button>
                         </h2>
                         <div id="faq6" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-                            <div class="accordion-body">Após os 30 dias de trial Pro, sua conta passa automaticamente para o plano Free — sem bloqueio e sem perda de dados. No plano Free você continua com acesso ao PDV, estoque e financeiro, com limite de 50 produtos, 100 clientes e 2 usuários. Para voltar a ter recursos ilimitados, basta assinar o plano Pro ou Business quando quiser.</div>
+                            <div class="accordion-body">Após os 14 dias de trial, é necessário assinar um dos planos pagos (Pro ou Business) para continuar usando o Invexa. Seus dados ficam guardados com segurança — nada é apagado — mas o acesso ao sistema fica pausado até a assinatura ser feita. Você pode assinar a qualquer momento na tela de upgrade.</div>
                         </div>
                     </div>
                 </div>
@@ -849,7 +817,7 @@
     <div class="container">
         <div class="hero-badge mx-auto mb-3" style="width:fit-content;"><i class="bi bi-rocket-takeoff"></i> Comece agora — é grátis</div>
         <h2>Pronto para ter controle<br>total do seu negócio?</h2>
-        <p class="mt-2 mb-4">30 dias de acesso completo. Sem cartão, sem compromisso.</p>
+        <p class="mt-2 mb-4">14 dias de acesso completo. Sem cartão, sem compromisso.</p>
         <a href="{{ route('register') }}" class="btn-hero-primary">Criar minha conta grátis</a>
     </div>
 </section>
