@@ -75,9 +75,13 @@ Route::middleware('auth')->group(function () {
     Route::post('/onboarding', [OnboardingController::class, 'store'])->name('onboarding.store');
     Route::post('/onboarding/skip', [OnboardingController::class, 'skip'])->name('onboarding.skip');
 
-    // Upgrade / Assinatura — somente admin da empresa gerencia plano e cobrança
+    // Upgrade / Assinatura
+    // A tela de planos fica visível a qualquer papel (é para onde o usuário é
+    // redirecionado quando o trial acaba/empresa está bloqueada — um vendedor
+    // ou gerente precisa conseguir ver que precisa pedir upgrade ao admin).
+    // As ações que mexem em cobrança de verdade continuam só para admin.
+    Route::get('/upgrade', [UpgradeController::class, 'index'])->name('upgrade');
     Route::middleware('role:admin,superadmin')->group(function () {
-        Route::get('/upgrade', [UpgradeController::class, 'index'])->name('upgrade');
         Route::post('/upgrade/checkout', [SubscriptionController::class, 'checkout'])->name('subscription.checkout');
         Route::get('/upgrade/success', [SubscriptionController::class, 'success'])->name('subscription.success');
         Route::post('/upgrade/cancel', [SubscriptionController::class, 'cancel'])->name('subscription.cancel');

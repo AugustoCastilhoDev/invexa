@@ -56,11 +56,16 @@ class RoleAuthorizationTest extends TestCase
         $vendedor = $this->makeUser('vendedor');
 
         foreach (['settings.company', 'settings.fiscal', 'settings.api', 'webhooks.index',
-                  'upgrade', 'company-profile.edit'] as $route) {
+                  'company-profile.edit'] as $route) {
             $this->actingAs($vendedor)->get(route($route))->assertForbidden();
         }
 
         $this->actingAs($vendedor)->post(route('subscription.cancel'))->assertForbidden();
+
+        // /upgrade fica visível a qualquer papel: é a tela pra onde o sistema
+        // manda quem está numa empresa bloqueada (trial vencido sem assinatura),
+        // e um vendedor precisa conseguir ver isso mesmo sem poder agir.
+        $this->actingAs($vendedor)->get(route('upgrade'))->assertOk();
     }
 
     public function test_gerente_can_access_gerente_areas_but_not_admin_only()
@@ -73,7 +78,8 @@ class RoleAuthorizationTest extends TestCase
 
         $this->actingAs($gerente)->get(route('users.index'))->assertForbidden();
         $this->actingAs($gerente)->get(route('settings.company'))->assertForbidden();
-        $this->actingAs($gerente)->get(route('upgrade'))->assertForbidden();
+        $this->actingAs($gerente)->post(route('subscription.cancel'))->assertForbidden();
+        $this->actingAs($gerente)->get(route('upgrade'))->assertOk();
     }
 
     public function test_admin_can_access_everything()

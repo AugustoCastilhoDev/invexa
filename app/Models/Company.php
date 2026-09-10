@@ -113,7 +113,7 @@ class Company extends Model
         if (in_array($this->plan, ['pro', 'business'])) return true;
         if ($this->isOnTrial()) return true;
         if ($this->hasActiveSubscription()) return true;
-        return true;
+        return false;
     }
 
     public function syncPlanFromSubscription(): void
