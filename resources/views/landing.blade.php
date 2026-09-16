@@ -27,18 +27,34 @@
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <style>
         :root {
-            --abyss:    #080D1A;
-            --navy:     #0D1929;
-            --sky:      #0EA5E9;
-            --electric: #38BDF8;
-            --ice:      #F0F9FF;
-            --glow:     rgba(14,165,233,.35);
+            /* Base — herdado da identidade do produto (mesmo azul do app), reorganizado para dar hierarquia real */
+            --abyss:      #0A0F1A;
+            --navy:       #0D1929;
+            --panel:      #121B2C;
+            --line:       rgba(148,163,184,.14);
+            --sky:        #0EA5E9;
+            --sky-deep:   #0369A1;
+            --electric:   #38BDF8;
+            --ice:        #F8FAFC;
+            --glow:       rgba(14,165,233,.35);
+            /* Acento reservado para decisão de compra (planos/preço) — não usado no resto da página */
+            --amber:      #F5A524;
+            --amber-deep: #C2760A;
+            --amber-soft: rgba(245,165,36,.12);
+            /* Texto — 3 níveis fixos em vez de dezenas de opacidades diferentes */
+            --text-1:     #F8FAFC;
+            --text-2:     #C3CDDB;
+            --text-3:     #8492A6;
         }
         * { scroll-behavior: smooth; }
-        body { background: var(--abyss); color: #e2e8f0; font-family: system-ui, -apple-system, sans-serif; }
+        body { background: var(--abyss); color: var(--text-2); font-family: 'Public Sans', system-ui, -apple-system, sans-serif; }
+        h1, h2, h3, .section-title, .plan-price, .metric-item .value, .plan-name, .cta-final h2 { font-family: 'Sora', 'Public Sans', system-ui, sans-serif; }
 
         /* NAV */
         .lp-nav { background: rgba(8,13,26,.92); border-bottom: 1px solid rgba(14,165,233,.1); backdrop-filter: blur(14px); padding: .6rem 0; }
@@ -47,26 +63,36 @@
         .lp-nav .nav-link:hover { color: var(--ice) !important; }
 
         /* HERO */
-        .hero { padding: 100px 0 80px; background: radial-gradient(ellipse 80% 60% at 50% -10%, rgba(14,165,233,.18), transparent), radial-gradient(circle at 80% 80%, rgba(56,189,248,.07), transparent 40%); }
-        .hero-badge { display: inline-flex; align-items: center; gap: .4rem; background: rgba(14,165,233,.12); border: 1px solid rgba(14,165,233,.25); border-radius: 999px; padding: .25rem .9rem; font-size: .78rem; font-weight: 600; color: var(--electric); margin-bottom: 1.5rem; }
-        .hero h1 { font-size: clamp(2rem, 5vw, 3.2rem); font-weight: 800; line-height: 1.15; color: #f1f5f9; }
-        .hero h1 span { background: linear-gradient(90deg, var(--sky), var(--electric)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .hero p.lead { font-size: 1.1rem; color: rgba(226,232,240,.7); max-width: 540px; margin: 1.25rem auto 2rem; }
-        .btn-hero-primary { background: linear-gradient(135deg, var(--sky), #0284c7); border: none; color: #fff; font-weight: 700; padding: .8rem 2rem; border-radius: .6rem; font-size: 1rem; box-shadow: 0 4px 20px rgba(14,165,233,.35); transition: transform .2s, box-shadow .2s; text-decoration: none; display: inline-block; }
+        .hero { padding: 96px 0 100px; background: radial-gradient(ellipse 70% 55% at 15% 0%, rgba(14,165,233,.16), transparent), radial-gradient(circle at 90% 90%, rgba(56,189,248,.06), transparent 45%); overflow: hidden; }
+        .hero-badge { display: inline-flex; align-items: center; gap: .4rem; background: rgba(14,165,233,.12); border: 1px solid rgba(14,165,233,.25); border-radius: 999px; padding: .3rem .95rem; font-size: .8rem; font-weight: 600; color: var(--electric); margin-bottom: 1.75rem; }
+        .hero h1 { font-size: clamp(2.3rem, 4.4vw, 3.75rem); font-weight: 800; line-height: 1.06; letter-spacing: -.01em; color: var(--text-1); }
+        .hero h1 em { font-style: normal; color: var(--sky); }
+        .hero p.lead { font-size: 1.15rem; line-height: 1.6; color: var(--text-2); max-width: 480px; margin: 1.5rem 0 2.25rem; }
+        .btn-hero-primary { background: linear-gradient(135deg, var(--sky), var(--sky-deep)); border: none; color: #fff; font-weight: 700; padding: .85rem 2.1rem; border-radius: .6rem; font-size: 1rem; box-shadow: 0 4px 20px rgba(14,165,233,.35); transition: transform .2s, box-shadow .2s; text-decoration: none; display: inline-block; }
         .btn-hero-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(14,165,233,.45); color: #fff; }
-        .btn-hero-secondary { background: transparent; border: 1px solid rgba(14,165,233,.3); color: rgba(226,232,240,.8); padding: .8rem 1.8rem; border-radius: .6rem; font-size: 1rem; transition: border-color .2s, color .2s; text-decoration: none; display: inline-block; }
+        .btn-hero-secondary { background: transparent; border: 1px solid rgba(148,163,184,.3); color: var(--text-2); padding: .85rem 1.9rem; border-radius: .6rem; font-size: 1rem; transition: border-color .2s, color .2s; text-decoration: none; display: inline-block; }
         .btn-hero-secondary:hover { border-color: var(--sky); color: var(--ice); }
-        .hero-metrics { display: flex; justify-content: center; gap: 2.5rem; margin-top: 3.5rem; flex-wrap: wrap; }
-        .metric-item { text-align: center; }
-        .metric-item .value { font-size: 1.8rem; font-weight: 800; background: linear-gradient(90deg, var(--sky), var(--electric)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .metric-item .label { font-size: .78rem; color: rgba(148,163,184,.7); }
+        .hero-metrics { display: flex; gap: 2.5rem; margin-top: 3rem; flex-wrap: wrap; }
+        .metric-item { text-align: left; }
+        .metric-item .value { font-size: 1.6rem; font-weight: 700; color: var(--text-1); }
+        .metric-item .label { font-size: .8rem; color: var(--text-3); }
+        .hero-visual { position: relative; }
+        .hero-visual .frame { border-radius: 16px; overflow: hidden; border: 1px solid rgba(14,165,233,.22); box-shadow: 0 20px 60px rgba(0,0,0,.45), 0 0 0 1px rgba(255,255,255,.02); }
+        .hero-visual .frame img { display: block; width: 100%; }
+        .hero-visual .float-card { position: absolute; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: .85rem 1.1rem; box-shadow: 0 12px 30px rgba(0,0,0,.4); display: flex; align-items: center; gap: .7rem; }
+        .hero-visual .float-card.card-top { top: -22px; right: -18px; }
+        .hero-visual .float-card.card-bottom { bottom: -22px; left: -18px; }
+        .hero-visual .float-card .ic { width: 34px; height: 34px; border-radius: 9px; background: rgba(14,165,233,.15); color: var(--sky); display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; }
+        .hero-visual .float-card strong { display: block; font-size: .95rem; color: var(--text-1); font-weight: 700; line-height: 1.2; }
+        .hero-visual .float-card span { font-size: .75rem; color: var(--text-3); }
+        @media (max-width: 991px) { .hero-visual { margin-top: 3.5rem; } .hero-visual .float-card { display: none; } }
 
         /* SEÇÕES */
-        section { padding: 80px 0; }
-        .section-label { display: inline-block; font-size: .72rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--sky); margin-bottom: .6rem; }
-        .section-title { font-size: clamp(1.5rem, 3vw, 2.2rem); font-weight: 800; color: #f1f5f9; margin-bottom: .75rem; }
-        .section-sub { color: rgba(226,232,240,.6); max-width: 520px; margin: 0 auto 3rem; }
-        .divider { height: 1px; background: rgba(14,165,233,.08); margin: 0; }
+        section { padding: 108px 0; }
+        .section-label { display: inline-block; font-size: .8rem; font-weight: 600; color: var(--sky); margin-bottom: .5rem; }
+        .section-title { font-size: clamp(1.6rem, 3vw, 2.3rem); font-weight: 800; color: var(--text-1); margin-bottom: 1rem; letter-spacing: -.01em; }
+        .section-sub { color: var(--text-3); max-width: 540px; margin: 0 auto 4rem; font-size: 1.03rem; line-height: 1.6; }
+        .divider { height: 1px; background: rgba(148,163,184,.08); margin: 0; }
 
         /* SEGMENTOS */
         .segments { padding: 32px 0; background: rgba(13,25,41,.4); }
@@ -132,23 +158,24 @@
         .adv-card h6 { color: #f1f5f9; font-weight: 700; font-size: .95rem; margin-bottom: .35rem; }
         .adv-card p  { font-size: .82rem; color: rgba(226,232,240,.6); margin: 0; line-height: 1.55; }
 
-        /* PLANOS */
+        /* PLANOS — acento âmbar reservado só para esta seção: sinaliza "hora de decidir" sem competir com o azul do resto da página */
         .plans { background: rgba(8,13,26,.6); }
-        .plan-card { background: rgba(13,25,41,.85); border: 1px solid rgba(14,165,233,.12); border-radius: 16px; padding: 32px 28px; height: 100%; position: relative; transition: border-color .25s, box-shadow .25s; }
-        .plan-card.featured { border-color: var(--sky); box-shadow: 0 0 40px rgba(14,165,233,.15); }
-        .plan-badge { position: absolute; top: -13px; left: 50%; transform: translateX(-50%); background: linear-gradient(90deg, var(--sky), var(--electric)); color: var(--abyss); font-size: .72rem; font-weight: 700; padding: .2rem 1rem; border-radius: 999px; white-space: nowrap; }
-        .plan-name { font-size: .875rem; font-weight: 700; color: var(--electric); text-transform: uppercase; letter-spacing: .08em; }
-        .plan-price { font-size: 2.4rem; font-weight: 800; color: #f1f5f9; line-height: 1; margin: .5rem 0 .1rem; }
-        .plan-price span { font-size: .95rem; font-weight: 400; color: rgba(148,163,184,.6); }
-        .plan-price-billed { font-size: .75rem; color: rgba(148,163,184,.5); margin-bottom: .25rem; }
-        .plan-price-old { font-size: 1rem; color: rgba(148,163,184,.45); text-decoration: line-through; margin-bottom: .1rem; }
-        .plan-offer-badge { display: inline-block; background: rgba(251,191,36,.15); border: 1px solid rgba(251,191,36,.35); color: #FCD34D; font-size: .7rem; font-weight: 700; padding: .15rem .7rem; border-radius: 999px; margin-bottom: .5rem; }
-        .plan-desc { font-size: .82rem; color: rgba(148,163,184,.6); margin-bottom: 1.5rem; }
-        .plan-features li { font-size: .875rem; color: rgba(226,232,240,.75); padding: .4rem 0; border-bottom: 1px solid rgba(14,165,233,.06); display: flex; align-items: center; gap: .5rem; }
-        .plan-features li:last-child { border-bottom: none; }
-        .plan-features li i.bi-check-circle-fill { color: var(--sky); flex-shrink: 0; }
-        .plan-features li.disabled { color: rgba(148,163,184,.35); }
-        .plan-features li.disabled i { color: rgba(148,163,184,.25); flex-shrink: 0; }
+        .plan-card { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 36px 32px; height: 100%; position: relative; transition: border-color .25s, box-shadow .25s; }
+        .plan-card.featured { border-color: var(--amber); box-shadow: 0 0 40px rgba(245,165,36,.12); }
+        .plan-badge { position: absolute; top: -13px; left: 50%; transform: translateX(-50%); background: var(--amber); color: #241804; font-size: .75rem; font-weight: 700; padding: .25rem 1.1rem; border-radius: 999px; white-space: nowrap; }
+        .plan-name { font-size: 1rem; font-weight: 700; color: var(--text-1); }
+        .plan-card.featured .plan-name { color: var(--amber); }
+        .plan-price { font-size: 2.6rem; font-weight: 800; color: var(--text-1); line-height: 1; margin: 1rem 0 .15rem; }
+        .plan-price span { font-size: .95rem; font-weight: 400; color: var(--text-3); }
+        .plan-price-billed { font-size: .78rem; color: var(--text-3); margin-bottom: .25rem; }
+        .plan-price-old { font-size: 1rem; color: var(--text-3); text-decoration: line-through; margin-bottom: .1rem; }
+        .plan-offer-badge { display: inline-block; background: var(--amber-soft); border: 1px solid rgba(245,165,36,.35); color: var(--amber); font-size: .72rem; font-weight: 700; padding: .2rem .75rem; border-radius: 999px; margin-bottom: .6rem; }
+        .plan-desc { font-size: .85rem; color: var(--text-3); margin-bottom: 1.75rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--line); }
+        .plan-features li { font-size: .9rem; color: var(--text-2); padding: .55rem 0; display: flex; align-items: flex-start; gap: .65rem; }
+        .plan-features li i.bi-check-circle-fill { color: var(--sky); flex-shrink: 0; margin-top: .15rem; }
+        .plan-card.featured .plan-features li i.bi-check-circle-fill { color: var(--amber); }
+        .plan-features li.disabled { color: var(--text-3); opacity: .5; }
+        .plan-features li.disabled i { color: var(--text-3); flex-shrink: 0; }
 
         /* TOGGLE */
         .billing-toggle { display: flex; align-items: center; justify-content: center; gap: .75rem; margin-bottom: 2.5rem; }
@@ -247,20 +274,38 @@
 </nav>
 
 {{-- HERO --}}
-<section class="hero text-center">
+<section class="hero">
     <div class="container">
-        <div class="hero-badge"><i class="bi bi-stars"></i>14 dias grátis · Sem cartão de crédito</div>
-        <h1>Gerencie seu negócio<br><span>com simplicidade e controle</span></h1>
-        <p class="lead mx-auto">Invexa é o sistema de gestão completo para pequenas e médias empresas: vendas, estoque, financeiro e relatórios — tudo em um só lugar.</p>
-        <div class="d-flex justify-content-center gap-3 flex-wrap">
-            <a href="{{ route('register') }}" class="btn-hero-primary">Criar conta grátis</a>
-            <a href="#how" class="btn-hero-secondary">Ver como funciona</a>
-        </div>
-        <div class="hero-metrics">
-            <div class="metric-item"><div class="value">14 dias</div><div class="label">Trial gratuito</div></div>
-            <div class="metric-item"><div class="value">3 min</div><div class="label">Para começar</div></div>
-            <div class="metric-item"><div class="value">100%</div><div class="label">Web — sem instalação</div></div>
-            <div class="metric-item"><div class="value">Multi</div><div class="label">Usuários por empresa</div></div>
+        <div class="row align-items-center g-5">
+            <div class="col-lg-6">
+                <div class="hero-badge"><i class="bi bi-stars"></i>14 dias grátis · Sem cartão de crédito</div>
+                <h1>Pare de gerenciar o negócio<br>numa planilha <em>que trava</em>.</h1>
+                <p class="lead">Invexa reúne vendas, estoque, financeiro e relatórios num só sistema — para você ver o que está acontecendo no seu negócio agora, não só no fim do mês.</p>
+                <div class="d-flex gap-3 flex-wrap">
+                    <a href="{{ route('register') }}" class="btn-hero-primary">Criar conta grátis</a>
+                    <a href="#how" class="btn-hero-secondary">Ver como funciona</a>
+                </div>
+                <div class="hero-metrics">
+                    <div class="metric-item"><div class="value">14 dias</div><div class="label">Trial gratuito</div></div>
+                    <div class="metric-item"><div class="value">3 min</div><div class="label">Para começar</div></div>
+                    <div class="metric-item"><div class="value">100%</div><div class="label">Web, sem instalar nada</div></div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="hero-visual">
+                    <div class="frame">
+                        <img src="{{ asset('images/screenshots/dash.jpeg') }}" alt="Dashboard do Invexa mostrando vendas, estoque e financeiro em tempo real">
+                    </div>
+                    <div class="float-card card-top">
+                        <div class="ic"><i class="bi bi-graph-up-arrow"></i></div>
+                        <div><strong>+18% vendas</strong><span>vs. mês anterior</span></div>
+                    </div>
+                    <div class="float-card card-bottom">
+                        <div class="ic"><i class="bi bi-box-seam"></i></div>
+                        <div><strong>Estoque atualizado</strong><span>a cada venda</span></div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </section>
@@ -270,7 +315,7 @@
 {{-- SEGMENTOS --}}
 <section class="segments">
     <div class="container">
-        <p class="text-center mb-3" style="font-size:.78rem; color:rgba(148,163,184,.5); letter-spacing:.08em; text-transform:uppercase;">Ideal para</p>
+        <p class="text-center mb-3" style="font-size:.85rem; color:var(--text-3);">Ideal para</p>
         <div class="d-flex flex-wrap justify-content-center gap-2">
             <span class="segment-pill"><i class="bi bi-shop"></i> Lojas de varejo</span>
             <span class="segment-pill"><i class="bi bi-tools"></i> Prestadores de serviço</span>
@@ -288,9 +333,8 @@
 <section class="how-it-works" id="how">
     <div class="container">
         <div class="text-center mb-5">
-            <span class="section-label">Simples assim</span>
-            <h2 class="section-title">Como funciona</h2>
-            <p class="section-sub">Do cadastro à primeira venda em menos de 10 minutos.</p>
+            <h2 class="section-title">Do cadastro à primeira venda em menos de 10 minutos</h2>
+            <p class="section-sub">Quatro passos, sem curva de aprendizado.</p>
         </div>
         <div class="row justify-content-center">
             <div class="col-lg-7">
@@ -365,7 +409,6 @@
 <section class="features" id="features">
     <div class="container">
         <div class="text-center mb-5">
-            <span class="section-label">Funcionalidades</span>
             <h2 class="section-title">Tudo que sua empresa precisa</h2>
             <p class="section-sub">Módulos integrados para você ter visibilidade total do negócio sem complicação.</p>
         </div>
@@ -422,7 +465,6 @@
 <section style="padding: 80px 0; background: rgba(8,13,26,.7);" id="screenshots">
     <div class="container">
         <div class="text-center mb-5">
-            <span class="section-label">Interface real</span>
             <h2 class="section-title">Veja o sistema em ação</h2>
             <p class="section-sub">Telas reais do Invexa — sem demonstrações fabricadas.</p>
         </div>
@@ -512,7 +554,6 @@
 <section class="vs-section" id="vs">
     <div class="container">
         <div class="text-center mb-5">
-            <span class="section-label">Por que trocar?</span>
             <h2 class="section-title">Invexa vs. Planilhas</h2>
             <p class="section-sub">Planilhas até funcionam no começo — mas chegam rápido no limite. Veja o que muda quando você usa um sistema feito para o seu negócio.</p>
         </div>
@@ -589,7 +630,7 @@
         </div>
 
         {{-- Cards de vantagens --}}
-        <div class="row g-3">
+        <div class="row g-4">
             <div class="col-sm-6 col-lg-4">
                 <div class="adv-card">
                     <div class="adv-icon"><i class="bi bi-lightning-charge-fill"></i></div>
@@ -642,7 +683,6 @@
 <section class="plans" id="plans">
     <div class="container">
         <div class="text-center mb-4">
-            <span class="section-label">Planos &amp; Preços</span>
             <h2 class="section-title">Simples, transparente e justo</h2>
             <p class="section-sub mb-0">14 dias de trial completo em qualquer plano — sem cartão de crédito. Depois, é só escolher o plano ideal para continuar.</p>
         </div>
@@ -689,7 +729,7 @@
                     <a id="btn-pro"
                        href="{{ route('register') }}?plan=pro_launch&billing=monthly"
                        class="btn btn-primary w-100 mt-auto"
-                       style="margin-top:1.5rem; background:var(--sky); border:none; font-weight:700;">
+                       style="margin-top:1.5rem; background:var(--amber); border:none; color:#241804; font-weight:700;">
                         Começar trial grátis — Pro
                     </a>
                 </div>
@@ -721,8 +761,8 @@
                     </ul>
                     <a id="btn-business"
                        href="{{ route('register') }}?plan=business&billing=monthly"
-                       class="btn btn-outline-primary w-100 mt-auto"
-                       style="margin-top:1.5rem;">
+                       class="btn w-100 mt-auto"
+                       style="margin-top:1.5rem; border:1px solid rgba(148,163,184,.3); color:var(--text-1); font-weight:700;">
                         Começar trial grátis — Business
                     </a>
                 </div>
@@ -750,7 +790,6 @@
 <section class="faq" id="faq">
     <div class="container">
         <div class="text-center mb-5">
-            <span class="section-label">Dúvidas</span>
             <h2 class="section-title">Perguntas frequentes</h2>
         </div>
         <div class="row justify-content-center">
