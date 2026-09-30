@@ -176,9 +176,9 @@
                     <h2><i class="bi bi-building"></i>1. Identificação do Controlador</h2>
                     <p>O INVEXA é um sistema de gestão empresarial desenvolvido e operado por:</p>
                     <div class="info-card mt-3">
-                        <div><strong>Augusto Corrêa Castilho</strong></div>
-                        <div class="mt-1" style="color:rgba(226,232,240,.6)">CPF: 079.607.886-69</div>
-                        <div style="color:rgba(226,232,240,.6)">Rua Agostinho Silvino Teixeira de Resende, 200 — Três Cruzes, Leopoldina/MG</div>
+                        <div><strong>Castilho Tech Soluções Digitais LTDA</strong> (Castilho Soluções Digitais)</div>
+                        <div class="mt-1" style="color:rgba(226,232,240,.6)">CNPJ: 68.552.491/0001-17</div>
+                        <div style="color:rgba(226,232,240,.6)">Rua Bernardino José Fidelis, 142 — Três Cruzes, Leopoldina/MG — CEP 36.700-488</div>
                         <div class="mt-1">E-mail: <a href="mailto:contato@invexa-app.com.br">contato@invexa-app.com.br</a></div>
                     </div>
                 </div>
@@ -186,7 +186,7 @@
                 {{-- 2 --}}
                 <div class="legal-section">
                     <h2><i class="bi bi-person-badge"></i>2. Encarregado de Dados (DPO)</h2>
-                    <p>O Encarregado responsável por receber comunicações e solicitações sobre dados pessoais é <strong style="color:#f1f5f9">Augusto Corrêa Castilho</strong>, pelo e-mail <a href="mailto:contato@invexa-app.com.br" style="color:var(--electric)">contato@invexa-app.com.br</a>. Prazo de resposta: até <strong style="color:#f1f5f9">15 dias úteis</strong>.</p>
+                    <p>O Encarregado responsável por receber comunicações e solicitações sobre dados pessoais é <strong style="color:#f1f5f9">Castilho Tech Soluções Digitais LTDA</strong>, pelo e-mail <a href="mailto:contato@invexa-app.com.br" style="color:var(--electric)">contato@invexa-app.com.br</a>. Prazo de resposta: até <strong style="color:#f1f5f9">15 dias úteis</strong>.</p>
                 </div>
 
                 {{-- 3 --}}
@@ -308,7 +308,7 @@
                     <h2><i class="bi bi-envelope"></i>11. Contato</h2>
                     <div class="highlight-card">
                         <div><i class="bi bi-envelope me-2" style="color:var(--sky)"></i><strong style="color:#f1f5f9">E-mail:</strong> <a href="mailto:contato@invexa-app.com.br">contato@invexa-app.com.br</a></div>
-                        <div class="mt-2"><i class="bi bi-person me-2" style="color:var(--sky)"></i><strong style="color:#f1f5f9">Responsável:</strong> Augusto Corrêa Castilho — Leopoldina/MG</div>
+                        <div class="mt-2"><i class="bi bi-person me-2" style="color:var(--sky)"></i><strong style="color:#f1f5f9">Responsável:</strong> Castilho Tech Soluções Digitais LTDA (CNPJ 68.552.491/0001-17) — Leopoldina/MG</div>
                         <div class="mt-2" style="font-size:.78rem;color:rgba(226,232,240,.5)"><i class="bi bi-info-circle me-1"></i>Também é possível apresentar reclamação diretamente à <a href="https://www.gov.br/anpd" target="_blank">ANPD — Autoridade Nacional de Proteção de Dados</a>.</div>
                     </div>
                 </div>

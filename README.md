@@ -12,7 +12,7 @@
 
 ## Sobre o Projeto
 
-O **Invexa** é um ERP leve voltado a pequenas e médias empresas, distribuído como SaaS com planos **Free / Pro / Business**. A arquitetura multi-tenant garante isolamento total de dados por empresa — produtos, vendas, compras, clientes, financeiro e usuários são sempre segregados por `company_id`. O controle de acesso é baseado em papéis (`admin`, `gerente`, `vendedor`), com visibilidades e permissões distintas em toda a interface e nas rotas.
+O **Invexa** é um ERP leve voltado a pequenas e médias empresas, distribuído como SaaS com **trial gratuito de 14 dias** e planos pagos **Pro / Business** (sem plano gratuito permanente). A arquitetura multi-tenant garante isolamento total de dados por empresa — produtos, vendas, compras, clientes, financeiro e usuários são sempre segregados por `company_id`. O controle de acesso é baseado em papéis (`admin`, `gerente`, `vendedor`), com visibilidades e permissões distintas em toda a interface e nas rotas.
 
 🌐 **Produção:** [invexa-app.com.br](https://invexa-app.com.br)
 📚 **API Docs:** [invexa-app.com.br/api-docs](https://invexa-app.com.br/api-docs)
@@ -63,23 +63,25 @@ O **Invexa** é um ERP leve voltado a pequenas e médias empresas, distribuído 
 | Gestão de Usuários                  | ✅ Completo    |
 | Painel Super-Admin                  | ✅ Completo    |
 | Audit Log                           | ✅ Completo    |
-| Trial + Bloqueio automático         | ✅ Completo    |
-| Planos Free / Pro / Business        | ✅ Completo    |
+| Trial de 14 dias + Bloqueio automático | ✅ Completo    |
+| Planos Pro / Business               | ✅ Completo    |
 | Assinaturas via Stripe              | ✅ Completo    |
 | E-mail transacional (Resend)        | ✅ Completo    |
 | Monitoramento de erros (Flare)      | ✅ Completo    |
 | Backup automático diário            | ✅ Completo    |
 | LGPD — Privacidade & Termos         | ✅ Completo    |
 | Testes automatizados                | ✅ Completo    |
-| Pix multi-tenant (Asaas)            | ✅ Completo    |
 | App Mobile (PWA)                    | ✅ Completo    |
 | API pública documentada             | ✅ Completo    |
 
-### 🔄 Em Andamento
+### ⏸️ Implementado, desativado por padrão
 
-| Item                               | Status          |
-| ---------------------------------- | --------------- |
-| NF-e / NFS-e integrada (Focus NFe) | 🔄 Em andamento |
+| Item                                | Status                                      |
+| ------------------------------------ | -------------------------------------------- |
+| Pix multi-tenant (Asaas)            | ⏸️ Desativado (`FEATURE_PIX_ENABLED=false`) |
+| NF-e / NFS-e integrada (Focus NFe)  | ⏸️ Desativado (`FEATURE_NFE_ENABLED=false`) |
+
+O Invexa opera hoje como ferramenta pura de gestão de estoque/vendas, sem movimentar dinheiro real (Pix) nem emitir documentos fiscais reais (NF-e). Os dois módulos permanecem implementados no código e podem ser reativados via as flags em `config/features.php`.
 
 ---
 
@@ -96,15 +98,16 @@ O **Invexa** é um ERP leve voltado a pequenas e médias empresas, distribuído 
 
 ### Planos e Assinaturas
 
+Sem plano gratuito permanente — toda conta nova começa com um **trial de 14 dias** com acesso completo, e precisa assinar Pro ou Business para continuar depois disso.
+
 | Plano        | Produtos | Clientes | Usuários | Cobrança      |
 | ------------ | -------- | -------- | -------- | ------------- |
-| **Free**     | 50       | 100      | 2        | Gratuito      |
 | **Pro**      | 500      | 1.000    | 10       | R$ 39,90/mês  |
 | **Business** | ∞        | ∞        | ∞        | R$ 119,90/mês |
 
-- Trial de 30 dias com acesso completo (sem cartão de crédito)
-- Bloqueio automático ao expirar o trial — dados preservados
-- Cobrança via Stripe (mensal e anual com desconto de 20%)
+- Trial de 14 dias com acesso completo (sem cartão de crédito)
+- Bloqueio automático ao expirar o trial sem assinatura ativa — dados preservados
+- Cobrança via Stripe (mensal e anual com desconto)
 
 ### Papéis e Permissões
 
@@ -130,14 +133,14 @@ Visão geral em tempo real com filtro de intervalo (Hoje / 7 dias / Este mês / 
 - Numeração sequencial automática por empresa (`sale_number`)
 - Status: `concluida`, `pendente`, `cancelada`
 - Devoluções com estorno automático no estoque
-- QR Code Pix gerado diretamente no PDV e na nota/invoice PDF
+- QR Code Pix no PDV e na nota/invoice PDF quando `FEATURE_PIX_ENABLED=true`
 
 ### Financeiro
 
 - Contas a Pagar e Receber com baixa individual e **baixa em lote**
 - Parcelamento, recorrência e controle de inadimplência
 - Alertas de vencimento no dashboard
-- Baixa automática de Conta a Receber ao confirmar pagamento Pix
+- Baixa automática de Conta a Receber ao confirmar pagamento Pix (quando `FEATURE_PIX_ENABLED=true`)
 
 ### Relatórios
 
@@ -145,7 +148,9 @@ Visão geral em tempo real com filtro de intervalo (Hoje / 7 dias / Este mês / 
 - Exportação em **PDF** e **CSV**
 - Relatório de Vendas e Relatório de Compras
 
-### Pix multi-tenant (Asaas)
+### Pix multi-tenant (Asaas) — desativado por padrão
+
+> Desligado em produção via `FEATURE_PIX_ENABLED=false` (`config/features.php`). O Invexa roda hoje só como ferramenta de gestão, sem movimentar dinheiro real. O módulo abaixo está implementado e pode ser reativado por ambiente.
 
 Cada empresa conecta sua própria conta Asaas — o Invexa não intermedia os recebimentos.
 
@@ -262,6 +267,10 @@ STRIPE_WEBHOOK_SECRET=your_webhook_secret
 
 # Pix via Asaas — configurado por empresa no painel
 # ASAAS_ENVIRONMENT=sandbox  (sandbox | production)
+
+# Feature toggles — desligados por padrão (ver config/features.php)
+FEATURE_PIX_ENABLED=false
+FEATURE_NFE_ENABLED=false
 ```
 
 ### Iniciar servidor de desenvolvimento
@@ -310,6 +319,18 @@ php artisan test
 | --------------------------- | ----------------------------------------------------------------------------- |
 | `BillBulkPayTest`           | Baixa em lote, ignorar já pagas, validação, isolamento multi-tenant           |
 | `ReceivableBulkReceiveTest` | Recebimento em lote, ignorar já recebidas, validação, isolamento multi-tenant |
+| `RoleAuthorizationTest`     | Autorização por papel em rotas administrativas e gerenciais                  |
+| `TrialAccessTest`           | Bloqueio de acesso ao expirar trial de 14 dias, liberação por assinatura ativa |
+| `FeatureTogglesTest`        | Pix/NF-e desativados por padrão (flags em `config/features.php`)             |
+| `AsaasWebhookSecurityTest`  | Validação de assinatura/segurança do webhook Asaas                           |
+| `LandingPageTest`           | Copy da landing page (trial de 14 dias, ausência de plano gratuito)          |
+| `FinancialReportTest`       | Relatórios financeiros (filtros, totais)                                     |
+| `SaleTest`                  | Fluxo de criação de venda                                                     |
+| `OnboardingTest`            | Fluxo de onboarding de nova empresa                                          |
+| `NotificationTest`          | Notificações do sistema                                                      |
+| `SmokeSweepTest`            | Varredura de smoke test nas rotas principais                                 |
+
+Veja `tests/Feature/` para a lista completa e sempre atualizada.
 
 ---
 

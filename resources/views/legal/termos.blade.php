@@ -171,9 +171,9 @@
                 <div class="legal-section">
                     <h2><i class="bi bi-building"></i>1. Identificação do Prestador</h2>
                     <div class="info-card">
-                        <div><strong>Augusto Corrêa Castilho</strong></div>
-                        <div class="mt-1" style="color:rgba(226,232,240,.6)">CPF: 079.607.886-69</div>
-                        <div style="color:rgba(226,232,240,.6)">Rua Agostinho Silvino Teixeira de Resende, 200 — Três Cruzes, Leopoldina/MG</div>
+                        <div><strong>Castilho Tech Soluções Digitais LTDA</strong> (Castilho Soluções Digitais)</div>
+                        <div class="mt-1" style="color:rgba(226,232,240,.6)">CNPJ: 68.552.491/0001-17</div>
+                        <div style="color:rgba(226,232,240,.6)">Rua Bernardino José Fidelis, 142 — Três Cruzes, Leopoldina/MG — CEP 36.700-488</div>
                         <div class="mt-1">E-mail: <a href="mailto:contato@invexa-app.com.br">contato@invexa-app.com.br</a></div>
                     </div>
                 </div>
@@ -240,7 +240,7 @@
                 <div class="legal-section">
                     <h2><i class="bi bi-award"></i>6. Propriedade Intelectual</h2>
                     <p><strong style="color:#f1f5f9">Seus dados:</strong> Os dados inseridos por você pertencem exclusivamente a você. O INVEXA os utiliza apenas para prestar o serviço.</p>
-                    <p><strong style="color:#f1f5f9">Plataforma:</strong> O código-fonte, design, marca e logotipo INVEXA são de propriedade de Augusto Corrêa Castilho, protegidos pela legislação brasileira de direitos autorais e propriedade industrial.</p>
+                    <p><strong style="color:#f1f5f9">Plataforma:</strong> O código-fonte, design, marca e logotipo INVEXA são de propriedade de Castilho Tech Soluções Digitais LTDA (CNPJ 68.552.491/0001-17), protegidos pela legislação brasileira de direitos autorais e propriedade industrial.</p>
                 </div>
 
                 {{-- 7 --}}
@@ -274,7 +274,7 @@
                     <h2><i class="bi bi-envelope"></i>11. Contato</h2>
                     <div class="highlight-card">
                         <div><i class="bi bi-envelope me-2" style="color:var(--sky)"></i><strong style="color:#f1f5f9">E-mail:</strong> <a href="mailto:contato@invexa-app.com.br">contato@invexa-app.com.br</a></div>
-                        <div class="mt-2"><i class="bi bi-person me-2" style="color:var(--sky)"></i><strong style="color:#f1f5f9">Responsável:</strong> Augusto Corrêa Castilho — Leopoldina/MG</div>
+                        <div class="mt-2"><i class="bi bi-person me-2" style="color:var(--sky)"></i><strong style="color:#f1f5f9">Responsável:</strong> Castilho Tech Soluções Digitais LTDA (CNPJ 68.552.491/0001-17) — Leopoldina/MG</div>
                     </div>
                 </div>
 
