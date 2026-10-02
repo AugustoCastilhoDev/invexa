@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+    {{-- Google AdSense --}}
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7023386295452219" crossorigin="anonymous"></script>
+
     {{-- SEO --}}
     <title>Invexa — Sistema de Gestão para Pequenas Empresas</title>
     <meta name="description" content="Controle vendas, estoque, contas a pagar e receber em um só lugar. Experimente grátis por 14 dias, sem cartão de crédito.">
